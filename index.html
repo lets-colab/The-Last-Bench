@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXIT BD - 11/10 Consultancy | Professional Solutions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #00d4ff;
+            --secondary-color: #ff006e;
+            --accent-color: #8338ec;
+            --dark-bg: #0a0e27;
+            --light-text: #f0f0f0;
+            --gray-text: #b0b0b0;
+            --success-color: #06ffa5;
+            --error-color: #ff4757;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1f3a 100%);
+            color: var(--light-text);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--light-text);
+            text-decoration: none;
+            position: relative;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        .cta-button {
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--dark-bg);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding-top: 80px;
+            perspective: 1000px;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: textShine 3s ease-in-out infinite;
+        }
+
+        @keyframes textShine {
+            0%, 100% {
+                filter: drop-shadow(0 0 5px var(--primary-color));
+            }
+            50% {
+                filter: drop-shadow(0 0 20px var(--secondary-color));
+            }
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--gray-text);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 1.2s ease-out;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1.4s ease-out;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--dark-bg);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: var(--dark-bg);
+            transform: translateY(-3px);
+        }
+
+        /* 3D Background */
+        .hero-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .floating-cube {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border: 2px solid var(--primary-color);
+            animation: float 15s infinite ease-in-out;
+            opacity: 0.1;
+            transform-style: preserve-3d;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) translateX(0px) rotateX(0deg) rotateY(0deg);
+            }
+            50% {
+                transform: translateY(-50px) translateX(30px) rotateX(180deg) rotateY(180deg);
+            }
+        }
+
+        .cube1 {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .cube2 {
+            top: 50%;
+            right: 10%;
+            animation-delay: 3s;
+        }
+
+        .cube3 {
+            bottom: 20%;
+            left: 50%;
+            animation-delay: 6s;
+        }
+
+        .glow-sphere {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.2);
+            }
+        }
+
+        .sphere1 {
+            width: 300px;
+            height: 300px;
+            background: var(--primary-color);
+            top: 10%;
+            right: 5%;
+            animation-delay: 0s;
+        }
+
+        .sphere2 {
+            width: 200px;
+            height: 200px;
+            background: var(--secondary-color);
+            bottom: 20%;
+            left: 5%;
+            animation-delay: 2s;
+        }
+
+        /* Services Section */
+        .services {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--gray-text);
+            margin-bottom: 4rem;
+            font-size: 1.1rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(131, 56, 236, 0.1));
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transform-style: preserve-3d;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+        }
+
+        .service-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover .service-icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .service-card p {
+            color: var(--gray-text);
+            line-height: 1.6;
+        }
+
+        /* Contact Form Section */
+        .contact-section {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(131, 56, 236, 0.05));
+            border-top: 2px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .contact-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 10px;
+            color: var(--light-text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: var(--gray-text);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: rgba(0, 212, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-validation {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+            color: var(--error-color);
+        }
+
+        .form-validation.success {
+            color: var(--success-color);
+            display: block;
+        }
+
+        .form-validation.error {
+            color: var(--error-color);
+            display: block;
+        }
+
+        .form-group input.valid,
+        .form-group textarea.valid {
+            border-color: var(--success-color);
+        }
+
+        .form-group input.invalid,
+        .form-group textarea.invalid {
+            border-color: var(--error-color);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--dark-bg);
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 212, 255, 0.5);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .form-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .form-message.success {
+            background: rgba(6, 255, 165, 0.2);
+            color: var(--success-color);
+            border: 2px solid var(--success-color);
+            display: block;
+        }
+
+        .form-message.error {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--error-color);
+            border: 2px solid var(--error-color);
+            display: block;
+        }
+
+        /* Statistics Section */
+        .stats {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-card {
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(131, 56, 236, 0.1));
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray-text);
+            font-size: 1rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, rgba(131, 56, 236, 0.05), rgba(0, 212, 255, 0.05));
+            border-top: 2px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.5rem;
+        }
+
+        .feature-content h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .feature-content p {
+            color: var(--gray-text);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 2px solid rgba(0, 212, 255, 0.2);
+            text-align: center;
+            color: var(--gray-text);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--light-text);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav ul {
+                gap: 1rem;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .floating-cube {
+                display: none;
+            }
+
+            .glow-sphere {
+                width: 150px !important;
+                height: 150px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 212, 255, 0.2);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scroll animations */
+        .fade-in-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease-out;
+        }
+
+        .fade-in-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Dark mode toggle */
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary-color);
+            color: var(--dark-bg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">EXIT BD</div>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <button class="cta-button" onclick="scrollToContact()">Get Started</button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-background">
+            <div class="glow-sphere sphere1"></div>
+            <div class="glow-sphere sphere2"></div>
+            <div class="floating-cube cube1"></div>
+            <div class="floating-cube cube2"></div>
+            <div class="floating-cube cube3"></div>
+        </div>
+
+        <div class="hero-content">
+            <h1>11/10 EXIT BD Consultancy</h1>
+            <p>Your trusted partner for comprehensive business solutions and strategic consulting services</p>
+            <div class="hero-buttons">
+                <button class="btn-primary" onclick="scrollToContact()">Start Consultation</button>
+                <button class="btn-secondary" onclick="scrollToServices()">Learn More</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services" id="services">
+        <h2 class="section-title fade-in-on-scroll">Our Services</h2>
+        <p class="section-subtitle fade-in-on-scroll">Comprehensive solutions tailored to your business needs</p>
+        
+        <div class="services-grid">
+            <div class="service-card fade-in-on-scroll">
+                <div class="service-icon">📊</div>
+                <h3>Business Consulting</h3>
+                <p>Strategic guidance and expert analysis to accelerate your business growth and market presence.</p>
+            </div>
+
+            <div class="service-card fade-in-on-scroll">
+                <div class="service-icon">💼</div>
+                <h3>Corporate Training</h3>
+                <p>Professional development programs designed to enhance team skills and productivity.</p>
+            </div>
+
+            <div class="service-card fade-in-on-scroll">
+                <div class="service-icon">🚀</div>
+                <h3>Digital Transformation</h3>
+                <p>Modernize your operations with cutting-edge technology solutions and digital strategies.</p>
+            </div>
+
+            <div class="service-card fade-in-on-scroll">
+                <div class="service-icon">📈</div>
+                <h3>Market Analysis</h3>
+                <p>In-depth market research and competitive analysis to inform your business decisions.</p>
+            </div>
+
+            <div class="service-card fade-in-on-scroll">
+                <div class="service-icon">🔒</div>
+                <h3>Risk Management</h3>
+                <p>Comprehensive risk assessment and mitigation strategies for sustainable operations.</p>
+            </div>
+
+            <div class="service-card fade-in-on-scroll">
+                <div class="service-icon">🌟</div>
+                <h3>Brand Development</h3>
+                <p>Creative branding solutions to establish a strong market identity and reputation.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-card fade-in-on-scroll">
+                <div class="stat-number" data-target="500">0</div>
+                <div class="stat-label">+ Active Clients</div>
+            </div>
+
+            <div class="stat-card fade-in-on-scroll">
+                <div class="stat-number" data-target="1200">0</div>
+                <div class="stat-label">+ Projects Completed</div>
+            </div>
+
+            <div class="stat-card fade-in-on-scroll">
+                <div class="stat-number" data-target="15">0</div>
+                <div class="stat-label">+ Years Experience</div>
+            </div>
+
+            <div class="stat-card fade-in-on-scroll">
+                <div class="stat-number" data-target="98">0</div>
+                <div class="stat-label">% Client Satisfaction</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <h2 class="section-title fade-in-on-scroll">Why Choose EXIT BD</h2>
+            <p class="section-subtitle fade-in-on-scroll">Excellence in every aspect of our service</p>
+
+            <div class="feature-list">
+                <div class="feature-item fade-in-on-scroll">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Expert Team</h4>
+                        <p>Highly skilled professionals with years of industry experience and proven track record.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item fade-in-on-scroll">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Custom Solutions</h4>
+                        <p>Tailored strategies designed specifically for your unique business requirements.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item fade-in-on-scroll">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>24/7 Support</h4>
+                        <p>Round-the-clock customer support to ensure your success at every step.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item fade-in-on-scroll">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Proven Results</h4>
+                        <p>Track record of delivering measurable results and ROI for our clients.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item fade-in-on-scroll">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Latest Technology</h4>
+                        <p>Leverage cutting-edge tools and platforms for competitive advantage.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item fade-in-on-scroll">
+                    <div class="feature-icon">✓</div>
+                    <div class="feature-content">
+                        <h4>Transparency</h4>
+                        <p>Clear communication and transparent reporting throughout our engagement.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="contact-container">
+            <h2 class="section-title fade-in-on-scroll">Get In Touch</h2>
+            <p class="section-subtitle fade-in-on-scroll">Reach out to us for a consultation or more information</p>
+
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Your full name" required>
+                    <div class="form-validation"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+                    <div class="form-validation"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="+1 (555) 000-0000">
+                    <div class="form-validation"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="company">Company Name</label>
+                    <input type="text" id="company" name="company" placeholder="Your company name">
+                    <div class="form-validation"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" placeholder="Tell us about your project or inquiry..." required></textarea>
+                    <div class="form-validation"></div>
+                </div>
+
+                <button type="submit" class="submit-btn">Send Message</button>
+                <div class="form-message"></div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#home">Home</a>
+                <a href="#services">Services</a>
+                <a href="#features">Features</a>
+                <a href="#contact">Contact</a>
+                <a href="#">Privacy Policy</a>
+            </div>
+            <p>&copy; 2026 EXIT BD - 11/10 Consultancy. All rights reserved.</p>
+            <p>Crafted with excellence • Powered by innovation</p>
+        </div>
+    </footer>
+
+    <script>
+        // Form Validation
+        const form = document.getElementById('contactForm');
+        const formInputs = form.querySelectorAll('input, textarea');
+        const formMessage = form.querySelector('.form-message');
+
+        const validationRules = {
+            name: {
+                rules: [
+                    { test: (val) => val.trim().length >= 2, message: 'Name must be at least 2 characters' },
+                    { test: (val) => /^[a-zA-Z\s]+$/.test(val), message: 'Name can only contain letters and spaces' }
+                ]
+            },
+            email: {
+                rules: [
+                    { test: (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), message: 'Please enter a valid email address' }
+                ]
+            },
+            phone: {
+                rules: [
+                    { test: (val) => val === '' || /^[\d\s\-\+\(\)]+$/.test(val), message: 'Please enter a valid phone number' }
+                ]
+            },
+            company: {
+                rules: [
+                    { test: (val) => val === '' || val.trim().length >= 2, message: 'Company name must be at least 2 characters' }
+                ]
+            },
+            message: {
+                rules: [
+                    { test: (val) => val.trim().length >= 10, message: 'Message must be at least 10 characters' }
+                ]
+            }
+        };
+
+        function validateField(field) {
+            const name = field.name;
+            const value = field.value;
+            const validationDiv = field.nextElementSibling;
+            
+            if (!validationRules[name]) return true;
+
+            const rules = validationRules[name].rules;
+            let isValid = true;
+
+            for (const rule of rules) {
+                if (!rule.test(value)) {
+                    validationDiv.textContent = rule.message;
+                    validationDiv.classList.add('error');
+                    validationDiv.classList.remove('success');
+                    field.classList.add('invalid');
+                    field.classList.remove('valid');
+                    isValid = false;
+                    break;
+                }
+            }
+
+            if (isValid) {
+                validationDiv.textContent = '✓ Valid';
+                validationDiv.classList.add('success');
+                validationDiv.classList.remove('error');
+                field.classList.add('valid');
+                field.classList.remove('invalid');
+            }
+
+            return isValid;
+        }
+
+        formInputs.forEach(input => {
+            input.addEventListener('blur', () => validateField(input));
+            input.addEventListener('input', () => validateField(input));
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            let isFormValid = true;
+            formInputs.forEach(input => {
+                if (!validateField(input)) {
+                    isFormValid = false;
+                }
+            });
+
+            if (isFormValid) {
+                // Simulate form submission
+                const submitBtn = form.querySelector('.submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+
+                setTimeout(() => {
+                    formMessage.textContent = '✓ Message sent successfully! We\'ll get back to you soon.';
+                    formMessage.classList.add('success');
+                    formMessage.classList.remove('error');
+                    
+                    // Reset form
+                    form.reset();
+                    formInputs.forEach(input => {
+                        input.classList.remove('valid', 'invalid');
+                        input.nextElementSibling.textContent = '';
+                    });
+
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message';
+
+                    // Clear success message after 5 seconds
+                    setTimeout(() => {
+                        formMessage.classList.remove('success');
+                    }, 5000);
+                }, 1500);
+            }
+        });
+
+        // Scroll to sections
+        function scrollToContact() {
+            document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToServices() {
+            document.getElementById('services').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Counter animation for statistics
+        function animateCounter(element) {
+            const target = parseInt(element.getAttribute('data-target'));
+            const increment = target / 50;
+            let current = 0;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 30);
+        }
+
+        // Intersection Observer for scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    
+                    // Animate counters when stat cards are visible
+                    if (entry.target.classList.contains('stat-card')) {
+                        const numberEl = entry.target.querySelector('.stat-number');
+                        if (numberEl && !numberEl.hasAttribute('data-animated')) {
+                            animateCounter(numberEl);
+                            numberEl.setAttribute('data-animated', 'true');
+                        }
+                    }
+                    
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Parallax effect on scroll
+        window.addEventListener('scroll', () => {
+            const scrollPosition = window.scrollY;
+            const heroBackground = document.querySelector('.hero-background');
+            if (heroBackground) {
+                heroBackground.style.transform = `translateY(${scrollPosition * 0.5}px)`;
+            }
+        });
+
+        // Active navigation link
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('nav a');
+
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.style.color = '';
+                if (link.getAttribute('href').slice(1) === current) {
+                    link.style.color = 'var(--primary-color)';
+                }
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Initialize page
+        window.addEventListener('load', () => {
+            console.log('EXIT BD Landing Page Loaded Successfully');
+        });
+    </script>
+</body>
+</html>
