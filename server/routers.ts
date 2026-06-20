@@ -124,7 +124,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        // TODO: Verify user is mentor or admin for this application
+        const app = await db.getApplication(input.applicationId);
+        if (!app) throw new Error("Application not found");
+        const isAdmin = ctx.user.role === "admin";
+        const isMentor = app.mentorAssigned === ctx.user.id;
+        if (!isAdmin && !isMentor) {
+          throw new Error("Not authorized to update this application");
+        }
         await db.updateApplicationStatus(input.applicationId, input.status, ctx.user.id);
         return { success: true };
       }),
@@ -202,10 +208,11 @@ export const appRouter = router({
     getCommissionSummary: protectedProcedure.query(async ({ ctx }) => {
       const tutor = await db.getTutor(ctx.user.id);
       if (!tutor) return { totalReferred: 0, totalEarned: "0", pendingCommission: "0" };
+      const pendingCommission = await db.getPendingCommissionByTutor(tutor.id);
       return {
         totalReferred: tutor.totalReferred,
         totalEarned: tutor.totalEarned,
-        pendingCommission: "0", // TODO: Calculate from referrals table
+        pendingCommission,
       };
     }),
   }),

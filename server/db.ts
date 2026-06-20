@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sum, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -102,6 +102,19 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateUserPushToken(userId: number, token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ expoPushToken: token } as any).where(eq(users.id, userId));
+}
+
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
@@ -123,6 +136,19 @@ export async function createStudent(data: InsertStudent) {
   if (!db) throw new Error("Database not available");
   const result = await db.insert(students).values(data);
   return result;
+}
+
+export async function getStudentById(studentId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(students).where(eq(students.id, studentId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllStudents() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(students);
 }
 
 export async function getStudent(userId: number) {
@@ -200,6 +226,18 @@ export async function createTutor(data: InsertTutor) {
   return result;
 }
 
+export async function getAllApplications() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(applications).orderBy(desc(applications.updatedAt));
+}
+
+export async function updateApplicationMentor(applicationId: number, mentorUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(applications).set({ mentorAssigned: mentorUserId }).where(eq(applications.id, applicationId));
+}
+
 export async function getTutor(userId: number) {
   const db = await getDb();
   if (!db) return undefined;
@@ -238,6 +276,47 @@ export async function getReferralByStudentAndTutor(studentId: number, tutorId: n
     and(eq(referrals.studentId, studentId), eq(referrals.tutorId, tutorId))
   ).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllTutors() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(tutors);
+}
+
+export async function getPendingCommissionByTutor(tutorId: number): Promise<string> {
+  const db = await getDb();
+  if (!db) return "0";
+  const result = await db
+    .select({ total: sql<string>`COALESCE(SUM(CAST(${referrals.commissionAmount} AS DECIMAL(15,2))), 0)` })
+    .from(referrals)
+    .where(and(eq(referrals.tutorId, tutorId), eq(referrals.commissionStatus, "pending")));
+  return result[0]?.total ?? "0";
+}
+
+export async function updateReferralStatus(referralId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(referrals).set({ commissionStatus: status as any }).where(eq(referrals.id, referralId));
+}
+
+export async function updateStudentTelegramChatId(studentId: number, chatId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(students).set({ telegramChatId: chatId } as any).where(eq(students.id, studentId));
+}
+
+export async function getStudentByTelegramLinkCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(students).where(eq((students as any).telegramLinkCode, code)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllMentors() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(mentors).where(eq(mentors.verificationStatus, "verified"));
 }
 
 export async function updateReferralCommission(referralId: number, amount: string, status: string) {

@@ -16,7 +16,8 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "tutor", "mentor"]).default("user").notNull(),
+  expoPushToken: text("expoPushToken"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -37,6 +38,12 @@ export const students = mysqlTable("students", {
   gpa: varchar("gpa", { length: 10 }), // e.g., "3.8", "4.0"
   transcriptUrl: text("transcriptUrl"), // S3 URL to uploaded transcript
   referralCode: varchar("referralCode", { length: 50 }), // Code of referring tutor (if applicable)
+  telegramChatId: varchar("telegramChatId", { length: 100 }),
+  whatsappPhone: varchar("whatsappPhone", { length: 20 }),
+  telegramLinkCode: varchar("telegramLinkCode", { length: 10 }),
+  notifyPush: int("notifyPush").default(1),
+  notifyTelegram: int("notifyTelegram").default(0),
+  notifyWhatsapp: int("notifyWhatsapp").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
