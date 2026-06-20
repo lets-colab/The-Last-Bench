@@ -105,7 +105,7 @@ export default function NotificationsSettingsScreen() {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Test Notification",
-          body: "This is a test notification from The Last Bench",
+          body: "This is a test notification from last bench",
           sound: "default",
         },
         trigger: null,

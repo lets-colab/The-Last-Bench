@@ -441,7 +441,7 @@ export const appRouter = router({
         const student = await db.getStudent(ctx.user.id);
         
         // Build system prompt with student context
-        const systemPrompt = `You are an expert study-abroad advisor for The Last Bench platform. You help Bangladeshi secondary school students explore university options and guide them through the application process.
+        const systemPrompt = `You are an expert study-abroad advisor for the last bench platform. You help Bangladeshi secondary school students explore university options and guide them through the application process.
 
 Student Context:
 - Class: ${student?.class || "Not specified"}

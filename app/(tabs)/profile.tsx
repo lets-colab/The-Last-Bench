@@ -207,7 +207,7 @@ export default function ProfileScreen() {
 
           {/* Footer */}
           <View className="items-center gap-1 pt-4 border-t border-border">
-            <Text className="text-xs text-muted">The Last Bench v1.0.0</Text>
+            <Text className="text-xs text-muted">last bench v1.0.0</Text>
             <Text className="text-xs text-muted">For Those Who Last, To Create a Benchmark</Text>
           </View>
         </View>
