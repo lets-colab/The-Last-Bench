@@ -37,7 +37,7 @@ export default function OnboardingScreen() {
   const steps: OnboardingStep[] = [
     {
       id: 0,
-      title: "Welcome to The Last Bench",
+      title: "Welcome to last bench",
       description: "Your personal guide to study abroad success",
       icon: "🚀",
     },
