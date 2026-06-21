@@ -4,6 +4,9 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const malaysiaUniversities = require("./data/malaysia-universities.json") as Array<Record<string, unknown>>;
 
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -222,15 +225,17 @@ export const appRouter = router({
   // ============================================================================
   referral: router({
     // Create referral when student signs up with code
-    createFromCode: publicProcedure
-      .input(z.object({ referralCode: z.string(), studentId: z.number() }))
-      .mutation(async ({ input }) => {
+    createFromCode: protectedProcedure
+      .input(z.object({ referralCode: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const student = await db.getStudent(ctx.user.id);
+        if (!student) throw new Error("Student profile not found");
         const tutor = await db.getTutorByReferralCode(input.referralCode);
         if (!tutor) throw new Error("Invalid referral code");
 
         const result = await db.createReferral({
           tutorId: tutor.id,
-          studentId: input.studentId,
+          studentId: student.id,
           referralCode: input.referralCode,
           commissionPercentage: "5",
           commissionStatus: "pending",
@@ -384,17 +389,55 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         await db.updateApplicationStatus(input.applicationId, input.status, ctx.user.id);
-        // Create notification for student
         const app = await db.getApplication(input.applicationId);
         if (app) {
-          await db.createNotification({
-            userId: 0, // TODO: Get student user ID from student ID
-            type: "status_update",
-            title: "Application Status Updated",
-            message: `Your application status has been updated to ${input.status}`,
-            relatedEntityId: input.applicationId,
-          });
+          const student = await db.getStudentById(app.studentId);
+          if (student) {
+            await db.createNotification({
+              userId: student.userId,
+              type: "status_update",
+              title: "Application Status Updated",
+              message: `Your application to ${app.universityName} has moved to: ${input.status.replace(/_/g, " ")}`,
+              relatedEntityId: input.applicationId,
+            });
+          }
         }
+        return { success: true };
+      }),
+
+    // Get all applications (admin only)
+    getAllApplications: adminProcedure.query(async () => {
+      return await db.getAllApplications();
+    }),
+
+    // Get all students (admin only)
+    getAllStudents: adminProcedure.query(async () => {
+      return await db.getAllStudents();
+    }),
+
+    // Get all tutors (admin only)
+    getAllTutors: adminProcedure.query(async () => {
+      return await db.getAllTutors();
+    }),
+
+    // Get all mentors (admin only)
+    getAllMentors: adminProcedure.query(async () => {
+      return await db.getAllMentors();
+    }),
+
+    // Assign mentor to application (admin only)
+    assignMentor: adminProcedure
+      .input(z.object({ applicationId: z.number(), mentorUserId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateApplicationMentor(input.applicationId, input.mentorUserId);
+        return { success: true };
+      }),
+
+    // Update tutor commission status (admin only)
+    updateCommissionStatus: adminProcedure
+      .input(z.object({ referralId: z.number(), status: z.string(), amount: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        await db.updateReferralCommission(input.referralId, input.amount || "0", input.status);
         return { success: true };
       }),
 
@@ -440,8 +483,9 @@ export const appRouter = router({
         // Get student profile for context
         const student = await db.getStudent(ctx.user.id);
         
-        // Build system prompt with student context
-        const systemPrompt = `You are an expert study-abroad advisor for the last bench platform. You help Bangladeshi secondary school students explore university options and guide them through the application process.
+        // Build system prompt with student context and verified university knowledge base
+        const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
+        const systemPrompt = `You are an expert study-abroad advisor for the last bench platform. You help Bangladeshi secondary school students explore university options in Malaysia and guide them through the application process.
 
 Student Context:
 - Class: ${student?.class || "Not specified"}
@@ -449,14 +493,23 @@ Student Context:
 - Field of Interest: ${student?.fieldOfInterest || "Not specified"}
 - Destination Preference: ${student?.destinationPreference || "Not specified"}
 
-Your role is to:
-1. Answer questions about universities, programs, and application processes
-2. Provide personalized recommendations based on their profile
-3. Explain visa requirements and success rates
-4. Suggest next steps in their journey
-5. Be encouraging and supportive
+VERIFIED MALAYSIA UNIVERSITY DATABASE (use ONLY this data for recommendations and statistics):
+${universityKnowledge}
 
-Always be honest about acceptance rates and visa requirements. If you don't know specific information, say so and suggest they verify with the university directly.`;
+STRICT RULES:
+1. Only recommend universities from the verified database above
+2. Never invent acceptance rates, costs, visa statistics, or GPA requirements not in the data
+3. If asked about universities NOT in the database, say you don't have verified data and direct them to verify directly
+4. If a student seems distressed or is making a major life decision based on borderline eligibility, add: "I recommend speaking with one of our mentors to verify this before applying."
+5. Always cite which university from the database you are referencing
+6. For GPA matching: the database uses a 5.0 scale; convert if the student uses a 4.0 scale (multiply by 1.25)
+
+Your role is to:
+1. Answer questions about universities, programs, and application processes using the verified database
+2. Provide personalized recommendations based on their profile and the actual data
+3. Explain visa requirements and success rates from the verified data
+4. Suggest next steps in their journey
+5. Be encouraging and supportive while being honest about eligibility`;
         
         // Build message history
         const messages = [
@@ -499,23 +552,32 @@ Always be honest about acceptance rates and visa requirements. If you don't know
         throw new Error("Student profile not found");
       }
       
-      const prompt = `Based on this student profile, recommend 3-5 universities that would be a good fit:
+      const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
+      const prompt = `Based on this student profile, recommend 3-5 universities from the VERIFIED DATABASE ONLY.
 
 Student Profile:
 - Class: ${student.class}
-- GPA: ${student.gpa}
+- GPA: ${student.gpa} (on 5.0 scale)
 - Field of Interest: ${student.fieldOfInterest}
 - Destination Preference: ${student.destinationPreference}
 
-For each recommendation, provide:
-1. University name
-2. Program name
-3. Why it's a good fit (2-3 sentences)
-4. Estimated cost range
-5. Visa success rate estimate
-6. Acceptance rate estimate
+VERIFIED MALAYSIA UNIVERSITY DATABASE:
+${universityKnowledge}
 
-Format your response as JSON with an array of recommendations.`;
+Instructions:
+- Only recommend universities from the database above
+- Match programs to the student's field of interest
+- Only recommend universities where the student's GPA meets the minimum requirement
+- Use exact cost and visa data from the database
+
+Return a JSON object with key "recommendations" containing an array where each item has:
+- universityName (string)
+- programName (string)
+- whyGoodFit (string, 2-3 sentences)
+- estimatedCostUSD (string, e.g. "$9,500/year")
+- visaSuccessRate (string, from database)
+- gpaRequired (string, from database)
+- emgsCategory (string, from database)`;
       
       try {
         const result = await invokeLLM({

@@ -88,6 +88,16 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
+            <Stack.Screen name="tutor/index" />
+            <Stack.Screen name="tutor/onboard" />
+            <Stack.Screen name="tutor/students" />
+            <Stack.Screen name="tutor/commission" />
+            <Stack.Screen name="admin/index" />
+            <Stack.Screen name="admin/applications" />
+            <Stack.Screen name="admin/students" />
+            <Stack.Screen name="admin/tutors" />
+            <Stack.Screen name="admin/skills" />
+            <Stack.Screen name="notifications" />
           </Stack>
           <StatusBar style="auto" />
         </QueryClientProvider>

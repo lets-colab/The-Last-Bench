@@ -1,9 +1,10 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, Switch, Alert } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Switch, Alert } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 /**
@@ -18,12 +19,16 @@ import * as Haptics from "expo-haptics";
 export default function ProfileScreen() {
   const { user } = useAuth();
   const colors = useColors();
+  const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { mutate: logout } = trpc.auth.logout.useMutation();
 
   const studentQuery = trpc.student.getProfile.useQuery(undefined, {
     enabled: !!user,
   });
+  const { data: notifications } = trpc.notification.getForUser.useQuery(undefined, { enabled: !!user });
+  const unreadCount = (notifications ?? []).filter((n: any) => !n.isRead).length;
+  const isAdmin = (user as any)?.role === "admin";
 
   if (!user) {
     return (
@@ -150,6 +155,50 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           )}
+
+          {/* Portal Access */}
+          <View className="gap-3">
+            <Text className="text-lg font-bold text-foreground">Quick Access</Text>
+
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/notifications"); }}
+              className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+            >
+              <View className="gap-1">
+                <Text className="text-base font-semibold text-foreground">🔔 Notifications</Text>
+                <Text className="text-sm text-muted">{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</Text>
+              </View>
+              {unreadCount > 0 && (
+                <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
+                  <Text className="text-white text-xs font-bold">{unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/tutor"); }}
+              className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+            >
+              <View className="gap-1">
+                <Text className="text-base font-semibold text-foreground">🤝 Partner Portal</Text>
+                <Text className="text-sm text-muted">Refer students and earn commission</Text>
+              </View>
+              <Text className="text-lg text-muted">→</Text>
+            </TouchableOpacity>
+
+            {isAdmin && (
+              <TouchableOpacity
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/admin"); }}
+                className="bg-surface border border-primary/20 rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+              >
+                <View className="gap-1">
+                  <Text className="text-base font-semibold text-foreground">⚙️ Admin Dashboard</Text>
+                  <Text className="text-sm text-muted">Manage students, applications & tutors</Text>
+                </View>
+                <Text className="text-lg text-muted">→</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* Preferences */}
           <View className="gap-3">
