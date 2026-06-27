@@ -1,0 +1,13 @@
+[build]
+  command = "npm install -g pnpm@9 && pnpm install --frozen-lockfile && npx expo export --platform web"
+  publish = "dist"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)render.yaml'"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
