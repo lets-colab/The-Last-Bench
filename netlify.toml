@@ -1,11 +1,11 @@
 [build]
-  command = "npm install -g pnpm@9 && pnpm install --frozen-lockfile && npx expo export --platform web"
+  command = "corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install && npx expo export --platform web"
   publish = "dist"
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)render.yaml'"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
+  EXPO_NO_TELEMETRY = "1"
+  CI = "1"
 
 [[redirects]]
   from = "/*"
