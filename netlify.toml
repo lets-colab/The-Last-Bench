@@ -1,11 +1,5 @@
 [build]
-  command = "corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install && npx expo export --platform web"
   publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "20"
-  EXPO_NO_TELEMETRY = "1"
-  CI = "1"
 
 [[redirects]]
   from = "/*"

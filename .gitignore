@@ -1,7 +1,7 @@
 node_modules/
 .expo/
 .next/
-dist/
+# dist/ tracked for Netlify zero-build deployment
 build/
 .env.local
 .env.*.local
