@@ -67,7 +67,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-6 gap-4"
+            className="bg-gradient-to-br from-green-800 to-green-600 rounded-2xl p-6 gap-4"
           >
             <View className="gap-2">
               <Text className="text-white text-sm font-semibold opacity-90">Your Application Journey</Text>
