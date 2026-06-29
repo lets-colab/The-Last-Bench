@@ -49,19 +49,23 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="community"
+        name="discover"
         options={{
           title: "Discover",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="chevron.left.forwardslash.chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="sparkles" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="chevron.right" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
         }}
       />
+      {/* Hidden from tab bar — accessible via deep links */}
+      <Tabs.Screen name="community" options={{ href: null }} />
+      <Tabs.Screen name="ai-guidance" options={{ href: null }} />
+      <Tabs.Screen name="messages" options={{ href: null }} />
     </Tabs>
   );
 }
