@@ -239,3 +239,35 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+
+/**
+ * AI Chat Messages — persistent memory layer (MemPalace-style)
+ * Stores every exchange between student and AI advisor across sessions.
+ */
+export const aiChatMessages = mysqlTable("aiChatMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  studentId: int("studentId").notNull(),
+  role: mysqlEnum("role", ["user", "assistant"]).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AiChatMessage = typeof aiChatMessages.$inferSelect;
+export type InsertAiChatMessage = typeof aiChatMessages.$inferInsert;
+
+/**
+ * AI Memories — extracted facts about each student.
+ * Key-value store of things the AI has learned (goals, concerns, preferences).
+ */
+export const aiMemories = mysqlTable("aiMemories", {
+  id: int("id").autoincrement().primaryKey(),
+  studentId: int("studentId").notNull(),
+  memoryKey: varchar("memoryKey", { length: 100 }).notNull(), // e.g., "target_university", "main_concern"
+  memoryValue: text("memoryValue").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AiMemory = typeof aiMemories.$inferSelect;
+export type InsertAiMemory = typeof aiMemories.$inferInsert;

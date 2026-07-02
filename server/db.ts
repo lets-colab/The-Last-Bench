@@ -25,6 +25,10 @@ import {
   skills,
   InsertNotification,
   notifications,
+  aiChatMessages,
+  InsertAiChatMessage,
+  aiMemories,
+  InsertAiMemory,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -442,4 +446,48 @@ export async function markNotificationAsRead(notificationId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(notifications).set({ isRead: 1 }).where(eq(notifications.id, notificationId));
+}
+
+// ── AI Memory (MemPalace-style) ──────────────────────────────────────────────
+
+export async function saveAIChatMessage(data: InsertAiChatMessage) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(aiChatMessages).values(data);
+}
+
+export async function getAIChatHistory(studentId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select()
+    .from(aiChatMessages)
+    .where(eq(aiChatMessages.studentId, studentId))
+    .orderBy(desc(aiChatMessages.createdAt))
+    .limit(limit);
+  return rows.reverse();
+}
+
+export async function upsertAIMemory(studentId: number, memoryKey: string, memoryValue: string) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select()
+    .from(aiMemories)
+    .where(and(eq(aiMemories.studentId, studentId), eq(aiMemories.memoryKey, memoryKey)))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(aiMemories)
+      .set({ memoryValue })
+      .where(and(eq(aiMemories.studentId, studentId), eq(aiMemories.memoryKey, memoryKey)));
+  } else {
+    await db.insert(aiMemories).values({ studentId, memoryKey, memoryValue });
+  }
+}
+
+export async function getAIMemories(studentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(aiMemories).where(eq(aiMemories.studentId, studentId));
 }

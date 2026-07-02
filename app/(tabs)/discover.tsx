@@ -1,26 +1,46 @@
 import { ScrollView, Text, View, TouchableOpacity, TextInput, ActivityIndicator } from "react-native";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+
+interface ChatMsg { id: string; role: "user" | "assistant"; content: string }
+
+const WELCOME: ChatMsg = {
+  id: "welcome",
+  role: "assistant",
+  content: "Hello! I'm your study-abroad advisor with memory — I'll remember what we discuss across sessions. Ask me about universities, visas, or your application.",
+};
 
 export default function DiscoverScreen() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"ai" | "community">("ai");
   const [inputText, setInputText] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      id: "welcome",
-      role: "assistant" as const,
-      content:
-        "Hello! I'm your study-abroad advisor. I can help you explore universities, understand visa requirements, and plan your application. What would you like to know?",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>([WELCOME]);
   const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const chatMutation = trpc.aiGuidance.chat.useMutation();
+  const historyQuery = trpc.aiGuidance.getChatHistory.useQuery(undefined, { enabled: !!user });
   const cohortsQuery = trpc.cohort.getAll.useQuery();
   const skillsQuery = trpc.skill.getAll.useQuery();
+
+  // Load persistent history from server on mount
+  useEffect(() => {
+    if (historyQuery.data && historyQuery.data.length > 0) {
+      setMessages(
+        historyQuery.data.map((m) => ({
+          id: String(m.id),
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }))
+      );
+    }
+  }, [historyQuery.data]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
 
   if (!user) {
     return (
@@ -32,12 +52,13 @@ export default function DiscoverScreen() {
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
-    const userMsg = { id: Date.now().toString(), role: "user" as const, content: inputText.trim() };
+    const text = inputText.trim();
+    const userMsg: ChatMsg = { id: Date.now().toString(), role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInputText("");
     setIsLoading(true);
     try {
-      const response = await chatMutation.mutateAsync({ message: userMsg.content });
+      const response = await chatMutation.mutateAsync({ message: text });
       setMessages((prev) => [
         ...prev,
         { id: (Date.now() + 1).toString(), role: "assistant", content: response.message },
@@ -64,9 +85,9 @@ export default function DiscoverScreen() {
   return (
     <ScreenContainer className="p-0">
       {/* Header */}
-      <View className="px-6 pt-8 pb-4 gap-2">
+      <View className="px-6 pt-8 pb-4 gap-1">
         <Text className="text-3xl font-bold text-foreground">Discover</Text>
-        <Text className="text-sm text-muted">AI advisor · Cohorts · Skills</Text>
+        <Text className="text-sm text-muted">AI advisor with memory · Cohorts · Skills</Text>
       </View>
 
       {/* Segment Control */}
@@ -92,14 +113,21 @@ export default function DiscoverScreen() {
       {/* AI Advisor Tab */}
       {activeTab === "ai" && (
         <View className="flex-1">
-          <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 8 }}>
+          <ScrollView
+            ref={scrollRef}
+            className="flex-1 px-6"
+            contentContainerStyle={{ paddingBottom: 8 }}
+          >
+            {historyQuery.isLoading && (
+              <ActivityIndicator size="small" color="#16a34a" className="mt-4 mb-2" />
+            )}
             {messages.map((msg) => (
               <View
                 key={msg.id}
-                className={`mb-3 max-w-xs ${msg.role === "user" ? "self-end" : "self-start"}`}
+                className={`mb-3 ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 <View
-                  className={`rounded-2xl px-4 py-3 ${
+                  className={`rounded-2xl px-4 py-3 max-w-xs ${
                     msg.role === "user" ? "bg-primary" : "bg-surface border border-border"
                   }`}
                 >
@@ -110,7 +138,7 @@ export default function DiscoverScreen() {
               </View>
             ))}
             {isLoading && (
-              <View className="self-start mb-3">
+              <View className="items-start mb-3">
                 <View className="bg-surface border border-border rounded-2xl px-4 py-3">
                   <ActivityIndicator size="small" color="#16a34a" />
                 </View>
