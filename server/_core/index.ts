@@ -7,6 +7,18 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { logError, getHealthSnapshot } from "../self-healing";
+
+// The server never dies from an unhandled error: every crash-class failure
+// is captured, logged to the knowledge base, and diagnosed in the background.
+process.on("uncaughtException", (error) => {
+  console.error("[self-healing] uncaught exception:", error);
+  void logError("process:uncaughtException", error).catch(() => {});
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[self-healing] unhandled rejection:", reason);
+  void logError("process:unhandledRejection", reason).catch(() => {});
+});
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -59,7 +71,7 @@ async function startServer() {
   registerOAuthRoutes(app);
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, timestamp: Date.now() });
+    res.json({ ok: true, timestamp: Date.now(), selfHealing: getHealthSnapshot() });
   });
 
   app.use(
@@ -69,6 +81,14 @@ async function startServer() {
       createContext,
     }),
   );
+
+  // Last-resort Express error handler: log to the healer, answer gracefully.
+  app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    void logError("express", err).catch(() => {});
+    if (!res.headersSent) {
+      res.status(500).json({ ok: false, error: "Something went wrong — the system is healing itself. Please retry." });
+    }
+  });
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);

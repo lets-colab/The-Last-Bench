@@ -271,3 +271,45 @@ export const aiMemories = mysqlTable("aiMemories", {
 
 export type AiMemory = typeof aiMemories.$inferSelect;
 export type InsertAiMemory = typeof aiMemories.$inferInsert;
+
+/**
+ * Error Logs — every error the system encounters, deduplicated by signature.
+ * The self-healing engine reads these to diagnose and fix recurring problems.
+ */
+export const errorLogs = mysqlTable("errorLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  signature: varchar("signature", { length: 191 }).notNull(), // normalized fingerprint of the error
+  source: varchar("source", { length: 191 }).notNull(), // e.g. "trpc:aiGuidance.chat", "express", "process"
+  message: text("message").notNull(),
+  stack: text("stack"),
+  context: text("context"), // JSON: input shape, user role, etc. (no PII)
+  status: mysqlEnum("status", ["open", "diagnosed", "healed", "ignored"]).default("open").notNull(),
+  occurrences: int("occurrences").default(1).notNull(),
+  lastSeenAt: timestamp("lastSeenAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ErrorLog = typeof errorLogs.$inferSelect;
+export type InsertErrorLog = typeof errorLogs.$inferInsert;
+
+/**
+ * Error Fixes — the knowledge base the system learns from.
+ * Each row is a diagnosis + fix strategy for an error signature, with a
+ * running success/failure score. Successful strategies are fed back into
+ * future diagnoses, so every fix makes the system smarter.
+ */
+export const errorFixes = mysqlTable("errorFixes", {
+  id: int("id").autoincrement().primaryKey(),
+  errorSignature: varchar("errorSignature", { length: 191 }).notNull(),
+  diagnosis: text("diagnosis").notNull(), // AI root-cause analysis
+  fixStrategy: mysqlEnum("fixStrategy", ["retry", "fallback", "degrade", "reconnect", "manual"]).notNull(),
+  fixDetail: text("fixDetail"), // AI-suggested remediation steps
+  autoApplied: int("autoApplied").default(0).notNull(), // 1 if the engine applied it automatically
+  successCount: int("successCount").default(0).notNull(),
+  failureCount: int("failureCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ErrorFix = typeof errorFixes.$inferSelect;
+export type InsertErrorFix = typeof errorFixes.$inferInsert;

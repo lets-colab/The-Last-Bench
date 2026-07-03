@@ -47,6 +47,12 @@ export async function getDb() {
   return _db;
 }
 
+// Drop the cached connection so the next getDb() reconnects fresh.
+// Used by the self-healing engine's "reconnect" strategy.
+export function resetDb() {
+  _db = null;
+}
+
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
