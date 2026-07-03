@@ -464,82 +464,90 @@ export const appRouter = router({
   // AI GUIDANCE ROUTES
   // ============================================================================
   aiGuidance: router({
-    // Chat with AI for university guidance
+    // Persistent chat — saves every message to DB, injects memories into each prompt
     chat: protectedProcedure
-      .input(
-        z.object({
-          message: z.string(),
-          conversationHistory: z.array(
-            z.object({
-              role: z.enum(["user", "assistant"]),
-              content: z.string(),
-            })
-          ).optional(),
-        })
-      )
+      .input(z.object({ message: z.string() }))
       .mutation(async ({ ctx, input }) => {
         const { invokeLLM } = await import("./_core/llm");
-        
-        // Get student profile for context
-        const student = await db.getStudent(ctx.user.id);
-        
-        // Build system prompt with student context and verified university knowledge base
-        const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
-        const systemPrompt = `You are an expert study-abroad advisor for the last bench platform. You help Bangladeshi secondary school students explore university options in Malaysia and guide them through the application process.
 
-Student Context:
+        const student = await db.getStudent(ctx.user.id);
+        const studentId = student?.id ?? 0;
+
+        // Load persistent memory for this student
+        const [chatHistory, memories] = await Promise.all([
+          db.getAIChatHistory(studentId, 20),
+          db.getAIMemories(studentId),
+        ]);
+
+        const memorySummary = memories.length > 0
+          ? `\nWhat I remember about this student:\n${memories.map((m) => `- ${m.memoryKey}: ${m.memoryValue}`).join("\n")}`
+          : "";
+
+        const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
+        const systemPrompt = `You are an expert study-abroad advisor for Last Bench — an AI platform helping Bangladeshi secondary school students study in Malaysia.
+
+Student Profile:
 - Class: ${student?.class || "Not specified"}
 - GPA: ${student?.gpa || "Not specified"}
 - Field of Interest: ${student?.fieldOfInterest || "Not specified"}
 - Destination Preference: ${student?.destinationPreference || "Not specified"}
+${memorySummary}
 
-VERIFIED MALAYSIA UNIVERSITY DATABASE (use ONLY this data for recommendations and statistics):
+VERIFIED MALAYSIA UNIVERSITY DATABASE (ONLY cite from this list):
 ${universityKnowledge}
 
 STRICT RULES:
 1. Only recommend universities from the verified database above
 2. Never invent acceptance rates, costs, visa statistics, or GPA requirements not in the data
-3. If asked about universities NOT in the database, say you don't have verified data and direct them to verify directly
-4. If a student seems distressed or is making a major life decision based on borderline eligibility, add: "I recommend speaking with one of our mentors to verify this before applying."
-5. Always cite which university from the database you are referencing
-6. For GPA matching: the database uses a 5.0 scale; convert if the student uses a 4.0 scale (multiply by 1.25)
+3. If asked about universities NOT in the database, say you don't have verified data
+4. If a student seems distressed or borderline eligible, add: "I recommend speaking with one of our mentors to verify this before applying."
+5. Always cite which university you are referencing
+6. GPA scale is 5.0; convert 4.0-scale scores by multiplying by 1.25
 
-Your role is to:
-1. Answer questions about universities, programs, and application processes using the verified database
-2. Provide personalized recommendations based on their profile and the actual data
-3. Explain visa requirements and success rates from the verified data
-4. Suggest next steps in their journey
-5. Be encouraging and supportive while being honest about eligibility`;
-        
-        // Build message history
+After each response, if you learned something important about this student (a goal, concern, preferred university, timeline), output it on a NEW LINE in this exact format:
+MEMORY::key::value
+Example: MEMORY::target_university::Universiti Malaya
+Only emit MEMORY lines for genuinely new, important facts — not for every message.`;
+
+        // Save the user's message to DB
+        await db.saveAIChatMessage({ studentId, role: "user", content: input.message });
+
         const messages = [
           { role: "system" as const, content: systemPrompt },
-          ...(input.conversationHistory || []).map((msg) => ({
-            role: msg.role as "user" | "assistant",
-            content: msg.content,
-          })),
+          ...chatHistory.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
           { role: "user" as const, content: input.message },
         ];
-        
+
         try {
-          const result = await invokeLLM({
-            messages,
-            model: "claude-3-5-sonnet-20241022",
-            maxTokens: 1024,
-          });
-          
-          const assistantMessage = result.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
-          
-          return {
-            success: true,
-            message: assistantMessage,
-            conversationId: ctx.user.id,
-          };
+          const result = await invokeLLM({ messages, model: "claude-3-5-sonnet-20241022", maxTokens: 1024 });
+          let assistantMessage = result.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+
+          // Extract and persist MEMORY:: lines, strip them from the displayed response
+          const memoryLines = assistantMessage.match(/^MEMORY::(.+)::(.+)$/gm) || [];
+          for (const line of memoryLines) {
+            const parts = line.replace("MEMORY::", "").split("::");
+            if (parts.length === 2) {
+              await db.upsertAIMemory(studentId, parts[0].trim(), parts[1].trim());
+            }
+          }
+          assistantMessage = assistantMessage.replace(/^MEMORY::.+$/gm, "").trim();
+
+          // Save AI response to DB
+          await db.saveAIChatMessage({ studentId, role: "assistant", content: assistantMessage });
+
+          return { success: true, message: assistantMessage, conversationId: ctx.user.id };
         } catch (error) {
           console.error("AI guidance error:", error);
           throw new Error("Failed to get AI guidance. Please try again.");
         }
       }),
+
+    // Return persistent chat history for the current student
+    getChatHistory: protectedProcedure.query(async ({ ctx }) => {
+      const student = await db.getStudent(ctx.user.id);
+      if (!student) return [];
+      return await db.getAIChatHistory(student.id, 50);
+    }),
 
     // Get university recommendations
     getRecommendations: protectedProcedure.query(async ({ ctx }) => {
