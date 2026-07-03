@@ -1,0 +1,14 @@
+frontend:
+  - app/**
+  - components/**
+  - hooks/**
+  - lib/**
+
+backend:
+  - server/**
+  - drizzle/**
+
+deploy:
+  - dist/**
+  - netlify.toml
+  - .github/workflows/**
