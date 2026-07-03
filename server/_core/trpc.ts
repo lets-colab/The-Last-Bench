@@ -8,7 +8,23 @@ const t = initTRPC.context<TrpcContext>().create({
 });
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
+
+// Self-healing guard: every procedure error is fingerprinted, logged, and
+// diagnosed in the background so recurring failures get auto-fix strategies.
+const selfHealingGuard = t.middleware(async (opts) => {
+  const result = await opts.next();
+  // UNAUTHORIZED/FORBIDDEN are expected auth outcomes, not system failures.
+  if (!result.ok && result.error.code !== "UNAUTHORIZED" && result.error.code !== "FORBIDDEN") {
+    const { logError } = await import("../self-healing");
+    void logError(`trpc:${opts.path}`, result.error, {
+      type: opts.type,
+      code: result.error.code,
+    }).catch(() => {});
+  }
+  return result;
+});
+
+export const publicProcedure = t.procedure.use(selfHealingGuard);
 
 const requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
@@ -25,9 +41,9 @@ const requireUser = t.middleware(async (opts) => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(requireUser);
+export const protectedProcedure = publicProcedure.use(requireUser);
 
-export const adminProcedure = t.procedure.use(
+export const adminProcedure = publicProcedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
 

@@ -72,16 +72,9 @@ export default function AIGuidanceScreen() {
     setIsLoading(true);
 
     try {
-      // Build conversation history
-      const conversationHistory = messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
-      // Send to AI
+      // Send to AI (the server owns conversation history now)
       const response = await chatMutation.mutateAsync({
         message: inputText,
-        conversationHistory,
       });
 
       // Add assistant response

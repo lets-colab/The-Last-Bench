@@ -519,8 +519,17 @@ Only emit MEMORY lines for genuinely new, important facts — not for every mess
         ];
 
         try {
-          const result = await invokeLLM({ messages, model: "claude-3-5-sonnet-20241022", maxTokens: 1024 });
-          let assistantMessage = result.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+          const { withSelfHealing } = await import("./self-healing");
+          const result = await withSelfHealing(
+            "llm:aiGuidance.chat",
+            () => invokeLLM({ messages, model: "claude-3-5-sonnet-20241022", maxTokens: 1024 }),
+            { maxRetries: 2 },
+          );
+          const rawContent = result.choices[0]?.message?.content;
+          let assistantMessage =
+            typeof rawContent === "string" && rawContent.length > 0
+              ? rawContent
+              : "I couldn't generate a response. Please try again.";
 
           // Extract and persist MEMORY:: lines, strip them from the displayed response
           const memoryLines = assistantMessage.match(/^MEMORY::(.+)::(.+)$/gm) || [];
@@ -612,6 +621,45 @@ Return a JSON object with key "recommendations" containing an array where each i
         throw new Error("Failed to generate recommendations. Please try again.");
       }
     }),
+  }),
+
+  // Self-healing engine: the system logs every error, auto-recovers where
+  // safe, and learns from each fix. Admin can inspect what it has learned.
+  selfHealing: router({
+    health: publicProcedure.query(async () => {
+      const { getHealthSnapshot } = await import("./self-healing");
+      return getHealthSnapshot();
+    }),
+
+    errors: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).optional() }).optional())
+      .query(async ({ input }) => {
+        const { listErrorLogs } = await import("./self-healing");
+        return listErrorLogs(input?.limit ?? 50);
+      }),
+
+    fixes: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).optional() }).optional())
+      .query(async ({ input }) => {
+        const { listFixes } = await import("./self-healing");
+        return listFixes(input?.limit ?? 50);
+      }),
+
+    diagnose: adminProcedure
+      .input(z.object({ signature: z.string() }))
+      .mutation(async ({ input }) => {
+        const { diagnoseSignature } = await import("./self-healing");
+        const fix = await diagnoseSignature(input.signature);
+        return { success: !!fix, fix };
+      }),
+
+    ignore: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const { ignoreError } = await import("./self-healing");
+        await ignoreError(input.id);
+        return { success: true };
+      }),
   }),
 });
 
