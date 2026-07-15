@@ -32,6 +32,12 @@ a,a:hover{color:inherit;}
 @keyframes lbFlicker{0%,92%,100%{opacity:1}93%{opacity:.4}96%{opacity:.9}}
 @keyframes lbGrain{0%{transform:translate(0,0)}25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(-1%,2%)}100%{transform:translate(2%,-1%)}}
 @keyframes sonarRing{from{transform:translate(-50%,-50%) scale(.3);opacity:.9}to{transform:translate(-50%,-50%) scale(5);opacity:0}}
+@keyframes heroRise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+.lb-hero-seq{opacity:0;animation:heroRise 1.1s cubic-bezier(.16,1,.3,1) forwards;}
+@media (prefers-reduced-motion: reduce){
+  .lb-hero-seq{animation:none;opacity:1;transform:none;}
+  [style*="lbGrain"],[style*="lbBob"],[style*="lbFlicker"]{animation:none !important;}
+}
 ::selection{background:#00C853;color:#04140b;}
 </style>
 </helmet>
@@ -40,6 +46,9 @@ a,a:hover{color:inherit;}
 
   <!-- WebGL canvas mount (the continuous 3D journey) -->
   <div ref="{{ mountRef }}" style="position:fixed;inset:0;z-index:0;"></div>
+
+  <!-- monsoon lightning — flashes the whole sky for a beat, then double-taps -->
+  <div ref="{{ lightningRef }}" style="position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;background:radial-gradient(ellipse 120% 80% at 50% 0%,rgba(210,230,255,.9),rgba(140,180,230,.35) 45%,transparent 75%);mix-blend-mode:screen;"></div>
 
   <!-- REAL FOOTAGE LAYER — dissolves in when you arrive at each real location -->
   <div ref="{{ vidLayerRef }}" style="position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;opacity:0;will-change:opacity;background:#000;">
@@ -111,10 +120,10 @@ a,a:hover{color:inherit;}
 
   <!-- ============ ACT 1 · HERO ============ -->
   <section data-screen-label="Hero — KL Skyline" style="position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:96px 24px 64px;">
-    <div style="font-size:12px;font-weight:700;letter-spacing:.34em;color:#00E676;margin-bottom:22px;">A STUDENT'S JOURNEY · DHAKA → KUALA LUMPUR</div>
-    <h1 style="font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(52px,9.5vw,148px);line-height:.98;margin:0;color:#fff;text-shadow:0 8px 60px rgba(0,0,0,.8);">FROM THE<br>LAST BENCH<br><span style="color:#00C853;">TO MALAYSIA.</span></h1>
-    <p style="max-width:560px;font-size:clamp(15px,1.6vw,19px);line-height:1.6;color:rgba(234,244,236,.85);margin:28px 0 36px;text-wrap:pretty;text-shadow:0 2px 18px rgba(0,0,0,.85);">Built for students who refuse to be defined by where they started. Scroll — and fly the journey you're about to take. The city you'll see is real.</p>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+    <div class="lb-hero-seq" style="animation-delay:.15s;font-size:12px;font-weight:700;letter-spacing:.34em;color:#00E676;margin-bottom:22px;">A STUDENT'S JOURNEY · DHAKA → KUALA LUMPUR</div>
+    <h1 class="lb-hero-seq" style="animation-delay:.32s;font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(52px,9vw,124px);line-height:.98;margin:0;color:#fff;text-shadow:0 8px 60px rgba(0,0,0,.8);">FROM THE<br>LAST BENCH<br><span style="color:#00C853;">TO MALAYSIA.</span></h1>
+    <p class="lb-hero-seq" style="animation-delay:.58s;max-width:560px;font-size:clamp(15px,1.6vw,19px);line-height:1.6;color:rgba(234,244,236,.85);margin:28px 0 36px;text-wrap:pretty;text-shadow:0 2px 18px rgba(0,0,0,.85);">Built for students who refuse to be defined by where they started. Scroll — and fly the journey you're about to take. The city you'll see is real.</p>
+    <div class="lb-hero-seq" style="animation-delay:.78s;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
       <a href="#cta" style="display:inline-block;background:#00C853;color:#04140b;font-weight:700;font-size:15px;letter-spacing:.04em;padding:16px 32px;border-radius:999px;text-decoration:none;box-shadow:0 0 34px rgba(0,200,83,.5);" style-hover="background:#00E676;box-shadow:0 0 50px rgba(0,230,118,.7);">Sign up now</a>
       <a href="#cta" style="display:inline-block;border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:600;font-size:15px;padding:16px 32px;border-radius:999px;text-decoration:none;backdrop-filter:blur(6px);background:rgba(0,0,0,.28);" style-hover="border-color:#00C853;color:#00E676;">Join the community</a>
     </div>
@@ -172,17 +181,17 @@ a,a:hover{color:inherit;}
               <div style="font-weight:600;font-size:14px;color:#fff;line-height:1.35;">{{ u.name }}</div>
               <div style="font-size:12px;color:rgba(234,244,236,.55);margin-top:2px;">{{ u.location }}</div>
             </div>
-            <div style="display:flex;gap:0;border-top:1px solid rgba(255,255,255,.1);padding-top:12px;margin-top:auto;">
+            <div style="display:flex;gap:14px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px;margin-top:auto;">
               <div style="flex:1;">
-                <div style="font-size:10px;letter-spacing:.14em;color:rgba(234,244,236,.5);font-weight:700;">TUITION/YR</div>
+                <div style="font-size:9px;letter-spacing:.1em;color:rgba(234,244,236,.5);font-weight:700;white-space:nowrap;">TUITION/YR</div>
                 <div style="font-size:15px;font-weight:700;color:#fff;margin-top:2px;">{{ u.tuition }}</div>
               </div>
               <div style="flex:1;">
-                <div style="font-size:10px;letter-spacing:.14em;color:rgba(234,244,236,.5);font-weight:700;">VISA RATE</div>
+                <div style="font-size:9px;letter-spacing:.1em;color:rgba(234,244,236,.5);font-weight:700;white-space:nowrap;">VISA RATE</div>
                 <div style="font-size:15px;font-weight:700;color:#00E676;margin-top:2px;">{{ u.visa }}</div>
               </div>
               <div style="flex:1;">
-                <div style="font-size:10px;letter-spacing:.14em;color:rgba(234,244,236,.5);font-weight:700;">IELTS</div>
+                <div style="font-size:9px;letter-spacing:.1em;color:rgba(234,244,236,.5);font-weight:700;white-space:nowrap;">IELTS</div>
                 <div style="font-size:15px;font-weight:700;color:#fff;margin-top:2px;">{{ u.ielts }}</div>
               </div>
             </div>
@@ -223,7 +232,7 @@ a,a:hover{color:inherit;}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;realFootage&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Real Footage&quot;},&quot;footageOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Real Footage&quot;},&quot;rainIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:2,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Atmosphere&quot;},&quot;lanternColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#00C853&quot;,&quot;options&quot;:[&quot;#FF4D2E&quot;,&quot;#FFB300&quot;,&quot;#00C853&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Atmosphere&quot;},&quot;letterbox&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Cinematic&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;realFootage&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Real Footage&quot;},&quot;footageOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Real Footage&quot;},&quot;rainIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:2,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Atmosphere&quot;},&quot;lanternColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#00C853&quot;,&quot;options&quot;:[&quot;#FF4D2E&quot;,&quot;#FFB300&quot;,&quot;#00C853&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Atmosphere&quot;},&quot;letterbox&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Cinematic&quot;}}">
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -250,6 +259,8 @@ class Component extends DCLogic {
     };
 
     this.state = { travelActive: false, warpLines: [] };
+    this.reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.isSmall = typeof window !== 'undefined' && window.innerWidth < 720;
   }
 
   renderVals() {
@@ -263,6 +274,7 @@ class Component extends DCLogic {
       preloadCampus: (e) => this.preloadCampus(e),
       closeTravelTo: () => this.closeTravelTo(),
       mountRef: (el) => { this.mount = el; },
+      lightningRef: (el) => { this.lightningEl = el; },
       chapterRef: (el) => { this.chapterEl = el; },
       progressRef: (el) => { this.progressEl = el; },
       liveRef: (el) => { this.liveEl = el; },
@@ -434,6 +446,7 @@ class Component extends DCLogic {
   // ─── REVEALS ────────────────────────────────────────────────────────────
 
   setupReveals() {
+    if (this.reduceMotion) { this.revealEls = []; return; }
     setTimeout(() => {
       this.revealEls = Array.from(document.querySelectorAll('[data-reveal]'));
       this.revealEls.forEach((el) => {
@@ -524,7 +537,7 @@ class Component extends DCLogic {
   init() {
     const THREE_ = window.THREE;
     const renderer = new THREE_.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isSmall ? 1.5 : 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.style.cssText = 'position:absolute;inset:0;display:block;';
     this.mount.appendChild(renderer.domElement);
@@ -539,6 +552,7 @@ class Component extends DCLogic {
     this.camera = camera;
 
     const glow = this.glowTex();
+    this.beaconSpots = [];
 
     const road = new THREE_.Mesh(new THREE_.PlaneGeometry(46, 1150), new THREE_.MeshBasicMaterial({ color: '#0c1014' }));
     road.rotation.x = -Math.PI / 2; road.position.set(0, 0, -515);
@@ -568,14 +582,17 @@ class Component extends DCLogic {
       const m = new THREE_.Mesh(new THREE_.BoxGeometry(w, h, w), bMats[i % 4]);
       m.position.set(x, h / 2, z);
       scene.add(m);
+      if (h > 105) this.beaconSpots.push([x, h + 1.5, z]);
     }
     for (let i = 0; i < 46; i++) {
       const x = (Math.random() - 0.5) * 1100;
       const h = 60 + Math.random() * 180;
       const w = 16 + Math.random() * 22;
       const m = new THREE_.Mesh(new THREE_.BoxGeometry(w, h, w), bMats[i % 4]);
-      m.position.set(x, h / 2, -1580 - Math.random() * 120);
+      const bz = -1580 - Math.random() * 120;
+      m.position.set(x, h / 2, bz);
       scene.add(m);
+      if (h > 170) this.beaconSpots.push([x, h + 2, bz]);
     }
 
     const towerMat = new THREE_.MeshBasicMaterial({ map: this.windowTex(0.75, 0.15) });
@@ -597,6 +614,7 @@ class Component extends DCLogic {
     mkTower(-34); mkTower(34);
     const bridge = new THREE_.Mesh(new THREE_.BoxGeometry(52, 3.4, 5), new THREE_.MeshBasicMaterial({ color: '#b9dcf2' }));
     bridge.position.set(0, 62, -1180); scene.add(bridge);
+    this.beaconSpots.push([-34, 168, -1180], [34, 168, -1180], [-210, 134, -1060]);
 
     const klt = new THREE_.Group();
     const shaft = new THREE_.Mesh(new THREE_.CylinderGeometry(2.2, 3.4, 120, 8), new THREE_.MeshBasicMaterial({ color: '#131a22' }));
@@ -608,7 +626,7 @@ class Component extends DCLogic {
     klt.position.set(-210, 0, -1060); scene.add(klt);
 
     {
-      const n = 500, pos = new Float32Array(n * 3);
+      const n = this.isSmall ? 280 : 500, pos = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) {
         pos[i * 3] = (Math.random() - 0.5) * 2400;
         pos[i * 3 + 1] = 160 + Math.random() * 520;
@@ -756,6 +774,66 @@ class Component extends DCLogic {
       this.benchHalo = halo;
     }
 
+    // aircraft-warning beacons: slow red blink on every tall structure — the KL night signature
+    this.beacons = this.beaconSpots.map(([bx, by, bz], i) => {
+      const sp = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#ff3b30', transparent: true, opacity: 0.0, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      sp.scale.set(6, 6, 1); sp.position.set(bx, by, bz); sp.userData.phase = (i * 0.83) % (Math.PI * 2);
+      scene.add(sp); return sp;
+    });
+
+    // living highway: taillights flowing away, headlights flowing toward you
+    {
+      const lanes = [[-6.5, 1], [-3.2, 1], [3.2, -1], [6.8, -1]];
+      const perLane = this.isSmall ? 22 : 34;
+      const n = lanes.length * perLane;
+      const pos = new Float32Array(n * 3);
+      this.trafficDir = new Float32Array(n);
+      this.trafficSpd = new Float32Array(n);
+      const colors = new Float32Array(n * 3);
+      let k = 0;
+      lanes.forEach(([lx, dir]) => {
+        for (let i = 0; i < perLane; i++) {
+          pos[k * 3] = lx + (Math.random() - 0.5) * 0.8;
+          pos[k * 3 + 1] = 0.7;
+          pos[k * 3 + 2] = -40 - Math.random() * 1060;
+          this.trafficDir[k] = dir;
+          this.trafficSpd[k] = 34 + Math.random() * 30;
+          const red = dir > 0; // moving away from camera = taillights
+          colors[k * 3] = red ? 1 : 0.95; colors[k * 3 + 1] = red ? 0.16 : 0.92; colors[k * 3 + 2] = red ? 0.1 : 0.75;
+          k++;
+        }
+      });
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      gm.setAttribute('color', new THREE_.BufferAttribute(colors, 3));
+      this.traffic = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: glow, size: 3.4, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      scene.add(this.traffic);
+    }
+
+    // tropical haze: soft layers drifting over the skyline, felt most at altitude
+    this.haze = [];
+    for (let i = 0; i < (this.isSmall ? 4 : 7); i++) {
+      const sp = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#16202e', transparent: true, opacity: 0.16 + Math.random() * 0.08, depthWrite: false }));
+      sp.scale.set(420 + Math.random() * 380, 90 + Math.random() * 70, 1);
+      sp.position.set((Math.random() - 0.5) * 900, 110 + Math.random() * 210, -350 - Math.random() * 1250);
+      sp.userData.drift = 1.2 + Math.random() * 2.2;
+      scene.add(sp); this.haze.push(sp);
+    }
+
+    // wind streaks: vertical velocity lines that only exist during the dive
+    {
+      const n = 90, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 90;
+        pos[i * 3 + 1] = Math.random() * 130;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
+      }
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      this.wind = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: this.streakTex(), color: '#9fb8c8', size: 13, transparent: true, opacity: 0, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      scene.add(this.wind);
+    }
+
     this.dawn = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#FFB300', transparent: true, opacity: 0, depthWrite: false }));
     this.dawn.scale.set(1000, 460, 1);
     this.dawn.position.set(0, 40, -1720);
@@ -766,7 +844,7 @@ class Component extends DCLogic {
     scene.add(this.dawnGreen);
 
     {
-      const n = 1600;
+      const n = this.isSmall ? 850 : 1600;
       const pos = new Float32Array(n * 3);
       this.rainVel = new Float32Array(n);
       for (let i = 0; i < n; i++) {
@@ -844,8 +922,9 @@ class Component extends DCLogic {
 
     const { a, b, t } = this.lerpKeys(this.keys, p);
     const lerp = (i, j, k) => i + (j - i) * k;
-    const sway = Math.sin(time * 0.55) * 0.9;
-    const bob = Math.sin(time * 0.9) * 0.35;
+    const motionAmp = this.reduceMotion ? 0 : 1;
+    const sway = Math.sin(time * 0.55) * 0.9 * motionAmp;
+    const bob = Math.sin(time * 0.9) * 0.35 * motionAmp;
     const swayAmp = p > 0.95 ? 0.25 : (p > 0.15 ? 1 : 3);
     this.camera.position.set(
       lerp(a.pos[0], b.pos[0], t) + sway * swayAmp,
@@ -853,10 +932,12 @@ class Component extends DCLogic {
       lerp(a.pos[2], b.pos[2], t)
     );
     this.camera.lookAt(
-      lerp(a.look[0], b.look[0], t) + this.mouse.x * 14,
-      lerp(a.look[1], b.look[1], t) - this.mouse.y * 8,
+      lerp(a.look[0], b.look[0], t) + this.mouse.x * 14 * motionAmp,
+      lerp(a.look[1], b.look[1], t) - this.mouse.y * 8 * motionAmp,
       lerp(a.look[2], b.look[2], t)
     );
+    // bank into the sway like an aircraft: roll follows lateral velocity
+    this.camera.rotateZ(Math.cos(time * 0.55) * 0.012 * swayAmp * motionAmp);
 
     const sk = this.lerpKeys(this.skyKeys, p);
     this.colA.set(sk.a.sky); this.colB.set(sk.b.sky);
@@ -891,6 +972,68 @@ class Component extends DCLogic {
     const lc = this.props.lanternColor ?? '#FF4D2E';
     if (this.lanterns && this.lastLc !== lc) { this.lanterns.material.color.set(lc); this.lastLc = lc; }
     if (this.lanterns) this.lanterns.material.opacity = 0.85 + Math.sin(time * 7) * 0.1;
+
+    // red beacons blink slow and out of phase, like a real skyline
+    if (this.beacons) for (let i = 0; i < this.beacons.length; i++) {
+      const bcn = this.beacons[i];
+      const tw = Math.sin(time * 1.5 + bcn.userData.phase);
+      bcn.material.opacity = tw > 0.55 ? 0.85 : 0.05;
+    }
+
+    // traffic flows both ways along the highway and wraps
+    if (this.traffic) {
+      const tp = this.traffic.geometry.attributes.position;
+      const speedScale = this.reduceMotion ? 0.35 : 1;
+      for (let i = 0; i < tp.count; i++) {
+        let z = tp.getZ(i) + this.trafficDir[i] * this.trafficSpd[i] * dt * speedScale;
+        if (z > -36) z = -1100;
+        if (z < -1104) z = -40;
+        tp.setZ(i, z);
+      }
+      tp.needsUpdate = true;
+      this.traffic.material.opacity = 0.9 * (1 - d * 0.55);
+    }
+
+    // haze drifts sideways; it thickens slightly at altitude
+    if (this.haze) for (const hz of this.haze) {
+      hz.position.x += hz.userData.drift * dt * (this.reduceMotion ? 0.3 : 1);
+      if (hz.position.x > 620) hz.position.x = -620;
+      hz.material.opacity = (0.13 + (this.camera.position.y > 60 ? 0.09 : 0)) * (1 - d * 0.6);
+    }
+
+    // wind streaks exist only in the dive (p 0.08-0.26) and follow the camera
+    if (this.wind) {
+      const dive = Math.max(0, 1 - Math.abs(p - 0.16) / 0.1);
+      this.wind.material.opacity = dive * 0.5 * motionAmp;
+      this.wind.position.set(this.camera.position.x, this.camera.position.y - 60, this.camera.position.z);
+      if (dive > 0.01) {
+        const wp = this.wind.geometry.attributes.position;
+        for (let i = 0; i < wp.count; i++) {
+          let y = wp.getY(i) + 220 * dt;
+          if (y > 130) y = 0;
+          wp.setY(i, y);
+        }
+        wp.needsUpdate = true;
+      }
+    }
+
+    // monsoon lightning: rare, doubled flash on the horizon
+    if (!this.reduceMotion && this.lightningEl) {
+      if (this.nextFlash === undefined) this.nextFlash = 6 + Math.random() * 9;
+      if (time > this.nextFlash) {
+        this.flashAt = time;
+        this.nextFlash = time + 11 + Math.random() * 14;
+      }
+      if (this.flashAt !== undefined) {
+        const ft = time - this.flashAt;
+        let o = 0;
+        if (ft < 0.09) o = 0.55 * (ft / 0.09);
+        else if (ft < 0.34) o = 0.55 * (1 - (ft - 0.09) / 0.25);
+        else if (ft < 0.42) o = 0.3 * ((ft - 0.34) / 0.08);
+        else if (ft < 0.75) o = 0.3 * (1 - (ft - 0.42) / 0.33);
+        this.lightningEl.style.opacity = (o * (1 - d)).toFixed(3);
+      }
+    }
 
     this.checkReveals();
 
