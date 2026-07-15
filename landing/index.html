@@ -93,7 +93,7 @@ a,a:hover{color:inherit;}
         <div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;">
           <div style="flex:1;min-width:250px;max-width:400px;background:rgba(5,16,10,.8);border:1px solid rgba(0,200,83,.32);border-radius:14px;padding:8px;backdrop-filter:blur(14px);">
             <iframe ref="{{ destMapRef }}" title="Campus satellite view" style="width:100%;height:150px;border:0;border-radius:8px;display:block;" loading="lazy"></iframe>
-            <div style="padding:8px 4px 2px;font-size:8px;font-weight:700;letter-spacing:.22em;color:rgba(234,244,236,.45);">LIVE SATELLITE · THE REAL CAMPUS</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px 2px;font-size:8px;font-weight:700;letter-spacing:.22em;color:rgba(234,244,236,.45);"><span>LIVE SATELLITE · THE REAL CAMPUS</span><a ref="{{ destEarthRef }}" href="#" target="_blank" rel="noopener" style="color:#00E676;text-decoration:none;pointer-events:auto;">GOOGLE EARTH ↗</a></div>
           </div>
           <button onClick="{{ closeTravelTo }}" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.32);color:#fff;font-weight:600;font-size:13px;letter-spacing:.1em;padding:13px 32px;border-radius:999px;cursor:pointer;backdrop-filter:blur(10px);font-family:'Space Grotesk',sans-serif;" style-hover="border-color:#00C853;color:#00E676;">← Return to the journey</button>
         </div>
@@ -110,6 +110,7 @@ a,a:hover{color:inherit;}
     </div>
     <div style="display:flex;align-items:center;gap:14px;font-size:11px;font-weight:600;letter-spacing:.22em;color:rgba(234,244,236,.65);">
       <span ref="{{ liveRef }}" style="display:none;align-items:center;gap:7px;color:#00E676;"><span style="width:6px;height:6px;border-radius:50%;background:#00E676;box-shadow:0 0 8px #00E676;display:inline-block;"></span>REAL FOOTAGE</span>
+      <button ref="{{ tiltBtnRef }}" onClick="{{ toggleTilt }}" aria-label="Steer the view by tilting your phone" style="display:none;pointer-events:auto;background:rgba(0,0,0,.35);border:1px solid rgba(0,230,118,.4);color:#00E676;font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:.22em;padding:7px 12px;border-radius:999px;cursor:pointer;backdrop-filter:blur(8px);">TILT: OFF</button>
       <span ref="{{ chapterRef }}">01 — KUALA LUMPUR</span>
     </div>
   </div>
@@ -210,11 +211,24 @@ a,a:hover{color:inherit;}
       <img src="assets/logo-full.png" alt="Last Bench — Creating a Lasting Benchmark" style="width:min(320px,70vw);height:auto;margin-bottom:26px;filter:drop-shadow(0 0 30px rgba(0,200,83,.35));">
       <div style="font-size:12px;font-weight:700;letter-spacing:.34em;color:#FFB300;margin-bottom:18px;">04 — KLCC PARK, DAYBREAK</div>
       <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(42px,7vw,104px);line-height:1;margin:0;color:#fff;text-shadow:0 8px 56px rgba(0,0,0,.9);">EVERY JOURNEY<br>BEGINS ON <span style="color:#00C853;">A BENCH.</span></h2>
-      <p style="max-width:540px;font-size:16px;line-height:1.65;color:rgba(234,244,236,.85);margin:24px 0 34px;text-wrap:pretty;text-shadow:0 2px 16px rgba(0,0,0,.85);">This one sits in KLCC Park, at the foot of the towers you just flew through. One day you'll sit here between classes. The bench is where you start. The arrow is where we take you.</p>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
-        <a href="#" style="display:inline-block;background:#00C853;color:#04140b;font-weight:700;font-size:16px;letter-spacing:.04em;padding:18px 40px;border-radius:999px;text-decoration:none;box-shadow:0 0 44px rgba(0,200,83,.55);" style-hover="background:#00E676;box-shadow:0 0 64px rgba(0,230,118,.75);">Sign up now</a>
-        <a href="#" style="display:inline-block;border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:600;font-size:16px;padding:18px 40px;border-radius:999px;text-decoration:none;backdrop-filter:blur(6px);background:rgba(0,0,0,.28);" style-hover="border-color:#00C853;color:#00E676;">Join the community now</a>
-      </div>
+      <p style="font-size:13px;font-weight:700;letter-spacing:.18em;margin:22px 0 0;color:rgba(234,244,236,.9);">BEYOND MARKS. <span style="color:#00C853;">BEYOND GRADES.</span> BEYOND LIMITS.</p>
+      <p style="max-width:540px;font-size:16px;line-height:1.65;color:rgba(234,244,236,.85);margin:14px 0 30px;text-wrap:pretty;text-shadow:0 2px 16px rgba(0,0,0,.85);">This one sits in KLCC Park, at the foot of the towers you just flew through. One day you'll sit here between classes. The bench is where you start. The arrow is where we take you.</p>
+      <form name="signup" method="POST" action="/thanks.html" data-netlify="true" data-netlify-honeypot="bot-field" style="width:min(560px,92vw);background:rgba(5,16,10,.78);border:1px solid rgba(0,200,83,.3);border-radius:20px;padding:26px;backdrop-filter:blur(12px);text-align:left;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22><g fill=%22none%22 stroke=%22%2300C853%22 stroke-opacity=%22.07%22 stroke-width=%221.4%22><path d=%22M-20 60 Q 90 20 180 70 T 420 50%22/><path d=%22M-20 100 Q 90 60 180 110 T 420 90%22/><path d=%22M-20 140 Q 90 100 180 150 T 420 130%22/><path d=%22M-20 330 Q 110 290 200 340 T 430 320%22/><path d=%22M-20 370 Q 110 330 200 380 T 430 360%22/></g></svg>');">
+        <input type="hidden" name="form-name" value="signup">
+        <p style="display:none;"><label>Leave this empty: <input name="bot-field"></label></p>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.3em;color:#00E676;margin-bottom:6px;">CLAIM YOUR SEAT</div>
+        <div style="font-size:13px;color:rgba(234,244,236,.6);margin-bottom:18px;">A mentor reviews your profile and reaches you on WhatsApp within 72 hours.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">FULL NAME</span><input required name="name" autocomplete="name" placeholder="Your name" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">WHATSAPP NUMBER</span><input required name="whatsapp" type="tel" inputMode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">CLASS / STAGE</span><select name="stage" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"><option value="SSC">SSC / O-Level</option><option value="HSC" selected>HSC / A-Level</option><option value="HSC-done">HSC done — applying now</option><option value="diploma">Diploma</option><option value="parent">I'm a parent</option></select></label>
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">DREAM FIELD (OPTIONAL)</span><input name="field" placeholder="CS, Business, Medicine…" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap;">
+          <button type="submit" style="background:#00C853;color:#04140b;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:.04em;padding:16px 36px;border-radius:999px;border:0;cursor:pointer;box-shadow:0 0 44px rgba(0,200,83,.55);" style-hover="background:#00E676;box-shadow:0 0 64px rgba(0,230,118,.75);">Claim my seat →</button>
+          <a href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.75);font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:14px 22px;border-radius:999px;" style-hover="border-color:#00C853;color:#00E676;">Join the community ↗</a>
+        </div>
+      </form>
       <div data-reveal style="margin-top:52px;width:min(640px,92vw);background:rgba(5,16,10,.7);border:1px solid rgba(0,200,83,.25);border-radius:18px;padding:14px;backdrop-filter:blur(10px);">
         <iframe src="https://maps.google.com/maps?q=KLCC%20Park%2C%20Kuala%20Lumpur&t=k&z=17&output=embed" title="KLCC Park — satellite view" style="width:100%;height:320px;border:0;border-radius:10px;display:block;" loading="lazy" allowfullscreen="allowfullscreen"></iframe>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 6px 4px;font-size:11px;font-weight:600;letter-spacing:.18em;color:rgba(234,244,236,.55);flex-wrap:wrap;gap:6px;">
@@ -223,12 +237,40 @@ a,a:hover{color:inherit;}
         </div>
       </div>
     </div>
-    <footer style="margin-top:70px;display:flex;justify-content:center;gap:24px;font-size:11px;letter-spacing:.18em;color:rgba(234,244,236,.45);font-weight:600;flex-wrap:wrap;">
-      <span>LAST BENCH © 2026</span>
-      <span>FOR THOSE WHO LAST</span>
-      <span>DHAKA · KUALA LUMPUR</span>
+    <footer style="margin-top:70px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div style="display:flex;justify-content:center;gap:22px;font-size:12px;letter-spacing:.14em;color:rgba(234,244,236,.7);font-weight:600;flex-wrap:wrap;">
+        <a href="tel:+8801300801785" style="color:#00E676;text-decoration:none;">01300 801785</a>
+        <a href="tel:+8801726494917" style="color:#00E676;text-decoration:none;">01726 494917</a>
+        <a href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.7);text-decoration:none;">@LASTBENCH.COMMUNITY</a>
+      </div>
+      <div style="display:flex;justify-content:center;gap:24px;font-size:11px;letter-spacing:.18em;color:rgba(234,244,236,.45);font-weight:600;flex-wrap:wrap;">
+        <span>LAST BENCH © 2026</span>
+        <span>FROM WHERE YOU ARE, TO MALAYSIA.</span>
+        <span>DHAKA · KUALA LUMPUR</span>
+      </div>
     </footer>
   </section>
+
+  <!-- BENCH AI — concierge chat -->
+  <button ref="{{ chatBtnRef }}" onClick="{{ toggleChat }}" aria-label="Chat with Bench AI" style="position:fixed;bottom:20px;right:20px;z-index:9;width:58px;height:58px;border-radius:50%;background:#00C853;border:0;cursor:pointer;box-shadow:0 8px 34px rgba(0,200,83,.5);display:flex;align-items:center;justify-content:center;">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 19V8a3 3 0 013-3h12a3 3 0 013 3v7a3 3 0 01-3 3H9l-5 4z" fill="#04140b"/><circle cx="10" cy="11.5" r="1.5" fill="#00E676"/><circle cx="15.5" cy="11.5" r="1.5" fill="#00E676"/></svg>
+  </button>
+  <div ref="{{ chatPanelRef }}" role="dialog" aria-label="Bench AI chat" style="display:none;position:fixed;bottom:88px;right:16px;z-index:9;width:min(370px,calc(100vw - 32px));max-height:min(540px,calc(100vh - 120px));background:rgba(4,12,8,.96);border:1px solid rgba(0,200,83,.35);border-radius:18px;backdrop-filter:blur(16px);flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#00E676;box-shadow:0 0 8px #00E676;"></span>
+        <span style="font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.1em;color:#fff;">BENCH AI</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.18em;color:rgba(234,244,236,.5);">VERIFIED DATA ONLY</span>
+      </div>
+      <button onClick="{{ toggleChat }}" aria-label="Close chat" style="background:none;border:0;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div ref="{{ chatLogRef }}" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:180px;"></div>
+    <div ref="{{ chatChipsRef }}" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;"></div>
+    <form ref="{{ chatFormRef }}" onSubmit="{{ chatSubmit }}" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
+      <input ref="{{ chatInputRef }}" placeholder="Ask about universities, visas, costs…" aria-label="Message Bench AI" style="flex:1;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:11px 12px;outline:none;min-width:0;">
+      <button type="submit" aria-label="Send" style="background:#00C853;border:0;border-radius:10px;color:#04140b;font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:14px;padding:0 16px;cursor:pointer;">→</button>
+    </form>
+  </div>
 
 </div>
 </x-dc>
@@ -261,6 +303,14 @@ class Component extends DCLogic {
     this.state = { travelActive: false, warpLines: [] };
     this.reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.isSmall = typeof window !== 'undefined' && window.innerWidth < 720;
+    // unified view control: mouse and device tilt both steer this target;
+    // the camera chases it with smoothing so the view feels weighted, not jittery
+    this.viewT = { x: 0, y: 0 };
+    this.view = { x: 0, y: 0 };
+    this.tiltOn = false;
+    this.tiltBase = null;
+    this.chatOpen = false;
+    this.chatHistory = [];
   }
 
   renderVals() {
@@ -275,6 +325,17 @@ class Component extends DCLogic {
       closeTravelTo: () => this.closeTravelTo(),
       mountRef: (el) => { this.mount = el; },
       lightningRef: (el) => { this.lightningEl = el; },
+      tiltBtnRef: (el) => { this.tiltBtnEl = el; this.setupTiltButton(); },
+      toggleTilt: () => this.toggleTilt(),
+      destEarthRef: (el) => { this.destEarthEl = el; },
+      chatBtnRef: (el) => { this.chatBtnEl = el; },
+      chatPanelRef: (el) => { this.chatPanelEl = el; },
+      chatLogRef: (el) => { this.chatLogEl = el; },
+      chatChipsRef: (el) => { this.chatChipsEl = el; },
+      chatFormRef: (el) => { this.chatFormEl = el; },
+      chatInputRef: (el) => { this.chatInputEl = el; },
+      toggleChat: () => this.toggleChat(),
+      chatSubmit: (e) => { e.preventDefault(); this.chatSend(this.chatInputEl ? this.chatInputEl.value : ''); },
       chapterRef: (el) => { this.chapterEl = el; },
       progressRef: (el) => { this.progressEl = el; },
       liveRef: (el) => { this.liveEl = el; },
@@ -315,7 +376,11 @@ class Component extends DCLogic {
     wait();
     this.setupReveals();
     this.initYT();
-    this.onKeyDown = (e) => { if (e.key === 'Escape' && this.state.travelActive) this.closeTravelTo(); };
+    this.onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      if (this.state.travelActive) this.closeTravelTo();
+      else if (this.chatOpen) this.toggleChat();
+    };
     window.addEventListener('keydown', this.onKeyDown);
   }
 
@@ -328,6 +393,7 @@ class Component extends DCLogic {
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('mousemove', this.onMouse);
     window.removeEventListener('keydown', this.onKeyDown);
+    if (this.onTilt) window.removeEventListener('deviceorientation', this.onTilt);
   }
 
   // ─── REAL FOOTAGE (YouTube) ─────────────────────────────────────────────
@@ -428,6 +494,7 @@ class Component extends DCLogic {
       if (this.destNameEl) this.destNameEl.textContent = dest.name.toUpperCase();
       if (this.destLocEl) this.destLocEl.textContent = dest.location;
       if (this.destMapEl) this.destMapEl.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(dest.q) + '&t=k&z=17&output=embed';
+      if (this.destEarthEl) this.destEarthEl.href = 'https://earth.google.com/web/search/' + encodeURIComponent(dest.q);
       if (this.destStatsEl) {
         const stats = [{ l: 'TUITION / YR', v: dest.tuition }, { l: 'VISA RATE', v: dest.visa }, { l: 'PROGRAMS', v: dest.program }];
         this.destStatsEl.innerHTML = stats.map(s => '<div style="display:flex;flex-direction:column;gap:4px;"><div style="font-size:9px;font-weight:700;letter-spacing:.22em;color:rgba(234,244,236,.42);">' + s.l + '</div><div style="font-size:14px;font-weight:700;color:#fff;line-height:1.3;">' + s.v + '</div></div>').join('');
@@ -441,6 +508,122 @@ class Component extends DCLogic {
     document.body.style.overflow = '';
     if (this._travelTimer) clearTimeout(this._travelTimer);
     this.setState({ travelActive: false });
+  }
+
+  // ─── DEVICE TILT: steer the flight by moving your phone ─────────────────
+
+  setupTiltButton() {
+    if (!this.tiltBtnEl) return;
+    const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const supported = typeof DeviceOrientationEvent !== 'undefined';
+    if (touch && supported && !this.reduceMotion) this.tiltBtnEl.style.display = 'inline-block';
+  }
+
+  toggleTilt() {
+    if (this.tiltOn) { this.stopTilt(); return; }
+    const needsPermission = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+    const start = () => this.startTilt();
+    if (needsPermission) {
+      DeviceOrientationEvent.requestPermission().then((r) => { if (r === 'granted') start(); }).catch(() => {});
+    } else start();
+  }
+
+  startTilt() {
+    this.tiltOn = true;
+    this.tiltBase = null;
+    if (this.tiltBtnEl) { this.tiltBtnEl.textContent = 'TILT: ON'; this.tiltBtnEl.style.background = 'rgba(0,200,83,.25)'; }
+    this.onTilt = (e) => {
+      if (e.gamma == null || e.beta == null) return;
+      if (this.tiltBase === null) this.tiltBase = { g: e.gamma, b: e.beta }; // neutral = how you hold it now
+      const dx = (e.gamma - this.tiltBase.g) / 24;  // roll phone left/right
+      const dy = (e.beta - this.tiltBase.b) / 24;   // pitch phone toward/away
+      this.viewT.x = Math.max(-1, Math.min(1, dx));
+      this.viewT.y = Math.max(-1, Math.min(1, dy));
+    };
+    window.addEventListener('deviceorientation', this.onTilt);
+  }
+
+  stopTilt() {
+    this.tiltOn = false;
+    this.viewT.x = 0; this.viewT.y = 0;
+    if (this.tiltBtnEl) { this.tiltBtnEl.textContent = 'TILT: OFF'; this.tiltBtnEl.style.background = 'rgba(0,0,0,.35)'; }
+    if (this.onTilt) window.removeEventListener('deviceorientation', this.onTilt);
+  }
+
+  // ─── BENCH AI: concierge chat ────────────────────────────────────────────
+  // With window.LB_AI.endpoint set (the deployed Last Bench API), messages go
+  // to the real advisor. Without it, a built-in concierge answers from the
+  // same verified numbers shown on the cards and hands off to WhatsApp.
+
+  toggleChat() {
+    this.chatOpen = !this.chatOpen;
+    if (this.chatPanelEl) this.chatPanelEl.style.display = this.chatOpen ? 'flex' : 'none';
+    if (this.chatOpen && !this.chatBooted) {
+      this.chatBooted = true;
+      this.chatPush('ai', "Salam! I'm Bench AI. Ask me about Malaysian universities, visa success rates, or real costs for Bangladeshi students — I only answer from Last Bench's verified data.");
+      this.chatChips(['Which university fits my budget?', 'Visa success rates', 'What does it cost in BDT?', 'Talk to a human mentor']);
+    }
+    if (this.chatOpen && this.chatInputEl) this.chatInputEl.focus();
+  }
+
+  chatPush(who, text) {
+    if (!this.chatLogEl) return;
+    const div = document.createElement('div');
+    div.style.cssText = who === 'ai'
+      ? 'align-self:flex-start;max-width:88%;background:rgba(0,200,83,.12);border:1px solid rgba(0,200,83,.25);border-radius:12px 12px 12px 4px;padding:10px 13px;font-size:13.5px;line-height:1.55;color:#EAF4EC;'
+      : 'align-self:flex-end;max-width:88%;background:rgba(255,255,255,.1);border-radius:12px 12px 4px 12px;padding:10px 13px;font-size:13.5px;line-height:1.55;color:#fff;';
+    div.textContent = text;
+    this.chatLogEl.appendChild(div);
+    this.chatLogEl.scrollTop = this.chatLogEl.scrollHeight;
+  }
+
+  chatChips(labels) {
+    if (!this.chatChipsEl) return;
+    this.chatChipsEl.innerHTML = '';
+    labels.forEach((l) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = l;
+      b.style.cssText = 'background:rgba(0,0,0,.4);border:1px solid rgba(0,230,118,.35);color:#00E676;border-radius:999px;padding:7px 12px;font-size:12px;font-family:"Space Grotesk",sans-serif;cursor:pointer;';
+      b.onclick = () => this.chatSend(l);
+      this.chatChipsEl.appendChild(b);
+    });
+  }
+
+  chatAnswer(q) {
+    const t = q.toLowerCase();
+    const unis = this.renderVals().unis;
+    const rows = unis.map((u) => u.shortName + ' — ' + u.tuition + '/yr, visa ' + u.visa + ', IELTS ' + u.ielts).join('  ·  ');
+    if (/budget|cheap|afford|cost|taka|bdt|price|fee/.test(t))
+      return 'Real yearly tuition for Bangladeshi students: ' + rows + '. UTM is the most affordable public option at $3,600/yr; living costs add roughly $4,000-5,000/yr. Tell me your budget and I\u2019ll narrow it.';
+    if (/visa/.test(t))
+      return 'Verified visa success rates for our students: APU 95%, Taylor\u2019s 94%, UM 91%, UCSI 88%, UTM 87%. EMGS Category-1 universities process in 6-8 weeks on average. Your grades and documents decide most of it \u2014 a mentor can pre-check yours free.';
+    if (/ielts|english/.test(t))
+      return 'IELTS requirements: APU accepts 4.5, UTM and Taylor\u2019s 5.5, UM and UCSI 6.0. Some universities accept MUET or an English placement test instead \u2014 ask a mentor about waiver routes.';
+    if (/mentor|human|talk|call|whatsapp|contact/.test(t))
+      return 'A named mentor (not a call center) reviews every profile. WhatsApp us at 01300 801785 or 01726 494917, or claim your seat in the form above \u2014 we reply within 72 hours.';
+    if (/scholar/.test(t))
+      return 'UM, UTM and several private universities offer partial scholarships and early-bird tuition discounts for international students. The realistic range is 10-50% of tuition based on your SSC/HSC results. A mentor can check which ones your grades unlock.';
+    if (/(which|best|fit|match|recommend|university|uni\b)/.test(t))
+      return 'It depends on three things: budget, grades, and field. Quick view: ' + rows + '. Click any card in the \u201cRise Above\u201d chapter to fly to its real campus \u2014 or tell me your GPA and budget and I\u2019ll shortlist.';
+    return 'I can answer about Malaysian universities, tuition in real numbers, visa rates, IELTS, and scholarships \u2014 all from Last Bench\u2019s verified database. For anything personal to your profile, the app\u2019s full AI advisor (with memory) takes over after you sign up. What would you like to know?';
+  }
+
+  chatSend(text) {
+    const msg = (text || '').trim();
+    if (!msg) return;
+    if (this.chatInputEl) this.chatInputEl.value = '';
+    this.chatPush('user', msg);
+    this.chatChips([]);
+    const cfg = window.LB_AI || {};
+    if (cfg.endpoint) {
+      this.chatHistory.push({ role: 'user', content: msg });
+      fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: msg, history: this.chatHistory.slice(-12) }) })
+        .then((r) => r.json())
+        .then((d) => { const reply = d.reply || d.message || 'Sorry \u2014 try again.'; this.chatHistory.push({ role: 'assistant', content: reply }); this.chatPush('ai', reply); })
+        .catch(() => this.chatPush('ai', 'I couldn\u2019t reach the advisor right now. WhatsApp a mentor at 01300 801785 \u2014 they answer fast.'));
+    } else {
+      setTimeout(() => this.chatPush('ai', this.chatAnswer(msg)), 350);
+    }
   }
 
   // ─── REVEALS ────────────────────────────────────────────────────────────
@@ -886,8 +1069,9 @@ class Component extends DCLogic {
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
     this.onMouse = (e) => {
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
+      if (this.tiltOn) return; // tilt owns the view while active
+      this.viewT.x = (e.clientX / window.innerWidth) * 2 - 1;
+      this.viewT.y = (e.clientY / window.innerHeight) * 2 - 1;
     };
     window.addEventListener('resize', this.onResize);
     window.addEventListener('mousemove', this.onMouse);
@@ -920,6 +1104,11 @@ class Component extends DCLogic {
     this.p += (target - this.p) * Math.min(1, dt * 4.5);
     const p = this.p;
 
+    // weighted view: chase the steering target (mouse or device tilt)
+    const chase = Math.min(1, dt * (this.tiltOn ? 7 : 5));
+    this.view.x += (this.viewT.x - this.view.x) * chase;
+    this.view.y += (this.viewT.y - this.view.y) * chase;
+
     const { a, b, t } = this.lerpKeys(this.keys, p);
     const lerp = (i, j, k) => i + (j - i) * k;
     const motionAmp = this.reduceMotion ? 0 : 1;
@@ -932,8 +1121,8 @@ class Component extends DCLogic {
       lerp(a.pos[2], b.pos[2], t)
     );
     this.camera.lookAt(
-      lerp(a.look[0], b.look[0], t) + this.mouse.x * 14 * motionAmp,
-      lerp(a.look[1], b.look[1], t) - this.mouse.y * 8 * motionAmp,
+      lerp(a.look[0], b.look[0], t) + this.view.x * (this.tiltOn ? 22 : 14) * motionAmp,
+      lerp(a.look[1], b.look[1], t) - this.view.y * (this.tiltOn ? 14 : 8) * motionAmp,
       lerp(a.look[2], b.look[2], t)
     );
     // bank into the sway like an aircraft: roll follows lateral velocity
@@ -1049,7 +1238,7 @@ class Component extends DCLogic {
       this.vidLayerEl.style.filter = op < 0.999 ? 'blur(' + ((1 - op) * 7).toFixed(2) + 'px)' : 'none';
       if (this.liveEl) this.liveEl.style.display = o > 0.5 ? 'flex' : 'none';
       if (this.vidPanEl) {
-        this.vidPanEl.style.transform = 'translate(' + (this.mouse.x * 14) + 'px,' + (this.mouse.y * -9) + 'px)';
+        this.vidPanEl.style.transform = 'translate(' + (this.view.x * 14) + 'px,' + (this.view.y * -9) + 'px)';
         this.vidPanEl.style.transition = 'transform .18s linear';
       }
       // slow push-in within each zone for forward motion
