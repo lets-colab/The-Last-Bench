@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Last Bench — Creating a Lasting Benchmark">
+  <!-- Vector recreation of the Last Bench logo for digital use.
+       Print-exact masters live in assets/branding/logo-lockups.png -->
+  <style>
+    .word { font-family: "General Sans", "Archivo Black", system-ui, sans-serif; font-weight: 800; font-size: 92px; letter-spacing: 2px; fill: #111111; }
+    .tag  { font-family: "Sora", system-ui, sans-serif; font-weight: 600; font-size: 21px; letter-spacing: 7px; fill: #111111; }
+    .tagAccent { fill: #00C853; }
+  </style>
+  <text class="word" x="320" y="88" text-anchor="middle">LAST</text>
+  <text class="word" x="320" y="178" text-anchor="middle">BENCH</text>
+  <g stroke="#00C853" stroke-width="13" stroke-linecap="round" fill="none">
+    <!-- bench back slats -->
+    <path d="M208 218 L400 218"/>
+    <path d="M206 240 L398 240"/>
+    <path d="M204 262 L396 262"/>
+    <!-- seat -->
+    <path d="M200 288 L392 288"/>
+    <!-- back posts -->
+    <path d="M218 206 L212 288"/>
+    <path d="M390 206 L384 288"/>
+    <!-- legs -->
+    <path d="M222 288 L216 344"/>
+    <path d="M370 288 L376 344"/>
+  </g>
+  <!-- rising arrow: sweeps from the bench base up to the top right -->
+  <g fill="#00C853">
+    <path d="M382 344 L400 316 L436 336 L488 268 L512 282 L448 366 L410 344 L396 364 Z" transform="translate(6,-8) scale(0.98)"/>
+    <path d="M492 246 L556 232 L540 296 L520 268 Z"/>
+  </g>
+  <!-- small arc accent above the bench -->
+  <path d="M414 196 a26 26 0 0 1 26 18" stroke="#00C853" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <text class="tag" x="320" y="404" text-anchor="middle">CREATING A LASTING <tspan class="tagAccent">BENCHMARK</tspan></text>
+</svg>

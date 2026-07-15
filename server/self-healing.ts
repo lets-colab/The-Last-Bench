@@ -63,20 +63,20 @@ export async function logError(source: string, error: unknown, context?: Record<
   try {
     const db = await getDb();
     if (!db) return signature;
-    const existing = await db.select().from(errorLogs).where(eq(errorLogs.signature, signature)).limit(1);
-    if (existing.length > 0) {
-      await db
-        .update(errorLogs)
-        .set({ occurrences: sql`${errorLogs.occurrences} + 1` })
-        .where(eq(errorLogs.signature, signature));
-    } else {
-      await db.insert(errorLogs).values({
+    // Atomic against the unique signature index: concurrent identical failures
+    // land on one row. MySQL reports affectedRows=1 for a fresh insert and
+    // 2 when the ON DUPLICATE KEY UPDATE branch ran.
+    const [result] = await db
+      .insert(errorLogs)
+      .values({
         signature,
         source,
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack?.slice(0, 4000) : undefined,
         context: context ? JSON.stringify(context).slice(0, 2000) : undefined,
-      });
+      })
+      .onDuplicateKeyUpdate({ set: { occurrences: sql`${errorLogs.occurrences} + 1` } });
+    if (result.affectedRows === 1) {
       // First time we see this signature → diagnose it in the background.
       void diagnoseSignature(signature).catch(() => {});
     }

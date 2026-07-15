@@ -1,0 +1,2 @@
+ALTER TABLE `aiMemories` ADD CONSTRAINT `aiMemories_studentId_memoryKey_unique` UNIQUE(`studentId`,`memoryKey`);--> statement-breakpoint
+ALTER TABLE `errorLogs` ADD CONSTRAINT `errorLogs_signature_unique` UNIQUE(`signature`);

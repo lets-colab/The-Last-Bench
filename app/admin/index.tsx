@@ -111,8 +111,11 @@ export default function AdminDashboardScreen() {
             <NavCard emoji="👤" title="Students" subtitle="Manage profiles" onPress={() => router.push("/admin/students")} />
           </View>
           <View className="flex-row gap-3">
-            <NavCard emoji="🤝" title="Tutors" subtitle="Commission & payouts" onPress={() => router.push("/admin/tutors")} />
+            <NavCard emoji="🤝" title="Tutors" subtitle="Partner network" onPress={() => router.push("/admin/tutors")} />
             <NavCard emoji="📚" title="Skills" subtitle="Create lessons" onPress={() => router.push("/admin/skills")} />
+          </View>
+          <View className="flex-row gap-3">
+            <NavCard emoji="💸" title="Payouts" subtitle="Approve & pay commissions" onPress={() => router.push("/admin/payouts")} />
           </View>
         </View>
 

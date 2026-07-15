@@ -29,6 +29,12 @@ import {
   InsertAiChatMessage,
   aiMemories,
   InsertAiMemory,
+  payouts,
+  InsertPayout,
+  auditLogs,
+  InsertAuditLog,
+  cohortMessages,
+  InsertCohortMessage,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -477,23 +483,207 @@ export async function getAIChatHistory(studentId: number, limit = 30) {
 export async function upsertAIMemory(studentId: number, memoryKey: string, memoryValue: string) {
   const db = await getDb();
   if (!db) return;
-  const existing = await db
-    .select()
-    .from(aiMemories)
-    .where(and(eq(aiMemories.studentId, studentId), eq(aiMemories.memoryKey, memoryKey)))
-    .limit(1);
-  if (existing.length > 0) {
-    await db
-      .update(aiMemories)
-      .set({ memoryValue })
-      .where(and(eq(aiMemories.studentId, studentId), eq(aiMemories.memoryKey, memoryKey)));
-  } else {
-    await db.insert(aiMemories).values({ studentId, memoryKey, memoryValue });
-  }
+  // Atomic against the (studentId, memoryKey) unique index — concurrent
+  // writers can't create duplicate memories.
+  await db
+    .insert(aiMemories)
+    .values({ studentId, memoryKey, memoryValue })
+    .onDuplicateKeyUpdate({ set: { memoryValue } });
 }
 
 export async function getAIMemories(studentId: number) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(aiMemories).where(eq(aiMemories.studentId, studentId));
+}
+
+// ============================================================================
+// PAYOUTS
+// ============================================================================
+
+export async function createPayout(data: InsertPayout) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [result] = await db.insert(payouts).values(data);
+  return result.insertId;
+}
+
+export async function getPayoutsByTutor(tutorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(payouts).where(eq(payouts.tutorId, tutorId)).orderBy(desc(payouts.requestedAt));
+}
+
+export async function getAllPayouts() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(payouts).orderBy(desc(payouts.requestedAt));
+}
+
+export async function getPayoutById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(payouts).where(eq(payouts.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function updatePayoutStatus(
+  id: number,
+  status: "approved" | "rejected" | "paid",
+  adminNote?: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db
+    .update(payouts)
+    .set({ status, adminNote, resolvedAt: new Date() })
+    .where(eq(payouts.id, id));
+}
+
+/** Sum of a tutor's payouts that are still in-flight (requested/approved). */
+export async function getOpenPayoutTotalByTutor(tutorId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ amount: payouts.amount })
+    .from(payouts)
+    .where(and(eq(payouts.tutorId, tutorId), sql`${payouts.status} IN ('requested','approved')`));
+  return rows.reduce((total, row) => total + parseFloat(row.amount ?? "0"), 0);
+}
+
+// ============================================================================
+// AUDIT LOGS
+// ============================================================================
+
+export async function createAuditLog(data: InsertAuditLog) {
+  const db = await getDb();
+  if (!db) return; // never block the primary action on audit trouble
+  try {
+    await db.insert(auditLogs).values(data);
+  } catch (error) {
+    console.warn("[Audit] failed to record:", error);
+  }
+}
+
+export async function getAuditLogs(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+}
+
+// ============================================================================
+// COHORT MESSAGES
+// ============================================================================
+
+export async function isCohortMember(cohortId: number, studentId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db
+    .select({ id: cohortMembers.id })
+    .from(cohortMembers)
+    .where(and(eq(cohortMembers.cohortId, cohortId), eq(cohortMembers.studentId, studentId)))
+    .limit(1);
+  return rows.length > 0;
+}
+
+export async function getCohortById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(cohorts).where(eq(cohorts.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getCohortMembers(cohortId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select({
+      studentId: cohortMembers.studentId,
+      joinedAt: cohortMembers.joinedAt,
+      name: users.name,
+    })
+    .from(cohortMembers)
+    .innerJoin(students, eq(cohortMembers.studentId, students.id))
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(eq(cohortMembers.cohortId, cohortId));
+}
+
+export async function createCohortMessage(data: InsertCohortMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [result] = await db.insert(cohortMessages).values(data);
+  return result.insertId;
+}
+
+export async function getCohortMessages(cohortId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      id: cohortMessages.id,
+      cohortId: cohortMessages.cohortId,
+      studentId: cohortMessages.studentId,
+      content: cohortMessages.content,
+      createdAt: cohortMessages.createdAt,
+      senderName: users.name,
+    })
+    .from(cohortMessages)
+    .innerJoin(students, eq(cohortMessages.studentId, students.id))
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(eq(cohortMessages.cohortId, cohortId))
+    .orderBy(desc(cohortMessages.createdAt))
+    .limit(limit);
+  return rows.reverse();
+}
+
+// ============================================================================
+// ADMIN ANALYTICS
+// ============================================================================
+
+export async function getAdminAnalytics() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [studentCount] = await db.select({ n: sql<number>`COUNT(*)` }).from(students);
+  const [tutorCount] = await db.select({ n: sql<number>`COUNT(*)` }).from(tutors);
+  const appsByStatus = await db
+    .select({ status: applications.applicationStatus, n: sql<number>`COUNT(*)` })
+    .from(applications)
+    .groupBy(applications.applicationStatus);
+  const referralsByStatus = await db
+    .select({ status: referrals.commissionStatus, n: sql<number>`COUNT(*)` })
+    .from(referrals)
+    .groupBy(referrals.commissionStatus);
+  const payoutsByStatus = await db
+    .select({
+      status: payouts.status,
+      n: sql<number>`COUNT(*)`,
+      total: sql<string>`COALESCE(SUM(CAST(${payouts.amount} AS DECIMAL(12,2))), 0)`,
+    })
+    .from(payouts)
+    .groupBy(payouts.status);
+  return {
+    students: Number(studentCount?.n ?? 0),
+    tutors: Number(tutorCount?.n ?? 0),
+    applicationsByStatus: appsByStatus.map((r) => ({ status: r.status, count: Number(r.n) })),
+    referralsByStatus: referralsByStatus.map((r) => ({ status: r.status, count: Number(r.n) })),
+    payoutsByStatus: payoutsByStatus.map((r) => ({ status: r.status, count: Number(r.n), total: r.total })),
+  };
+}
+
+/** Sum of commissions the tutor has earned but not yet been paid. */
+export async function getEarnedCommissionByTutor(tutorId: number): Promise<string> {
+  const db = await getDb();
+  if (!db) return "0";
+  const result = await db
+    .select({ total: sql<string>`COALESCE(SUM(CAST(${referrals.commissionAmount} AS DECIMAL(15,2))), 0)` })
+    .from(referrals)
+    .where(and(eq(referrals.tutorId, tutorId), eq(referrals.commissionStatus, "earned")));
+  return result[0]?.total ?? "0";
+}
+
+export async function getTutorById(tutorId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(tutors).where(eq(tutors.id, tutorId)).limit(1);
+  return rows[0];
 }
