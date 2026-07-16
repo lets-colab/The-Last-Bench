@@ -64,9 +64,9 @@ export async function logError(source: string, error: unknown, context?: Record<
     const db = await getDb();
     if (!db) return signature;
     // Atomic against the unique signature index: concurrent identical failures
-    // land on one row. MySQL reports affectedRows=1 for a fresh insert and
-    // 2 when the ON DUPLICATE KEY UPDATE branch ran.
-    const [result] = await db
+    // land on one row. Postgres exposes insert-vs-update via xmax: a freshly
+    // inserted row has xmax = 0.
+    const [row] = await db
       .insert(errorLogs)
       .values({
         signature,
@@ -75,8 +75,12 @@ export async function logError(source: string, error: unknown, context?: Record<
         stack: error instanceof Error ? error.stack?.slice(0, 4000) : undefined,
         context: context ? JSON.stringify(context).slice(0, 2000) : undefined,
       })
-      .onDuplicateKeyUpdate({ set: { occurrences: sql`${errorLogs.occurrences} + 1` } });
-    if (result.affectedRows === 1) {
+      .onConflictDoUpdate({
+        target: errorLogs.signature,
+        set: { occurrences: sql`${errorLogs.occurrences} + 1`, lastSeenAt: new Date() },
+      })
+      .returning({ inserted: sql<boolean>`(xmax = 0)` });
+    if (row?.inserted) {
       // First time we see this signature → diagnose it in the background.
       void diagnoseSignature(signature).catch(() => {});
     }

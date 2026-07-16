@@ -1,40 +1,19 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1763372440610,
-      "tag": "0000_elite_eternals",
+      "version": "7",
+      "when": 1783384116497,
+      "tag": "0000_lowly_tiger_shark",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "5",
-      "when": 1781894155693,
-      "tag": "0001_moaning_vulcan",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1783236773310,
-      "tag": "0002_awesome_black_panther",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1783254551798,
-      "tag": "0003_warm_iron_patriot",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1783256434855,
-      "tag": "0004_sticky_dracula",
+      "version": "7",
+      "when": 1784193374449,
+      "tag": "0001_gifted_sunspot",
       "breakpoints": true
     }
   ]

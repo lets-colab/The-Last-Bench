@@ -215,12 +215,12 @@ export const appRouter = router({
         return { totalReferred: 0, totalEarned: "0", pendingCommission: "0", availableForPayout: "0" };
       const pendingCommission = await db.getPendingCommissionByTutor(tutor.id);
       const earned = parseFloat(await db.getEarnedCommissionByTutor(tutor.id));
-      const inFlight = await db.getOpenPayoutTotalByTutor(tutor.id);
+      const reserved = await db.getReservedPayoutTotalByTutor(tutor.id);
       return {
         totalReferred: tutor.totalReferred,
         totalEarned: tutor.totalEarned,
         pendingCommission,
-        availableForPayout: Math.max(0, earned - inFlight).toFixed(2),
+        availableForPayout: Math.max(0, earned - reserved).toFixed(2),
       };
     }),
 
@@ -236,22 +236,24 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const tutor = await db.getTutor(ctx.user.id);
         if (!tutor) throw new Error("Tutor profile not found");
+        // Format checks first (method, wallet number, minimum) against a
+        // snapshot balance; the REAL balance check happens atomically below.
         const earned = parseFloat(await db.getEarnedCommissionByTutor(tutor.id));
-        const inFlight = await db.getOpenPayoutTotalByTutor(tutor.id);
-        const available = Math.max(0, earned - inFlight);
+        const reserved = await db.getReservedPayoutTotalByTutor(tutor.id);
         const check = validatePayoutRequest({
           amountBdt: input.amount,
-          availableBdt: available,
+          availableBdt: Math.max(0, earned - reserved),
           method: input.method,
           accountNumber: input.accountNumber,
         });
         if (!check.ok) throw new Error(check.error);
-        const payoutId = await db.createPayout({
-          tutorId: tutor.id,
-          amount: input.amount.toFixed(2),
-          method: input.method,
-          accountNumber: check.accountNumber,
-        });
+        // Balance reserve + insert in one transaction (tutor row locked), so
+        // concurrent requests can never double-spend the same commission.
+        const result = await db.createPayoutReserved(tutor.id, input.amount, input.method, check.accountNumber);
+        if (!result.ok) {
+          throw new Error(`Amount exceeds your available balance of \u09F3${result.available.toFixed(0)}.`);
+        }
+        const payoutId = result.payoutId;
         await db.createAuditLog({
           actorUserId: ctx.user.id,
           action: "payout.requested",

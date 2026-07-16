@@ -1,5 +1,6 @@
-import { eq, and, desc, sum, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import {
   InsertUser,
   users,
@@ -39,12 +40,14 @@ import {
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _client: ReturnType<typeof postgres> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _client = postgres(process.env.DATABASE_URL, { ssl: "require" });
+      _db = drizzle(_client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -56,7 +59,9 @@ export async function getDb() {
 // Drop the cached connection so the next getDb() reconnects fresh.
 // Used by the self-healing engine's "reconnect" strategy.
 export function resetDb() {
+  void _client?.end({ timeout: 1 }).catch(() => {});
   _db = null;
+  _client = null;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -109,9 +114,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    await db
+      .insert(users)
+      .values(values)
+      .onConflictDoUpdate({ target: users.openId, set: updateSet });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
@@ -488,7 +494,10 @@ export async function upsertAIMemory(studentId: number, memoryKey: string, memor
   await db
     .insert(aiMemories)
     .values({ studentId, memoryKey, memoryValue })
-    .onDuplicateKeyUpdate({ set: { memoryValue } });
+    .onConflictDoUpdate({
+      target: [aiMemories.studentId, aiMemories.memoryKey],
+      set: { memoryValue, updatedAt: new Date() },
+    });
 }
 
 export async function getAIMemories(studentId: number) {
@@ -504,8 +513,44 @@ export async function getAIMemories(studentId: number) {
 export async function createPayout(data: InsertPayout) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
-  const [result] = await db.insert(payouts).values(data);
-  return result.insertId;
+  const [row] = await db.insert(payouts).values(data).returning({ id: payouts.id });
+  return row.id;
+}
+
+/**
+ * Atomically reserve balance and create a payout request.
+ * Locks the tutor row so concurrent requests serialize: the balance check and
+ * the insert happen inside one transaction, closing the double-reserve race.
+ * Reserved = payouts in ANY state except rejected — paid payouts permanently
+ * consume balance until the underlying commissions are marked settled.
+ */
+export async function createPayoutReserved(
+  tutorId: number,
+  amountBdt: number,
+  method: "bKash" | "Nagad",
+  accountNumber: string,
+): Promise<{ ok: true; payoutId: number } | { ok: false; available: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return await db.transaction(async (tx) => {
+    // serialize per tutor
+    await tx.select({ id: tutors.id }).from(tutors).where(eq(tutors.id, tutorId)).for("update");
+    const [earnedRow] = await tx
+      .select({ total: sql<string>`COALESCE(SUM(CAST(${referrals.commissionAmount} AS DECIMAL(15,2))), 0)` })
+      .from(referrals)
+      .where(and(eq(referrals.tutorId, tutorId), eq(referrals.commissionStatus, "earned")));
+    const [reservedRow] = await tx
+      .select({ total: sql<string>`COALESCE(SUM(CAST(${payouts.amount} AS DECIMAL(15,2))), 0)` })
+      .from(payouts)
+      .where(and(eq(payouts.tutorId, tutorId), sql`${payouts.status} <> 'rejected'`));
+    const available = Math.max(0, parseFloat(earnedRow?.total ?? "0") - parseFloat(reservedRow?.total ?? "0"));
+    if (amountBdt > available) return { ok: false as const, available };
+    const [row] = await tx
+      .insert(payouts)
+      .values({ tutorId, amount: amountBdt.toFixed(2), method, accountNumber })
+      .returning({ id: payouts.id });
+    return { ok: true as const, payoutId: row.id };
+  });
 }
 
 export async function getPayoutsByTutor(tutorId: number) {
@@ -540,14 +585,18 @@ export async function updatePayoutStatus(
     .where(eq(payouts.id, id));
 }
 
-/** Sum of a tutor's payouts that are still in-flight (requested/approved). */
-export async function getOpenPayoutTotalByTutor(tutorId: number): Promise<number> {
+/**
+ * Sum of a tutor's payouts that consume balance: requested, approved, AND paid.
+ * Paid payouts stay counted — otherwise the same earned commission becomes
+ * requestable again the moment ops marks a payout as paid.
+ */
+export async function getReservedPayoutTotalByTutor(tutorId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   const rows = await db
     .select({ amount: payouts.amount })
     .from(payouts)
-    .where(and(eq(payouts.tutorId, tutorId), sql`${payouts.status} IN ('requested','approved')`));
+    .where(and(eq(payouts.tutorId, tutorId), sql`${payouts.status} <> 'rejected'`));
   return rows.reduce((total, row) => total + parseFloat(row.amount ?? "0"), 0);
 }
 
@@ -611,8 +660,8 @@ export async function getCohortMembers(cohortId: number) {
 export async function createCohortMessage(data: InsertCohortMessage) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
-  const [result] = await db.insert(cohortMessages).values(data);
-  return result.insertId;
+  const [row] = await db.insert(cohortMessages).values(data).returning({ id: cohortMessages.id });
+  return row.id;
 }
 
 export async function getCohortMessages(cohortId: number, limit = 100) {

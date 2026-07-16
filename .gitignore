@@ -17,3 +17,10 @@ build/
 
 expo-env.d.ts
 # @end expo-cli
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
+
+# graphify knowledge-graph output (rebuild with /graphify .)
+graphify-out/
