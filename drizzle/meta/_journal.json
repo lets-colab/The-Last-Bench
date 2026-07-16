@@ -8,6 +8,13 @@
       "when": 1783384116497,
       "tag": "0000_lowly_tiger_shark",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784193374449,
+      "tag": "0001_gifted_sunspot",
+      "breakpoints": true
     }
   ]
 }

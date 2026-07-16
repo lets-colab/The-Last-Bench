@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 /**
  * Enum types. Postgres enums are named types in the schema, so each gets a
@@ -21,6 +21,8 @@ export const applicationStatusEnum = pgEnum("application_status", [
 ]);
 export const tutorStatusEnum = pgEnum("tutor_status", ["active", "inactive", "suspended"]);
 export const commissionStatusEnum = pgEnum("commission_status", ["pending", "earned", "paid"]);
+export const payoutMethodEnum = pgEnum("payout_method", ["bKash", "Nagad"]);
+export const payoutStatusEnum = pgEnum("payout_status", ["requested", "approved", "rejected", "paid"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["pending", "verified", "rejected"]);
 export const difficultyEnum = pgEnum("difficulty", ["beginner", "intermediate", "advanced"]);
 export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
@@ -274,14 +276,21 @@ export type InsertAiChatMessage = typeof aiChatMessages.$inferInsert;
  * AI Memories — extracted facts about each student.
  * Key-value store of things the AI has learned (goals, concerns, preferences).
  */
-export const aiMemories = pgTable("aiMemories", {
-  id: serial("id").primaryKey(),
-  studentId: integer("studentId").notNull(),
-  memoryKey: varchar("memoryKey", { length: 100 }).notNull(), // e.g., "target_university", "main_concern"
-  memoryValue: text("memoryValue").notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const aiMemories = pgTable(
+  "aiMemories",
+  {
+    id: serial("id").primaryKey(),
+    studentId: integer("studentId").notNull(),
+    memoryKey: varchar("memoryKey", { length: 100 }).notNull(), // e.g., "target_university", "main_concern"
+    memoryValue: text("memoryValue").notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    // One memory per key per student — upsertAIMemory relies on this to stay atomic.
+    studentKeyUnique: uniqueIndex("aiMemories_studentId_memoryKey_unique").on(table.studentId, table.memoryKey),
+  }),
+);
 
 export type AiMemory = typeof aiMemories.$inferSelect;
 export type InsertAiMemory = typeof aiMemories.$inferInsert;
@@ -290,7 +299,9 @@ export type InsertAiMemory = typeof aiMemories.$inferInsert;
  * Error Logs — every error the system encounters, deduplicated by signature.
  * The self-healing engine reads these to diagnose and fix recurring problems.
  */
-export const errorLogs = pgTable("errorLogs", {
+export const errorLogs = pgTable(
+  "errorLogs",
+  {
   id: serial("id").primaryKey(),
   signature: varchar("signature", { length: 191 }).notNull(), // normalized fingerprint of the error
   source: varchar("source", { length: 191 }).notNull(), // e.g. "trpc:aiGuidance.chat", "express", "process"
@@ -301,7 +312,12 @@ export const errorLogs = pgTable("errorLogs", {
   occurrences: integer("occurrences").default(1).notNull(),
   lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+  },
+  (table) => ({
+    // One log row per signature — logError upserts atomically against this.
+    signatureUnique: uniqueIndex("errorLogs_signature_unique").on(table.signature),
+  }),
+);
 
 export type ErrorLog = typeof errorLogs.$inferSelect;
 export type InsertErrorLog = typeof errorLogs.$inferInsert;
@@ -327,3 +343,55 @@ export const errorFixes = pgTable("errorFixes", {
 
 export type ErrorFix = typeof errorFixes.$inferSelect;
 export type InsertErrorFix = typeof errorFixes.$inferInsert;
+
+/**
+ * Payouts — tutor commission payout requests and their lifecycle.
+ * A tutor requests a payout for earned commission; ops approves/rejects and
+ * marks it paid once the bKash/Nagad transfer is done.
+ */
+export const payouts = pgTable("payouts", {
+  id: serial("id").primaryKey(),
+  tutorId: integer("tutorId").notNull(),
+  amount: varchar("amount", { length: 50 }).notNull(), // in BDT, stored as string like the other money fields
+  method: payoutMethodEnum("method").notNull(),
+  accountNumber: varchar("accountNumber", { length: 30 }).notNull(), // mobile wallet number
+  status: payoutStatusEnum("status").default("requested").notNull(),
+  adminNote: text("adminNote"), // rejection reason or payment reference
+  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"), // set when approved/rejected/paid
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Payout = typeof payouts.$inferSelect;
+export type InsertPayout = typeof payouts.$inferInsert;
+
+/**
+ * Audit Logs — immutable trail of privileged state changes
+ * (application status, commission status, payout lifecycle).
+ */
+export const auditLogs = pgTable("auditLogs", {
+  id: serial("id").primaryKey(),
+  actorUserId: integer("actorUserId").notNull(), // users.id of the admin/user who acted
+  action: varchar("action", { length: 100 }).notNull(), // e.g. "application.status_change"
+  entityType: varchar("entityType", { length: 50 }).notNull(), // e.g. "application", "payout"
+  entityId: integer("entityId").notNull(),
+  detail: text("detail"), // JSON: { from, to, note, ... }
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * Cohort Messages — discussion feed inside a cohort space.
+ */
+export const cohortMessages = pgTable("cohort_messages", {
+  id: serial("id").primaryKey(),
+  cohortId: integer("cohortId").notNull(),
+  studentId: integer("studentId").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CohortMessage = typeof cohortMessages.$inferSelect;
+export type InsertCohortMessage = typeof cohortMessages.$inferInsert;

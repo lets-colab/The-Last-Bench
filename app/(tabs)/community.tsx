@@ -1,4 +1,5 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -8,9 +9,19 @@ import { trpc } from "@/lib/trpc";
  */
 export default function CommunityScreen() {
   const { user } = useAuth();
+  const router = useRouter();
+  const utils = trpc.useUtils();
 
   // Fetch cohorts
   const cohortsQuery = trpc.cohort.getAll.useQuery();
+
+  const joinCohort = trpc.cohort.join.useMutation({
+    onSuccess: (_data, variables) => {
+      utils.cohort.getById.invalidate({ cohortId: variables.cohortId });
+      router.push(`/cohort/${variables.cohortId}`);
+    },
+    onError: (e) => Alert.alert("Could not join cohort", e.message),
+  });
 
   // Fetch skills
   const skillsQuery = trpc.skill.getAll.useQuery();
@@ -63,6 +74,7 @@ export default function CommunityScreen() {
               {cohorts.map((cohort) => (
                 <TouchableOpacity
                   key={cohort.id}
+                  onPress={() => router.push(`/cohort/${cohort.id}`)}
                   className="bg-surface rounded-xl p-4 border border-border active:opacity-80 gap-3"
                 >
                   <View className="flex-row items-start justify-between gap-3">
@@ -77,7 +89,11 @@ export default function CommunityScreen() {
                     </View>
                     <Text className="text-lg text-primary">→</Text>
                   </View>
-                  <TouchableOpacity className="bg-primary px-4 py-2 rounded-lg active:opacity-80">
+                  <TouchableOpacity
+                    onPress={() => joinCohort.mutate({ cohortId: cohort.id })}
+                    disabled={joinCohort.isPending}
+                    className="bg-primary px-4 py-2 rounded-lg active:opacity-80"
+                  >
                     <Text className="text-background font-semibold text-center text-sm">Join Cohort</Text>
                   </TouchableOpacity>
                 </TouchableOpacity>

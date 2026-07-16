@@ -1,5 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity, TextInput, ActivityIndicator, FlatList } from "react-native";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -16,6 +17,7 @@ interface ChatMessage {
  */
 export default function AIGuidanceScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -164,6 +166,13 @@ export default function AIGuidanceScreen() {
           {messages.length <= 1 && !isLoading && (
             <View className="gap-3 mt-6">
               <Text className="text-sm font-semibold text-muted">Quick Questions:</Text>
+
+              <TouchableOpacity
+                onPress={() => router.push("/compare")}
+                className="bg-primary/10 border border-primary/20 rounded-lg p-3 active:opacity-80"
+              >
+                <Text className="text-sm font-semibold text-primary">⚖️ Compare universities side by side</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => {

@@ -63,20 +63,24 @@ export async function logError(source: string, error: unknown, context?: Record<
   try {
     const db = await getDb();
     if (!db) return signature;
-    const existing = await db.select().from(errorLogs).where(eq(errorLogs.signature, signature)).limit(1);
-    if (existing.length > 0) {
-      await db
-        .update(errorLogs)
-        .set({ occurrences: sql`${errorLogs.occurrences} + 1` })
-        .where(eq(errorLogs.signature, signature));
-    } else {
-      await db.insert(errorLogs).values({
+    // Atomic against the unique signature index: concurrent identical failures
+    // land on one row. Postgres exposes insert-vs-update via xmax: a freshly
+    // inserted row has xmax = 0.
+    const [row] = await db
+      .insert(errorLogs)
+      .values({
         signature,
         source,
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack?.slice(0, 4000) : undefined,
         context: context ? JSON.stringify(context).slice(0, 2000) : undefined,
-      });
+      })
+      .onConflictDoUpdate({
+        target: errorLogs.signature,
+        set: { occurrences: sql`${errorLogs.occurrences} + 1`, lastSeenAt: new Date() },
+      })
+      .returning({ inserted: sql<boolean>`(xmax = 0)` });
+    if (row?.inserted) {
       // First time we see this signature → diagnose it in the background.
       void diagnoseSignature(signature).catch(() => {});
     }

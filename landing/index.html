@@ -1,463 +1,1268 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Last Bench — From Last Bench. To The World.</title>
-<meta name="description" content="The Last Bench guides Bangladeshi students to global universities — transparent, human-first, free for students. Not everyone fits in. They build what's next." />
-<meta property="og:title" content="The Last Bench — From Last Bench. To The World." />
-<meta property="og:description" content="For the ones the system measured wrong. Join 500+ students building their global future. Creating a Lasting Benchmark." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://www.lastbenchbd.com" />
-<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23111111"/><g stroke="%2300C853" stroke-width="4" fill="none" stroke-linecap="round"><path d="M12 40h28"/><path d="M12 33h28"/><path d="M14 40v10M38 40v10"/><path d="M40 38l8-9"/><path d="M48 29h-7M48 29v7" stroke-width="4"/></g></svg>' />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Caveat:wght@700&family=Noto+Sans+Bengali:wght@600&display=swap" rel="stylesheet" />
-<style>
-:root{
-  --ink:#111111; --black:#0B0D0C; --paper:#FAFAF8; --green:#00C853;
-  --green-deep:#00913D; --sage:#93B99A; --forest:#0F2A1E; --amber:#f5a623;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-html,body{background:var(--black);color:var(--paper);overflow-x:hidden}
-body{font-family:'Sora',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
-::selection{background:var(--green);color:#04150b}
-h1,h2,h3{font-weight:800;letter-spacing:-.02em;text-transform:uppercase;line-height:1.02}
-.accent{color:var(--green)}
-.bn{font-family:'Noto Sans Bengali','Sora',sans-serif;text-transform:none}
-.hand{font-family:'Caveat',cursive;text-transform:none;letter-spacing:0}
-a{color:inherit;text-decoration:none}
-
-/* ── progress + nav ─────────────────────────── */
-#bar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--green),#7CFFB2);z-index:99;box-shadow:0 0 12px rgba(0,200,83,.8)}
-nav{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;
-  padding:14px clamp(16px,4vw,44px);z-index:90;transform:translateY(-110%);transition:transform .5s cubic-bezier(.2,.8,.2,1);
-  background:linear-gradient(rgba(8,10,9,.85),rgba(8,10,9,0));backdrop-filter:blur(8px)}
-nav.show{transform:none}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:.04em}
-.logo svg{width:34px;height:34px}
-.cta-pill{background:var(--green);color:#03160a;font-weight:700;font-size:13px;padding:10px 20px;border-radius:99px;
-  transition:transform .25s,box-shadow .25s;box-shadow:0 0 0 rgba(0,200,83,.5)}
-.cta-pill:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 30px rgba(0,200,83,.45)}
-
-/* ── canvas dust ────────────────────────────── */
-#dust{position:fixed;inset:0;z-index:1;pointer-events:none}
-
-/* ── scenes ─────────────────────────────────── */
-.scene{position:relative;z-index:2}
-.stage{position:sticky;top:0;height:100vh;height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.tall{height:200vh}.taller{height:260vh}
-
-/* reveal machinery */
-.rv{opacity:0;transform:translateY(46px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
-.rv.in{opacity:1;transform:none}
-.chars span{display:inline-block;opacity:0;transform:translateY(.65em) rotate(4deg);transition:opacity .5s,transform .6s cubic-bezier(.2,.8,.2,1)}
-.chars.in span{opacity:1;transform:none}
-
-/* ── ACT 1 · HERO ───────────────────────────── */
-#hero .stage{flex-direction:column;padding-bottom:96px;background:
-  radial-gradient(58% 42% at 50% 30%,rgba(255,183,94,.13),transparent 70%),
-  radial-gradient(120% 90% at 50% 110%,#0d1410 0%,var(--black) 60%)}
-.cone{position:absolute;top:-6%;left:50%;transform:translateX(-50%);width:min(58vw,560px);height:74vh;
-  background:linear-gradient(180deg,rgba(255,214,150,.30),rgba(255,214,150,.05) 55%,transparent 80%);
-  clip-path:polygon(46% 0,54% 0,96% 100%,4% 100%);filter:blur(14px);animation:flicker 7s ease-in-out infinite}
-@keyframes flicker{0%,100%{opacity:.9}45%{opacity:.65}60%{opacity:1}}
-.smoke{position:absolute;width:60vw;height:36vh;bottom:8vh;left:50%;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(200,220,205,.10),transparent);filter:blur(30px)}
-.smoke.a{transform:translateX(-85%);animation:drift 16s ease-in-out infinite alternate}
-.smoke.b{transform:translateX(-15%);animation:drift 22s ease-in-out infinite alternate-reverse}
-@keyframes drift{to{transform:translateX(-45%) translateY(-6vh)}}
-#benchArt{width:min(46vw,340px);margin-top:8vh;filter:drop-shadow(0 18px 30px rgba(0,0,0,.7))}
-#benchArt path{stroke-dasharray:1200;stroke-dashoffset:1200;animation:draw 2.4s .4s cubic-bezier(.6,0,.2,1) forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-.h-title{font-size:clamp(38px,8.5vw,110px);text-align:center;margin-top:26px}
-.h-sub{font-size:clamp(15px,2vw,20px);color:#c9d3cc;margin-top:18px;text-align:center;font-weight:400;max-width:560px;padding:0 18px}
-.scroll-cue{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--sage);font-size:11px;letter-spacing:.35em;text-transform:uppercase}
-.scroll-cue::after{content:"";width:1px;height:44px;background:linear-gradient(var(--green),transparent);animation:cue 1.8s ease-in-out infinite}
-@keyframes cue{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
-
-/* ── ACT 2 · NUMBER (dolly-zoom camera) ─────── */
-#number .stage{background:
-  radial-gradient(70% 60% at 70% 20%,rgba(120,160,130,.07),transparent 65%),var(--black)}
-#numCam{text-align:center;padding:0 20px;will-change:transform,opacity,filter}
-.chalk{font-size:clamp(44px,10vw,140px)}
-.chalk .q{color:var(--green);text-shadow:0 0 34px rgba(0,200,83,.55)}
-.num-fact{margin-top:30px;font-size:clamp(15px,2vw,21px);color:#aeb8b1;font-weight:400;max-width:640px;margin-left:auto;margin-right:auto}
-.num-fact b{color:var(--paper);font-weight:700}
-.bigcount{display:block;font-size:clamp(40px,7vw,84px);font-weight:800;color:var(--paper);margin-bottom:6px;letter-spacing:-.02em}
-
-/* ── ACT 3 · DREAMS (lateral pan camera) ────── */
-#dreams .stage{background:
-  linear-gradient(180deg,#120e08 0%,#241505 45%,#3a2408 72%,#0f1c13 100%)}
-#dreams .stage::before{content:"";position:absolute;inset:auto 0 0 0;height:38%;
-  background:radial-gradient(60% 100% at 50% 100%,rgba(245,166,35,.28),transparent 75%)}
-#panTrack{display:flex;flex-direction:column;gap:3vh;will-change:transform;padding:0 6vw}
-.pan-line{font-size:clamp(34px,7.4vw,96px);white-space:nowrap}
-.pan-line.ghost{color:transparent;-webkit-text-stroke:1.5px rgba(250,250,248,.35)}
-.pan-bn{font-size:clamp(20px,3.4vw,40px);color:var(--amber);font-weight:600;margin-top:2vh;text-shadow:0 2px 24px rgba(245,166,35,.35)}
-.underline-svg{display:block;width:min(420px,60vw);margin-top:1.5vh}
-.underline-svg path{stroke:var(--green);stroke-width:6;fill:none;stroke-linecap:round;stroke-dasharray:520;stroke-dashoffset:520;transition:stroke-dashoffset 1.4s cubic-bezier(.6,0,.2,1)}
-.in .underline-svg path{stroke-dashoffset:0}
-
-/* ── ACT 4 · WORLD (tilt-up camera + parallax skyline) */
-#world .stage{background:linear-gradient(180deg,#07120c 0%,var(--forest) 55%,#0a2015 100%);perspective:900px}
-#worldCam{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;will-change:transform;transform-style:preserve-3d}
-.sky{position:absolute;inset:0;pointer-events:none}
-.sky svg{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:max(120vw,1200px)}
-.sun{position:absolute;left:50%;top:34%;width:34vmin;height:34vmin;transform:translateX(-50%);border-radius:50%;
-  background:radial-gradient(circle,rgba(0,230,118,.28),rgba(0,200,83,.10) 55%,transparent 72%);filter:blur(6px)}
-.w-title{font-size:clamp(34px,7.6vw,104px);text-align:center;z-index:3}
-.w-title .l2{display:block;color:var(--green);text-shadow:0 4px 40px rgba(0,200,83,.4)}
-.stats{display:flex;gap:clamp(18px,5vw,72px);margin-top:6vh;z-index:3;flex-wrap:wrap;justify-content:center;padding:0 16px}
-.stat{text-align:center}
-.stat .v{font-size:clamp(30px,5vw,58px);font-weight:800;color:var(--paper)}
-.stat .v em{font-style:normal;color:var(--green)}
-.stat .k{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--sage);margin-top:6px}
-
-/* ── ACT 5 · MOVEMENT (light flip) ──────────── */
-#movement{background:var(--paper);color:var(--ink);border-radius:38px 38px 0 0;box-shadow:0 -30px 80px rgba(0,0,0,.55)}
-#movement .wrap{max-width:1180px;margin:0 auto;padding:clamp(70px,11vh,130px) clamp(18px,5vw,48px)}
-.kicker{font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:var(--green-deep);font-weight:700}
-.m-title{font-size:clamp(30px,5.6vw,68px);margin-top:14px;color:var(--ink)}
-.m-title .accent{color:var(--green-deep)}
-.m-story{margin-top:22px;max-width:720px;font-size:clamp(15px,1.9vw,19px);color:#3c443f;font-weight:400}
-.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:54px}
-.pillar{background:#fff;border:1px solid #e4ece6;border-radius:18px;padding:26px 22px;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;position:relative;overflow:hidden}
-.pillar::after{content:"";position:absolute;left:0;top:0;height:3px;width:0;background:var(--green);transition:width .5s .1s}
-.pillar:hover{transform:translateY(-8px);box-shadow:0 24px 50px rgba(15,42,30,.14)}
-.pillar:hover::after{width:100%}
-.pillar .ic{font-size:26px}
-.pillar h3{font-size:15px;margin:14px 0 8px;color:var(--ink);letter-spacing:.02em}
-.pillar p{font-size:13.5px;color:#5a6660;font-weight:400}
-.quote{margin-top:70px;border-left:4px solid var(--green);padding:6px 0 6px 24px}
-.quote p{font-size:clamp(19px,2.8vw,30px);font-weight:700;color:var(--ink);text-transform:none;letter-spacing:-.01em}
-.quote span{display:block;margin-top:10px;font-size:13px;color:#68746d;letter-spacing:.2em;text-transform:uppercase}
-
-/* ── ACT 6 · JOIN ───────────────────────────── */
-#join{background:
-  radial-gradient(80% 60% at 50% 0%,rgba(0,200,83,.14),transparent 60%),
-  linear-gradient(180deg,#0a1f14,var(--forest))}
-#join .wrap{max-width:1180px;margin:0 auto;padding:clamp(70px,11vh,130px) clamp(18px,5vw,48px);display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,72px);align-items:center}
-@media(max-width:880px){#join .wrap{grid-template-columns:1fr}}
-.j-title{font-size:clamp(32px,5.4vw,64px)}
-.j-copy{margin-top:18px;color:#bcd0c3;font-weight:400;font-size:clamp(14px,1.8vw,17px);max-width:460px}
-.j-list{margin-top:26px;display:grid;gap:12px}
-.j-list li{list-style:none;display:flex;gap:12px;align-items:flex-start;font-size:14.5px;color:#d9e6dc}
-.j-list li::before{content:"✓";color:var(--green);font-weight:800;flex:0 0 auto}
-form.card{background:rgba(250,250,248,.98);color:var(--ink);border-radius:22px;padding:clamp(22px,3vw,34px);box-shadow:0 30px 80px rgba(0,0,0,.45)}
-form.card h3{font-size:18px;letter-spacing:.02em}
-form.card p.small{font-size:12.5px;color:#68746d;margin-top:6px;font-weight:400}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:520px){.grid2{grid-template-columns:1fr}}
-.field{margin-top:14px;display:flex;flex-direction:column;gap:6px}
-.field label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3c443f}
-.field input,.field select{font:inherit;font-size:14px;padding:12px 14px;border:1.5px solid #dde6df;border-radius:11px;background:#fff;color:var(--ink);transition:border-color .2s,box-shadow .2s;width:100%}
-.field input:focus,.field select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 4px rgba(0,200,83,.15)}
-.file-drop{border:2px dashed #cfdcd2;border-radius:12px;padding:16px;text-align:center;font-size:13px;color:#5a6660;cursor:pointer;transition:border-color .2s,background .2s}
-.file-drop:hover{border-color:var(--green);background:rgba(0,200,83,.05)}
-.file-drop input{display:none}
-.submit{margin-top:20px;width:100%;background:var(--green);border:none;color:#03160a;font:inherit;font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;padding:16px;border-radius:13px;cursor:pointer;transition:transform .2s,box-shadow .2s}
-.submit:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,200,83,.5)}
-.privacy{font-size:11.5px;color:#8a958e;margin-top:12px;text-align:center;font-weight:400}
-
-/* ── footer ─────────────────────────────────── */
-footer{background:var(--ink);padding:56px clamp(18px,5vw,48px) 40px}
-.f-inner{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;align-items:center}
-.f-tag{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sage)}
-.f-tag b{color:var(--green)}
-.f-links{display:flex;gap:22px;font-size:13px;color:#9aa39d}
-.f-links a:hover{color:var(--green)}
-.f-bottom{max-width:1180px;margin:26px auto 0;padding-top:20px;border-top:1px solid #222826;font-size:12px;color:#6b756f;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
-
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important}
-  .rv,.chars span{opacity:1!important;transform:none!important}
-}
-</style>
+<meta name="description" content="A cinematic journey from Bangladesh to Malaysia. The Last Bench guides Bangladeshi students to their global future — admissions, visas, scholarships, and a community that lasts.">
+<link rel="icon" type="image/png" href="./assets/logo-icon.png">
+<meta property="og:title" content="The Last Bench — From Last Bench. To The World.">
+<meta property="og:description" content="A cinematic journey from Bangladesh to Malaysia. We don't just help students study abroad — we build futures that last.">
+<meta property="og:image" content="./assets/logo-full.png">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#070b16">
+<script src="./vendor/react.min.js"></script>
+<script src="./vendor/react-dom.min.js"></script>
+<script src="./support.js"></script>
 </head>
 <body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="./vendor/three.min.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<style>
+html,body{margin:0;padding:0;background:#070b16;}
+body{overflow-x:hidden;}
+a,a:hover{color:inherit;}
+@keyframes lbBob{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
+@keyframes lbFlicker{0%,92%,100%{opacity:1}93%{opacity:.4}96%{opacity:.9}}
+@keyframes lbGrain{0%{transform:translate(0,0)}25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(-1%,2%)}100%{transform:translate(2%,-1%)}}
+@keyframes sonarRing{from{transform:translate(-50%,-50%) scale(.3);opacity:.9}to{transform:translate(-50%,-50%) scale(5);opacity:0}}
+@keyframes heroRise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+.lb-hero-seq{opacity:0;animation:heroRise 1.1s cubic-bezier(.16,1,.3,1) forwards;}
+@media (prefers-reduced-motion: reduce){
+  .lb-hero-seq{animation:none;opacity:1;transform:none;}
+  [style*="lbGrain"],[style*="lbBob"],[style*="lbFlicker"]{animation:none !important;}
+}
+::selection{background:#00C853;color:#04140b;}
+</style>
+</helmet>
 
-<div id="bar"></div>
+<div style="position:relative;background:#070b16;color:#EAF4EC;font-family:'Space Grotesk',system-ui,sans-serif;">
 
-<nav id="nav" aria-label="Main">
-  <a class="logo" href="#hero" aria-label="The Last Bench">
-    <svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="#111"/><g stroke="#00C853" stroke-width="4" stroke-linecap="round"><path d="M12 40h28"/><path d="M12 33h28"/><path d="M14 40v10M38 40v10"/><path d="M40 38l8-9"/><path d="M41 29h7v7"/></g></svg>
-    THE LAST BENCH
-  </a>
-  <a class="cta-pill" href="#join">Join the movement</a>
-</nav>
+  <!-- WebGL canvas mount (the continuous 3D journey) -->
+  <div ref="{{ mountRef }}" style="position:fixed;inset:0;z-index:0;"></div>
 
-<canvas id="dust" aria-hidden="true"></canvas>
+  <!-- monsoon lightning — flashes the whole sky for a beat, then double-taps -->
+  <div ref="{{ lightningRef }}" style="position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;background:radial-gradient(ellipse 120% 80% at 50% 0%,rgba(210,230,255,.9),rgba(140,180,230,.35) 45%,transparent 75%);mix-blend-mode:screen;"></div>
 
-<!-- ═══ ACT 1 · THE BENCH ═══ -->
-<section class="scene" id="hero">
-  <div class="stage">
-    <div class="cone"></div>
-    <div class="smoke a"></div><div class="smoke b"></div>
-    <svg id="benchArt" viewBox="0 0 320 190" fill="none" aria-hidden="true">
-      <g stroke="#e8efe9" stroke-width="7" stroke-linecap="round">
-        <path d="M30 92 H240"/><path d="M30 70 H240"/><path d="M30 48 H240"/>
-        <path d="M42 92 V160"/><path d="M228 92 V160"/>
-        <path d="M30 122 H240"/>
-      </g>
-      <g stroke="#00C853" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M244 118 L292 62"/><path d="M258 62 H292 V96"/>
-      </g>
-    </svg>
-    <h1 class="h-title chars" data-split>NOT EVERYONE<br>FITS IN.</h1>
-    <p class="h-sub rv">For the students the system measured wrong — <b class="accent">they build what's next.</b><br/>The Last Bench takes you from a Dhaka classroom to a global university. Free. Transparent. Human.</p>
-    <div class="scroll-cue">The story</div>
-  </div>
-</section>
-
-<!-- ═══ ACT 2 · JUST ANOTHER NUMBER ═══ -->
-<section class="scene tall" id="number">
-  <div class="stage">
-    <div id="numCam">
-      <h2 class="chalk chars" data-split>JUST ANOTHER<br><span class="q">NUMBER?</span></h2>
-      <p class="num-fact rv">
-        <span class="bigcount" data-count="1300000">0</span>
-        students sit for HSC in Bangladesh every year. The system ranks them, stamps them, files them.
-        <b>It never asks what they could become.</b>
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ ACT 3 · DREAMS ═══ -->
-<section class="scene tall" id="dreams">
-  <div class="stage">
-    <div id="panTrack">
-      <div class="pan-line ghost">DREAMS DON'T CARE</div>
-      <div class="pan-line rv">DREAMS DON'T CARE<br>WHERE YOU <span class="accent">SIT.</span>
-        <svg class="underline-svg" viewBox="0 0 420 24"><path d="M6 16 C 120 4, 300 26, 414 10"/></svg>
-      </div>
-      <div class="pan-bn rv bn">স্বপ্ন জানে না তুমি কোন বেঞ্চে বসো।</div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ ACT 4 · TO THE WORLD ═══ -->
-<section class="scene taller" id="world">
-  <div class="stage">
-    <div class="sun"></div>
-    <div class="sky" aria-hidden="true">
-      <svg id="skyBack" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice">
-        <path fill="#0a1c12" d="M0 320V210h60v-40h30v40h50V150h40v160h70V190h50v130h90V120h20l10-60 10 60h20v200h80V170h60v150h90V90h14l8-52 8 52h14v230h100V200h50v120h80V160h40v160h90V180h60v140h96v-90h60v90z"/>
-      </svg>
-      <svg id="skyFront" viewBox="0 0 1440 260" preserveAspectRatio="xMidYMax slice">
-        <path fill="#04120a" d="M0 260V190h80v-30h40v30h60V120h50v140h90V150h60v110h110V80h18l12-46 12 46h18v180h120V140h70v120h110V100h50v160h100V170h70v90h120v-60h80v60z"/>
-      </svg>
-    </div>
-    <div id="worldCam">
-      <h2 class="w-title chars" data-split>FROM LAST BENCH.<span class="l2">TO THE WORLD.</span></h2>
-      <div class="stats">
-        <div class="stat rv"><div class="v"><span data-count="500">0</span><em>+</em></div><div class="k">Students moving</div></div>
-        <div class="stat rv"><div class="v"><span data-count="92">0</span><em>%</em></div><div class="k">Visa success</div></div>
-        <div class="stat rv"><div class="v">৳<span data-count="0">0</span></div><div class="k">Cost to students</div></div>
+  <!-- REAL FOOTAGE LAYER — dissolves in when you arrive at each real location -->
+  <div ref="{{ vidLayerRef }}" style="position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;opacity:0;will-change:opacity;background:#000;">
+    <div ref="{{ vidContainerRef }}" style="position:absolute;top:50%;left:50%;width:177.78vh;min-width:100vw;height:100vh;min-height:56.25vw;transform:translate(-50%,-50%) scale(1.18);will-change:transform,filter;">
+      <div ref="{{ vidPanRef }}" style="position:absolute;inset:0;will-change:transform;">
+        <div id="lb-yt-main" style="width:100%;height:100%;pointer-events:none;"></div>
       </div>
     </div>
+    <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 88% 68% at 50% 46%,transparent 40%,rgba(0,0,0,.72));"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:44%;pointer-events:none;background:linear-gradient(transparent,rgba(0,0,0,.78));"></div>
   </div>
-</section>
 
-<!-- ═══ ACT 5 · THE MOVEMENT ═══ -->
-<section class="scene" id="movement">
-  <div class="wrap">
-    <div class="kicker rv">Why The Last Bench</div>
-    <h2 class="m-title rv">We don't just send students abroad.<br><span class="accent">We build futures that last.</span></h2>
-    <p class="m-story rv">
-      Every year, thousands of brilliant Bangladeshi students are told they're not "first-bench material."
-      Consultancies charge them lakhs, hide the process, and disappear after the fee clears.
-      The Last Bench was built by people who sat on that bench — to make the invisible visible:
-      every step of your application, tracked like a delivery. An AI advisor that remembers you.
-      Mentors who've already made the journey. And it costs a student nothing.
-    </p>
-    <div class="pillars">
-      <div class="pillar rv"><div class="ic">🤝</div><h3>Human First</h3><p>We care like mentors, not agents. A real person knows your name and your file.</p></div>
-      <div class="pillar rv"><div class="ic">🛡️</div><h3>Transparent</h3><p>No hidden charges. No false promises. You see your application move, stage by stage.</p></div>
-      <div class="pillar rv"><div class="ic">🌏</div><h3>Global Exposure</h3><p>Universities, culture, opportunities — starting with Malaysia, built for the world.</p></div>
-      <div class="pillar rv"><div class="ic">🚀</div><h3>Career Focused</h3><p>Beyond degrees, towards dreams. Skills, portfolios, and paths that outlast a visa.</p></div>
-      <div class="pillar rv"><div class="ic">👥</div><h3>Community Driven</h3><p>Cohorts of students on the same journey. You're never building your future alone.</p></div>
-    </div>
-    <div class="quote rv">
-      <p>"The people who are crazy enough to think they can change the world are the ones who do."</p>
-      <span>— The bench where we all started</span>
-    </div>
-  </div>
-</section>
+  <!-- film grain -->
+  <div style="position:fixed;inset:-10%;z-index:3;pointer-events:none;opacity:.09;animation:lbGrain .45s steps(4) infinite;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22256%22 height=%22256%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%22.82%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22256%22 height=%22256%22 filter=%22url(%23n)%22/></svg>');"></div>
 
-<!-- ═══ ACT 6 · JOIN ═══ -->
-<section class="scene" id="join">
-  <div class="wrap">
-    <div>
-      <div class="kicker rv" style="color:var(--green)">Join the movement</div>
-      <h2 class="j-title rv">YOUR FUTURE IS <span class="accent">WAITING.</span></h2>
-      <p class="j-copy rv">Be one of the first 500. Tell us who you are, drop your transcript, and our advisors + AI will map your route from Bangladesh to a global university — before the app even launches.</p>
-      <ul class="j-list rv">
-        <li>Free profile evaluation by a real mentor within 72 hours</li>
-        <li>AI-matched university shortlist for your GPA and budget</li>
-        <li>Early access to The Last Bench app the day it ships</li>
-      </ul>
-    </div>
-    <form class="card rv" name="waitlist" method="POST" action="https://formsubmit.co/360cybertroopers@gmail.com" enctype="multipart/form-data">
-      <input type="hidden" name="_subject" value="🪑 New Last Bench signup" />
-      <input type="hidden" name="_template" value="table" />
-      <input type="hidden" name="_captcha" value="false" />
-      <input type="hidden" name="_next" value="https://lets-colab.github.io/The-Last-Bench/thanks.html" />
-      <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
-      <h3>Start your journey <span class="hand accent" style="font-size:22px">— it's free</span></h3>
-      <p class="small">Creating a lasting benchmark starts with your name.</p>
-      <div class="grid2">
-        <div class="field"><label for="f-name">Full name</label><input id="f-name" name="name" required placeholder="Nahid Hasan" /></div>
-        <div class="field"><label for="f-phone">WhatsApp number</label><input id="f-phone" name="whatsapp" required placeholder="+880 1XXX-XXXXXX" /></div>
+  <!-- cinematic letterbox bars -->
+  <sc-if value="{{ letterbox }}" hint-placeholder-val="{{ true }}">
+    <div style="position:fixed;top:0;left:0;right:0;height:42px;background:linear-gradient(#000 55%,transparent);z-index:4;pointer-events:none;"></div>
+    <div style="position:fixed;bottom:0;left:0;right:0;height:42px;background:linear-gradient(transparent,#000 55%);z-index:4;pointer-events:none;"></div>
+  </sc-if>
+
+  <!-- FAST-TRAVEL OVERLAY -->
+  <sc-if value="{{ travelActive }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:50;background:#000;overflow:hidden;">
+      <div style="position:absolute;top:50%;left:50%;z-index:1;pointer-events:none;">
+        <div style="position:absolute;width:80px;height:80px;border:1px solid rgba(0,230,118,.7);border-radius:50%;animation:sonarRing 1.4s ease-out .0s 3 forwards;"></div>
+        <div style="position:absolute;width:80px;height:80px;border:1px solid rgba(0,230,118,.5);border-radius:50%;animation:sonarRing 1.4s ease-out .35s 3 forwards;"></div>
+        <div style="position:absolute;width:80px;height:80px;border:1px solid rgba(0,230,118,.3);border-radius:50%;animation:sonarRing 1.4s ease-out .7s 3 forwards;"></div>
       </div>
-      <div class="field"><label for="f-email">Email</label><input id="f-email" type="email" name="email" required placeholder="you@example.com" /></div>
-      <div class="grid2">
-        <div class="field"><label for="f-level">Current education</label>
-          <select id="f-level" name="education">
-            <option>HSC / A-Levels</option><option>Diploma</option><option>Bachelor (running)</option><option>Bachelor (complete)</option><option>Other</option>
-          </select>
-        </div>
-        <div class="field"><label for="f-gpa">GPA / Result</label><input id="f-gpa" name="gpa" placeholder="e.g. 4.83 / 5.00" /></div>
+      <div ref="{{ warpRef }}" style="position:absolute;inset:0;z-index:2;">
+        <sc-for list="{{ warpLines }}" as="wl" hint-placeholder-count="28">
+          <div style="position:absolute;top:50%;left:50%;height:2px;background:linear-gradient(90deg,transparent,{{ wl.color }},transparent);width:{{ wl.len }}px;will-change:transform,opacity;transform:translate(-50%,-50%) rotate({{ wl.deg }}deg);"></div>
+        </sc-for>
       </div>
-      <div class="grid2">
-        <div class="field"><label for="f-dest">Dream destination</label>
-          <select id="f-dest" name="destination">
-            <option>Malaysia</option><option>UK</option><option>Australia</option><option>Canada</option><option>Anywhere my dream fits</option>
-          </select>
-        </div>
-        <div class="field"><label for="f-intake">Target intake</label>
-          <select id="f-intake" name="intake">
-            <option>2026 (this year)</option><option>2027</option><option>Just exploring</option>
-          </select>
+      <div ref="{{ destImgRef }}" style="position:absolute;inset:0;z-index:3;opacity:0;background-size:cover;background-position:center;will-change:opacity,transform;transform:scale(1.14);"></div>
+      <div style="position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.48) 0%,transparent 28%,transparent 52%,rgba(0,0,0,.92) 100%);"></div>
+      <div ref="{{ destTextRef }}" style="position:absolute;bottom:0;left:0;right:0;z-index:5;padding:0 clamp(24px,5vw,60px) clamp(36px,6vh,60px);opacity:0;will-change:opacity,transform;transform:translateY(30px);">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.44em;color:#00E676;margin-bottom:16px;">ARRIVED · FAST-TRAVEL COMPLETE</div>
+        <h2 ref="{{ destNameRef }}" style="font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(28px,5vw,76px);line-height:1;margin:0 0 8px;color:#fff;text-shadow:0 6px 40px rgba(0,0,0,.9);"></h2>
+        <p ref="{{ destLocRef }}" style="font-size:13px;letter-spacing:.16em;color:rgba(234,244,236,.65);margin:0 0 20px;"></p>
+        <div ref="{{ destStatsRef }}" style="display:flex;gap:28px;flex-wrap:wrap;margin-bottom:20px;"></div>
+        <div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:250px;max-width:400px;background:rgba(5,16,10,.8);border:1px solid rgba(0,200,83,.32);border-radius:14px;padding:8px;backdrop-filter:blur(14px);">
+            <iframe ref="{{ destMapRef }}" title="Campus satellite view" style="width:100%;height:150px;border:0;border-radius:8px;display:block;" loading="lazy"></iframe>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px 2px;font-size:8px;font-weight:700;letter-spacing:.22em;color:rgba(234,244,236,.45);"><span>LIVE SATELLITE · THE REAL CAMPUS</span><a ref="{{ destEarthRef }}" href="#" target="_blank" rel="noopener" style="color:#00E676;text-decoration:none;pointer-events:auto;">GOOGLE EARTH ↗</a></div>
+          </div>
+          <button onClick="{{ closeTravelTo }}" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.32);color:#fff;font-weight:600;font-size:13px;letter-spacing:.1em;padding:13px 32px;border-radius:999px;cursor:pointer;backdrop-filter:blur(10px);font-family:'Space Grotesk',sans-serif;" style-hover="border-color:#00C853;color:#00E676;">← Return to the journey</button>
         </div>
       </div>
-      <div class="field">
-        <label>Transcript / marksheet <span style="color:#8a958e;font-weight:400;text-transform:none">(optional, PDF or photo)</span></label>
-        <label class="file-drop" id="drop">
-          <input type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png" />
-          <span id="dropText">📎 Tap to attach — we'll evaluate it for free</span>
-        </label>
+      <div style="position:absolute;top:0;left:0;right:0;z-index:5;padding:18px 28px;font-size:9px;font-weight:700;letter-spacing:.36em;color:rgba(255,255,255,.5);">FAST-TRAVEL ENGAGED</div>
+    </div>
+  </sc-if>
+
+  <!-- HUD: top bar -->
+  <div style="position:fixed;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:space-between;padding:12px 28px;pointer-events:none;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img src="assets/logo-icon.png" alt="Last Bench" style="height:26px;width:auto;filter:drop-shadow(0 0 8px rgba(0,200,83,.6));">
+      <span style="font-family:'Anton',sans-serif;font-size:16px;letter-spacing:.14em;color:#fff;">LAST BENCH</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;font-size:11px;font-weight:600;letter-spacing:.22em;color:rgba(234,244,236,.65);">
+      <span ref="{{ liveRef }}" style="display:none;align-items:center;gap:7px;color:#00E676;"><span style="width:6px;height:6px;border-radius:50%;background:#00E676;box-shadow:0 0 8px #00E676;display:inline-block;"></span>REAL FOOTAGE</span>
+      <button ref="{{ tiltBtnRef }}" onClick="{{ toggleTilt }}" aria-label="Steer the view by tilting your phone" style="display:none;pointer-events:auto;background:rgba(0,0,0,.35);border:1px solid rgba(0,230,118,.4);color:#00E676;font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:.22em;padding:7px 12px;border-radius:999px;cursor:pointer;backdrop-filter:blur(8px);">TILT: OFF</button>
+      <span ref="{{ chapterRef }}">01 — KUALA LUMPUR</span>
+    </div>
+  </div>
+  <!-- HUD: progress line -->
+  <div style="position:fixed;top:0;left:0;right:0;height:2px;z-index:7;background:rgba(255,255,255,.08);">
+    <div ref="{{ progressRef }}" style="height:100%;width:100%;background:#00C853;transform:scaleX(0);transform-origin:left;box-shadow:0 0 12px #00C853;"></div>
+  </div>
+
+  <!-- ============ ACT 1 · HERO ============ -->
+  <section data-screen-label="Hero — KL Skyline" style="position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:96px 24px 64px;">
+    <div class="lb-hero-seq" style="animation-delay:.15s;font-size:12px;font-weight:700;letter-spacing:.34em;color:#00E676;margin-bottom:22px;">A STUDENT'S JOURNEY · DHAKA → KUALA LUMPUR</div>
+    <h1 class="lb-hero-seq" style="animation-delay:.32s;font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(52px,9vw,124px);line-height:.98;margin:0;color:#fff;text-shadow:0 8px 60px rgba(0,0,0,.8);">FROM THE<br>LAST BENCH<br><span style="color:#00C853;">TO MALAYSIA.</span></h1>
+    <p class="lb-hero-seq" style="animation-delay:.58s;max-width:560px;font-size:clamp(15px,1.6vw,19px);line-height:1.6;color:rgba(234,244,236,.85);margin:28px 0 36px;text-wrap:pretty;text-shadow:0 2px 18px rgba(0,0,0,.85);">Built for students who refuse to be defined by where they started. Scroll — and fly the journey you're about to take. The city you'll see is real.</p>
+    <div class="lb-hero-seq" style="animation-delay:.78s;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+      <a href="#cta" style="display:inline-block;background:#00C853;color:#04140b;font-weight:700;font-size:15px;letter-spacing:.04em;padding:16px 32px;border-radius:999px;text-decoration:none;box-shadow:0 0 34px rgba(0,200,83,.5);" style-hover="background:#00E676;box-shadow:0 0 50px rgba(0,230,118,.7);">Sign up now</a>
+      <a href="#cta" style="display:inline-block;border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:600;font-size:15px;padding:16px 32px;border-radius:999px;text-decoration:none;backdrop-filter:blur(6px);background:rgba(0,0,0,.28);" style-hover="border-color:#00C853;color:#00E676;">Join the community</a>
+    </div>
+    <div style="position:absolute;bottom:64px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;animation:lbBob 2.4s ease-in-out infinite;">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.3em;color:rgba(234,244,236,.6);">FLY IN</span>
+      <svg width="14" height="22" viewBox="0 0 14 22"><path d="M7 2 V18 M2 13 L7 19 L12 13" stroke="#00C853" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </div>
+  </section>
+
+  <div style="height:90vh;"></div>
+
+  <!-- ============ ACT 2 · JALAN ALOR / STUDENT JOURNEY ============ -->
+  <section data-screen-label="Jalan Alor — Your Journey" style="position:relative;z-index:2;min-height:120vh;display:flex;align-items:center;padding:80px 24px;">
+    <div style="max-width:1080px;margin:0 auto;width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:56px;align-items:center;">
+      <div data-reveal>
+        <div style="font-size:12px;font-weight:700;letter-spacing:.34em;color:#FFB300;margin-bottom:16px;animation:lbFlicker 5s linear infinite;">02 — JALAN ALOR, 11:48 PM</div>
+        <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(38px,5.5vw,76px);line-height:1.02;margin:0 0 20px;color:#fff;text-shadow:0 6px 44px rgba(0,0,0,.9);">THE CITY IS AWAKE.<br><span style="color:#FFB300;">SO IS YOUR JOURNEY.</span></h2>
+        <p style="font-size:16px;line-height:1.65;color:rgba(234,244,236,.85);max-width:440px;text-wrap:pretty;text-shadow:0 2px 16px rgba(0,0,0,.85);">Your application is a journey with visible stages — timestamped, updated by a named mentor, never a black box. You always know where you stand and what comes next.</p>
       </div>
-      <div class="field"><label for="f-ref">Referral code <span style="color:#8a958e;font-weight:400;text-transform:none">(from your tutor, optional)</span></label><input id="f-ref" name="referral" placeholder="TLB-XXXX" /></div>
-      <button class="submit" type="submit">Claim my seat →</button>
-      <p class="privacy">🔒 Your documents are used only to evaluate your profile. Never sold, never shared.</p>
+      <div data-reveal style="display:flex;flex-direction:column;gap:0;background:rgba(8,6,10,.72);border:1px solid rgba(255,179,0,.22);border-radius:18px;padding:30px 34px;backdrop-filter:blur(12px);">
+        <sc-for list="{{ stages }}" as="st" hint-placeholder-count="5">
+          <div style="display:flex;gap:18px;">
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <div style="width:12px;height:12px;border-radius:50%;background:{{ st.dot }};box-shadow:0 0 12px {{ st.dot }};margin-top:4px;flex:none;"></div>
+              <div style="width:2px;flex:1;background:linear-gradient(rgba(0,200,83,.5),rgba(0,200,83,.12));min-height:26px;"></div>
+            </div>
+            <div style="padding-bottom:22px;">
+              <div style="font-weight:700;font-size:15px;color:{{ st.titleColor }};letter-spacing:.02em;">{{ st.title }}</div>
+              <div style="font-size:12.5px;color:rgba(234,244,236,.55);margin-top:3px;">{{ st.meta }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <div style="height:60vh;"></div>
+
+  <!-- ============ ACT 3 · ABOVE THE TOWERS / UNIVERSITIES ============ -->
+  <section data-screen-label="Above the Towers — Universities" style="position:relative;z-index:2;min-height:120vh;display:flex;align-items:center;padding:80px 24px;">
+    <div style="max-width:1120px;margin:0 auto;width:100%;">
+      <div data-reveal style="max-width:640px;margin-bottom:40px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.34em;color:#00E676;margin-bottom:16px;">03 — ABOVE THE TOWERS, 452 M</div>
+        <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(38px,5.5vw,76px);line-height:1.02;margin:0 0 20px;color:#fff;text-shadow:0 6px 44px rgba(0,0,0,.9);">RISE ABOVE<br><span style="color:#00C853;">THE SKYLINE.</span></h2>
+        <p style="font-size:16px;line-height:1.65;color:rgba(234,244,236,.85);text-wrap:pretty;text-shadow:0 2px 16px rgba(0,0,0,.85);">You're flying between the Petronas Towers. Below you: universities matched to your grades, your budget, your dream — with real costs and real visa numbers for Bangladeshi students. Click any card to fast-travel to its campus.</p>
+      </div>
+      <div data-reveal style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+        <sc-for list="{{ unis }}" as="u" hint-placeholder-count="5">
+          <div onClick="{{ travelTo }}" onKeyDown="{{ travelToKey }}" onMouseEnter="{{ preloadCampus }}" data-uni="{{ u.shortName }}" role="button" tabIndex="0" aria-label="Fast-travel to {{ u.name }}" style="cursor:pointer;background:rgba(5,16,10,.68);border:1px solid rgba(0,200,83,.22);border-radius:16px;padding:22px;backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:12px;transition:transform .3s cubic-bezier(.2,.7,.2,1),border-color .3s ease,box-shadow .3s ease;" style-hover="border-color:rgba(0,230,118,.65);transform:translateY(-4px);box-shadow:0 18px 44px rgba(0,0,0,.5);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+              <span style="font-family:'Anton',sans-serif;font-size:26px;color:#00E676;letter-spacing:.03em;">{{ u.shortName }}</span>
+              <span style="font-size:10px;font-weight:700;letter-spacing:.16em;color:rgba(234,244,236,.5);">{{ u.type }}</span>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px;color:#fff;line-height:1.35;">{{ u.name }}</div>
+              <div style="font-size:12px;color:rgba(234,244,236,.55);margin-top:2px;">{{ u.location }}</div>
+            </div>
+            <div style="display:flex;gap:14px;border-top:1px solid rgba(255,255,255,.1);padding-top:12px;margin-top:auto;">
+              <div style="flex:1;">
+                <div style="font-size:9px;letter-spacing:.1em;color:rgba(234,244,236,.5);font-weight:700;white-space:nowrap;">TUITION/YR</div>
+                <div style="font-size:15px;font-weight:700;color:#fff;margin-top:2px;">{{ u.tuition }}</div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:9px;letter-spacing:.1em;color:rgba(234,244,236,.5);font-weight:700;white-space:nowrap;">VISA RATE</div>
+                <div style="font-size:15px;font-weight:700;color:#00E676;margin-top:2px;">{{ u.visa }}</div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:9px;letter-spacing:.1em;color:rgba(234,244,236,.5);font-weight:700;white-space:nowrap;">IELTS</div>
+                <div style="font-size:15px;font-weight:700;color:#fff;margin-top:2px;">{{ u.ielts }}</div>
+              </div>
+            </div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:.22em;color:#00E676;display:flex;align-items:center;gap:7px;">VISIT CAMPUS <svg width="10" height="9" viewBox="0 0 10 9"><path d="M1 4.5h7M5 1l3.5 3.5L5 8" stroke="#00E676" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <div style="height:70vh;"></div>
+
+  <!-- ============ ACT 4 · KLCC PARK / THE BENCH ============ -->
+  <section id="cta" data-screen-label="KLCC Park — The Bench" style="position:relative;z-index:2;min-height:140vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;">
+    <div data-reveal style="display:flex;flex-direction:column;align-items:center;max-width:760px;">
+      <img src="assets/logo-full.png" alt="Last Bench — Creating a Lasting Benchmark" style="width:min(320px,70vw);height:auto;margin-bottom:26px;filter:drop-shadow(0 0 30px rgba(0,200,83,.35));">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.34em;color:#FFB300;margin-bottom:18px;">04 — KLCC PARK, DAYBREAK</div>
+      <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(42px,7vw,104px);line-height:1;margin:0;color:#fff;text-shadow:0 8px 56px rgba(0,0,0,.9);">EVERY JOURNEY<br>BEGINS ON <span style="color:#00C853;">A BENCH.</span></h2>
+      <p style="font-size:13px;font-weight:700;letter-spacing:.18em;margin:22px 0 0;color:rgba(234,244,236,.9);">BEYOND MARKS. <span style="color:#00C853;">BEYOND GRADES.</span> BEYOND LIMITS.</p>
+      <p style="max-width:540px;font-size:16px;line-height:1.65;color:rgba(234,244,236,.85);margin:14px 0 30px;text-wrap:pretty;text-shadow:0 2px 16px rgba(0,0,0,.85);">This one sits in KLCC Park, at the foot of the towers you just flew through. One day you'll sit here between classes. The bench is where you start. The arrow is where we take you.</p>
+      <form name="signup" method="POST" action="/thanks.html" data-netlify="true" data-netlify-honeypot="bot-field" style="width:min(560px,92vw);background:rgba(5,16,10,.78);border:1px solid rgba(0,200,83,.3);border-radius:20px;padding:26px;backdrop-filter:blur(12px);text-align:left;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22><g fill=%22none%22 stroke=%22%2300C853%22 stroke-opacity=%22.07%22 stroke-width=%221.4%22><path d=%22M-20 60 Q 90 20 180 70 T 420 50%22/><path d=%22M-20 100 Q 90 60 180 110 T 420 90%22/><path d=%22M-20 140 Q 90 100 180 150 T 420 130%22/><path d=%22M-20 330 Q 110 290 200 340 T 430 320%22/><path d=%22M-20 370 Q 110 330 200 380 T 430 360%22/></g></svg>');">
+        <input type="hidden" name="form-name" value="signup">
+        <p style="display:none;"><label>Leave this empty: <input name="bot-field"></label></p>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.3em;color:#00E676;margin-bottom:6px;">CLAIM YOUR SEAT</div>
+        <div style="font-size:13px;color:rgba(234,244,236,.6);margin-bottom:18px;">A mentor reviews your profile and reaches you on WhatsApp within 72 hours.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">FULL NAME</span><input required name="name" autocomplete="name" placeholder="Your name" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">WHATSAPP NUMBER</span><input required name="whatsapp" type="tel" inputMode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">CLASS / STAGE</span><select name="stage" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"><option value="SSC">SSC / O-Level</option><option value="HSC" selected>HSC / A-Level</option><option value="HSC-done">HSC done — applying now</option><option value="diploma">Diploma</option><option value="parent">I'm a parent</option></select></label>
+          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">DREAM FIELD (OPTIONAL)</span><input name="field" placeholder="CS, Business, Medicine…" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap;">
+          <button type="submit" style="background:#00C853;color:#04140b;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:.04em;padding:16px 36px;border-radius:999px;border:0;cursor:pointer;box-shadow:0 0 44px rgba(0,200,83,.55);" style-hover="background:#00E676;box-shadow:0 0 64px rgba(0,230,118,.75);">Claim my seat →</button>
+          <a href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.75);font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:14px 22px;border-radius:999px;" style-hover="border-color:#00C853;color:#00E676;">Join the community ↗</a>
+        </div>
+      </form>
+      <div data-reveal style="margin-top:52px;width:min(640px,92vw);background:rgba(5,16,10,.7);border:1px solid rgba(0,200,83,.25);border-radius:18px;padding:14px;backdrop-filter:blur(10px);">
+        <iframe src="https://maps.google.com/maps?q=KLCC%20Park%2C%20Kuala%20Lumpur&t=k&z=17&output=embed" title="KLCC Park — satellite view" style="width:100%;height:320px;border:0;border-radius:10px;display:block;" loading="lazy" allowfullscreen="allowfullscreen"></iframe>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 6px 4px;font-size:11px;font-weight:600;letter-spacing:.18em;color:rgba(234,244,236,.55);flex-wrap:wrap;gap:6px;">
+          <span>THE BENCH IS REAL — KLCC PARK, KUALA LUMPUR</span>
+          <span style="color:#00E676;">3.1553° N, 101.7145° E</span>
+        </div>
+      </div>
+    </div>
+    <footer style="margin-top:70px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div style="display:flex;justify-content:center;gap:22px;font-size:12px;letter-spacing:.14em;color:rgba(234,244,236,.7);font-weight:600;flex-wrap:wrap;">
+        <a href="tel:+8801300801785" style="color:#00E676;text-decoration:none;">01300 801785</a>
+        <a href="tel:+8801726494917" style="color:#00E676;text-decoration:none;">01726 494917</a>
+        <a href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.7);text-decoration:none;">@LASTBENCH.COMMUNITY</a>
+      </div>
+      <div style="display:flex;justify-content:center;gap:24px;font-size:11px;letter-spacing:.18em;color:rgba(234,244,236,.45);font-weight:600;flex-wrap:wrap;">
+        <span>LAST BENCH © 2026</span>
+        <span>FROM WHERE YOU ARE, TO MALAYSIA.</span>
+        <span>DHAKA · KUALA LUMPUR</span>
+      </div>
+    </footer>
+  </section>
+
+  <!-- BENCH AI — concierge chat -->
+  <button ref="{{ chatBtnRef }}" onClick="{{ toggleChat }}" aria-label="Chat with Bench AI" style="position:fixed;bottom:20px;right:20px;z-index:9;width:58px;height:58px;border-radius:50%;background:#00C853;border:0;cursor:pointer;box-shadow:0 8px 34px rgba(0,200,83,.5);display:flex;align-items:center;justify-content:center;">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 19V8a3 3 0 013-3h12a3 3 0 013 3v7a3 3 0 01-3 3H9l-5 4z" fill="#04140b"/><circle cx="10" cy="11.5" r="1.5" fill="#00E676"/><circle cx="15.5" cy="11.5" r="1.5" fill="#00E676"/></svg>
+  </button>
+  <div ref="{{ chatPanelRef }}" role="dialog" aria-label="Bench AI chat" style="display:none;position:fixed;bottom:88px;right:16px;z-index:9;width:min(370px,calc(100vw - 32px));max-height:min(540px,calc(100vh - 120px));background:rgba(4,12,8,.96);border:1px solid rgba(0,200,83,.35);border-radius:18px;backdrop-filter:blur(16px);flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#00E676;box-shadow:0 0 8px #00E676;"></span>
+        <span style="font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.1em;color:#fff;">BENCH AI</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.18em;color:rgba(234,244,236,.5);">VERIFIED DATA ONLY</span>
+      </div>
+      <button onClick="{{ toggleChat }}" aria-label="Close chat" style="background:none;border:0;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div ref="{{ chatLogRef }}" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:180px;"></div>
+    <div ref="{{ chatChipsRef }}" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;"></div>
+    <form ref="{{ chatFormRef }}" onSubmit="{{ chatSubmit }}" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);">
+      <input ref="{{ chatInputRef }}" placeholder="Ask about universities, visas, costs…" aria-label="Message Bench AI" style="flex:1;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:11px 12px;outline:none;min-width:0;">
+      <button type="submit" aria-label="Send" style="background:#00C853;border:0;border-radius:10px;color:#04140b;font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:14px;padding:0 16px;cursor:pointer;">→</button>
     </form>
   </div>
-</section>
 
-<footer>
-  <div class="f-inner">
-    <a class="logo" href="#hero">
-      <svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="#1c1c1c"/><g stroke="#00C853" stroke-width="4" stroke-linecap="round"><path d="M12 40h28"/><path d="M12 33h28"/><path d="M14 40v10M38 40v10"/><path d="M40 38l8-9"/><path d="M41 29h7v7"/></g></svg>
-      THE LAST BENCH
-    </a>
-    <div class="f-tag">Creating a <b>lasting benchmark</b></div>
-    <div class="f-links">
-      <a href="https://www.instagram.com/lastbench.community" rel="noopener">Instagram</a>
-      <a href="https://www.facebook.com/lastbench.community" rel="noopener">Facebook</a>
-      <a href="https://wa.me/8801234567890" rel="noopener">WhatsApp</a>
-      <a href="mailto:hello@lastbenchbd.com">hello@lastbenchbd.com</a>
-      <a href="https://exitbd.netlify.app" rel="noopener" style="color:var(--green)">Open the app →</a>
-    </div>
-  </div>
-  <div class="f-bottom">
-    <span>© 2026 The Last Bench · Dhaka, Bangladesh → The World</span>
-    <span class="bn">শেষ বেঞ্চ থেকে, পৃথিবীর দিকে।</span>
-  </div>
-</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;realFootage&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Real Footage&quot;},&quot;footageOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Real Footage&quot;},&quot;rainIntensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0,&quot;max&quot;:2,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Atmosphere&quot;},&quot;lanternColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#00C853&quot;,&quot;options&quot;:[&quot;#FF4D2E&quot;,&quot;#FFB300&quot;,&quot;#00C853&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Atmosphere&quot;},&quot;letterbox&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Cinematic&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.mount = null;
+    this.p = 0;
+    this.mouse = { x: 0, y: 0 };
+    this.disposed = false;
+    this.zoneIdx = -1;
 
-<script>
-/* ── split headlines into chars ── */
-document.querySelectorAll('[data-split]').forEach(el=>{
-  const walk=(node)=>{[...node.childNodes].forEach(n=>{
-    if(n.nodeType===3){
-      const frag=document.createDocumentFragment();
-      [...n.textContent].forEach((ch,i)=>{const s=document.createElement('span');s.textContent=ch===' '? ' ':ch;frag.appendChild(s)});
-      n.replaceWith(frag);
-    } else if(n.nodeType===1 && n.tagName!=='BR') walk(n);
-  })};
-  walk(el);
-  [...el.querySelectorAll('span')].forEach((s,i)=>s.style.transitionDelay=(i*28)+'ms');
-});
+    // Real-footage zones: p-range where the 3D flight dissolves into real KL video
+    this.zones = [
+      { id: 'XVzuVXgbnwY', start: 30,  a: 0.00, b: 0.14,  filter: 'saturate(.9) contrast(1.1) brightness(.85)' },
+      { id: 'otukTTf4C4k', start: 120, a: 0.21, b: 0.44,  filter: 'saturate(1.3) hue-rotate(-8deg) contrast(1.05) brightness(.88)' },
+      { id: 'b2jE8rPOn9o', start: 45,  a: 0.51, b: 0.74,  filter: 'saturate(.75) hue-rotate(10deg) contrast(1.18) brightness(.85)' },
+      { id: 'K7MCrSiwdyQ', start: 60,  a: 0.84, b: 1.02,  filter: 'saturate(1.08) hue-rotate(-10deg) contrast(1.0) brightness(.98)' },
+    ];
 
-/* ── reveal on enter + counters ── */
-const io=new IntersectionObserver(es=>es.forEach(e=>{
-  if(!e.isIntersecting)return;
-  e.target.classList.add('in');
-  e.target.querySelectorAll('[data-count]').forEach(runCount);
-  if(e.target.hasAttribute('data-count'))runCount(e.target);
-  io.unobserve(e.target);
-}),{threshold:.35});
-document.querySelectorAll('.rv,.chars').forEach(el=>io.observe(el));
-function runCount(el){
-  if(el.dataset.done)return;el.dataset.done=1;
-  const end=+el.dataset.count,t0=performance.now(),D=1600;
-  const fmt=n=>n.toLocaleString('en-IN');
-  (function tick(t){const p=Math.min((t-t0)/D,1),e=1-Math.pow(1-p,3);
-    el.textContent=fmt(Math.round(end*e));
-    if(p<1)requestAnimationFrame(tick)})(t0);
-}
+    this.campuses = {
+      UM:      { name: 'Universiti Malaya',             location: 'Kuala Lumpur · est. 1949',       q: 'Universiti Malaya, Kuala Lumpur',                       img: 'https://images.unsplash.com/photo-1596496181861-5fc9f0d1a75e?w=1920&q=85&auto=format&fit=crop', tuition: 'RM 18,000 / yr', visa: '91%', program: 'Engineering · Medicine · Business' },
+      UTM:     { name: 'Universiti Teknologi Malaysia', location: 'Johor Bahru · est. 1904',        q: 'Universiti Teknologi Malaysia, Johor Bahru',            img: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1920&q=85&auto=format&fit=crop', tuition: 'RM 15,000 / yr', visa: '87%', program: 'Engineering · Technology · Built Env.' },
+      APU:     { name: 'Asia Pacific University',       location: 'Kuala Lumpur · Technology Park', q: 'Asia Pacific University of Technology and Innovation',  img: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920&q=85&auto=format&fit=crop', tuition: 'RM 23,000 / yr', visa: '95%', program: 'IT · Business · Engineering' },
+      "Taylor\u2019s": { name: "Taylor's University",   location: 'Subang Jaya · Lakeside Campus',  q: "Taylor's University Lakeside Campus, Subang Jaya",      img: 'https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=1920&q=85&auto=format&fit=crop', tuition: 'RM 31,000 / yr', visa: '94%', program: 'Hospitality · Business · Medicine' },
+      UCSI:    { name: 'UCSI University',               location: 'Cheras, Kuala Lumpur',           q: 'UCSI University Kuala Lumpur Campus',                   img: 'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=1920&q=85&auto=format&fit=crop', tuition: 'RM 37,000 / yr', visa: '88%', program: 'Medicine · Pharmacy · Engineering' },
+    };
 
-/* ── cinematic scroll engine (lerped camera moves) ── */
-const $=s=>document.querySelector(s);
-const numSc=$('#number'),numCam=$('#numCam');
-const drSc=$('#dreams'),pan=$('#panTrack');
-const wSc=$('#world'),wCam=$('#worldCam'),skyB=$('#skyBack'),skyF=$('#skyFront');
-const nav=$('#nav'),bar=$('#bar');
-let cur=0;
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const prog=(sc)=>{const r=sc.getBoundingClientRect();return clamp(-r.top/(r.height-innerHeight),0,1)};
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function frame(){
-  cur+= (scrollY-cur)*.12;
-  bar.style.width=(scrollY/(document.body.scrollHeight-innerHeight)*100)+'%';
-  nav.classList.toggle('show',scrollY>innerHeight*.75);
-  if(!reduced){
-    /* Act 2: dolly zoom — camera pushes in, then racks focus out */
-    const p2=prog(numSc);
-    numCam.style.transform=`scale(${1.28-.28*Math.min(p2*1.6,1)})`;
-    numCam.style.opacity=p2>.82?String(1-(p2-.82)/.18):1;
-    numCam.style.filter=`blur(${p2>.82?(p2-.82)*22:0}px)`;
-    /* Act 3: lateral pan — camera slides across the line */
-    const p3=prog(drSc);
-    pan.style.transform=`translateX(${(0.5-p3)*22}vw)`;
-    /* Act 4: tilt-up from the ground to the skyline + parallax */
-    const p4=prog(wSc);
-    wCam.style.transform=`rotateX(${(1-Math.min(p4*1.5,1))*14}deg) translateY(${(1-Math.min(p4*1.5,1))*8}vh)`;
-    skyB.style.transform=`translateX(-50%) translateY(${(1-p4)*9}vh)`;
-    skyF.style.transform=`translateX(-50%) translateY(${(1-p4)*4}vh)`;
+    this.state = { travelActive: false, warpLines: [] };
+    this.reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.isSmall = typeof window !== 'undefined' && window.innerWidth < 720;
+    // unified view control: mouse and device tilt both steer this target;
+    // the camera chases it with smoothing so the view feels weighted, not jittery
+    this.viewT = { x: 0, y: 0 };
+    this.view = { x: 0, y: 0 };
+    this.tiltOn = false;
+    this.tiltBase = null;
+    this.chatOpen = false;
+    this.chatHistory = [];
   }
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
 
-/* ── dust particles (scene-aware colors) ── */
-const cv=$('#dust'),cx=cv.getContext('2d');let W,H,P=[];
-function size(){W=cv.width=innerWidth*devicePixelRatio;H=cv.height=innerHeight*devicePixelRatio;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
-addEventListener('resize',size);size();
-const N=innerWidth<640?42:90;
-for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:(Math.random()*1.6+.4)*devicePixelRatio,vx:(Math.random()-.5)*.12,vy:-(Math.random()*.25+.06),o:Math.random()*.5+.15,w:Math.random()<.3});
-function dust(){
-  cx.clearRect(0,0,W,H);
-  const doc=document.body.scrollHeight-innerHeight;
-  const sp=doc?scrollY/doc:0;
-  for(const p of P){
-    p.x+=p.vx*devicePixelRatio;p.y+=p.vy*devicePixelRatio;
-    if(p.y<-8){p.y=H+8;p.x=Math.random()*W}
-    if(p.x<-8)p.x=W+8;if(p.x>W+8)p.x=-8;
-    // warm dust early in the film, green fireflies later
-    const g=p.w?`rgba(255,214,150,${p.o})`:(sp>.45?`rgba(0,220,110,${p.o*.9})`:`rgba(190,205,195,${p.o*.6})`);
-    cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fillStyle=g;cx.fill();
+  renderVals() {
+    const g = '#00E676', dim = 'rgba(234,244,236,.85)';
+    return {
+      letterbox: this.props.letterbox ?? true,
+      travelActive: this.state.travelActive,
+      warpLines: this.state.warpLines,
+      travelTo: (e) => this.travelTo(e),
+      travelToKey: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.travelTo(e); } },
+      preloadCampus: (e) => this.preloadCampus(e),
+      closeTravelTo: () => this.closeTravelTo(),
+      mountRef: (el) => { this.mount = el; },
+      lightningRef: (el) => { this.lightningEl = el; },
+      tiltBtnRef: (el) => { this.tiltBtnEl = el; this.setupTiltButton(); },
+      toggleTilt: () => this.toggleTilt(),
+      destEarthRef: (el) => { this.destEarthEl = el; },
+      chatBtnRef: (el) => { this.chatBtnEl = el; },
+      chatPanelRef: (el) => { this.chatPanelEl = el; },
+      chatLogRef: (el) => { this.chatLogEl = el; },
+      chatChipsRef: (el) => { this.chatChipsEl = el; },
+      chatFormRef: (el) => { this.chatFormEl = el; },
+      chatInputRef: (el) => { this.chatInputEl = el; },
+      toggleChat: () => this.toggleChat(),
+      chatSubmit: (e) => { e.preventDefault(); this.chatSend(this.chatInputEl ? this.chatInputEl.value : ''); },
+      chapterRef: (el) => { this.chapterEl = el; },
+      progressRef: (el) => { this.progressEl = el; },
+      liveRef: (el) => { this.liveEl = el; },
+      vidLayerRef: (el) => { this.vidLayerEl = el; },
+      vidContainerRef: (el) => { this.vidContainerEl = el; },
+      vidPanRef: (el) => { this.vidPanEl = el; },
+      warpRef: (el) => { this.warpEl = el; },
+      destImgRef: (el) => { this.destImgEl = el; },
+      destTextRef: (el) => { this.destTextEl = el; },
+      destNameRef: (el) => { this.destNameEl = el; },
+      destLocRef: (el) => { this.destLocEl = el; },
+      destStatsRef: (el) => { this.destStatsEl = el; },
+      destMapRef: (el) => { this.destMapEl = el; },
+      stages: [
+        { title: 'Documents Received', meta: 'Updated by Rahim · Tue 9:12 PM', dot: g, titleColor: '#fff' },
+        { title: 'Profile Analyzed', meta: 'AI shortlist reasoning attached', dot: g, titleColor: '#fff' },
+        { title: 'University Shortlist', meta: '3 matches · UM, APU, Taylor\u2019s', dot: g, titleColor: '#fff' },
+        { title: 'Offer Received', meta: 'Waiting on APU · est. 3\u20134 weeks', dot: '#FFB300', titleColor: '#FFB300' },
+        { title: 'Visa Approved', meta: 'EMGS Category 1 · avg. 91% success', dot: 'rgba(255,255,255,.28)', titleColor: dim },
+      ],
+      unis: [
+        { shortName: 'UM', name: 'Universiti Malaya', location: 'Kuala Lumpur', type: 'PUBLIC', tuition: '$4,500', visa: '91%', ielts: '6.0' },
+        { shortName: 'UTM', name: 'Universiti Teknologi Malaysia', location: 'Johor Bahru', type: 'PUBLIC', tuition: '$3,600', visa: '87%', ielts: '5.5' },
+        { shortName: 'APU', name: 'Asia Pacific University', location: 'Kuala Lumpur', type: 'PRIVATE', tuition: '$5,500', visa: '95%', ielts: '4.5' },
+        { shortName: 'Taylor\u2019s', name: 'Taylor\u2019s University', location: 'Subang Jaya', type: 'PRIVATE', tuition: '$7,500', visa: '94%', ielts: '5.5' },
+        { shortName: 'UCSI', name: 'UCSI University · MBBS', location: 'Cheras, KL', type: 'PRIVATE', tuition: '$9,000', visa: '88%', ielts: '6.0' },
+      ],
+    };
   }
-  requestAnimationFrame(dust);
-}
-if(!reduced)requestAnimationFrame(dust);
 
-/* ── file input label ── */
-const fi=document.querySelector('#drop input');
-if(fi)fi.addEventListener('change',()=>{$('#dropText').textContent=fi.files[0]?('✅ '+fi.files[0].name):'📎 Tap to attach — we\'ll evaluate it for free'});
+  componentDidMount() {
+    let tries = 0;
+    const wait = () => {
+      if (this.disposed) return;
+      if (window.THREE && this.mount) { this.init(); }
+      else if (tries++ < 150) { setTimeout(wait, 100); }
+    };
+    wait();
+    this.setupReveals();
+    this.initYT();
+    this.onKeyDown = (e) => {
+      if (e.key !== 'Escape') return;
+      if (this.state.travelActive) this.closeTravelTo();
+      else if (this.chatOpen) this.toggleChat();
+    };
+    window.addEventListener('keydown', this.onKeyDown);
+  }
+
+  componentWillUnmount() {
+    this.disposed = true;
+    if (this._travelTimer) clearTimeout(this._travelTimer);
+    if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.renderer) { this.renderer.dispose(); }
+    if (this.player && this.player.destroy) try { this.player.destroy(); } catch (_) {}
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('mousemove', this.onMouse);
+    window.removeEventListener('keydown', this.onKeyDown);
+    if (this.onTilt) window.removeEventListener('deviceorientation', this.onTilt);
+  }
+
+  // ─── REAL FOOTAGE (YouTube) ─────────────────────────────────────────────
+
+  initYT() {
+    let tries = 0;
+    const make = () => {
+      if (this.disposed) return;
+      const el = document.getElementById('lb-yt-main');
+      if (window.YT && window.YT.Player && el) {
+        const z = this.zones[0];
+        this.player = new YT.Player('lb-yt-main', {
+          videoId: z.id,
+          playerVars: { autoplay: 1, mute: 1, controls: 0, rel: 0, playsinline: 1, loop: 1, playlist: z.id, start: z.start, modestbranding: 1, iv_load_policy: 3, disablekb: 1, fs: 0, cc_load_policy: 0 },
+          events: {
+            onReady: (e) => { this.playerReady = true; try { e.target.mute(); e.target.setVolume(0); e.target.playVideo(); } catch (_) {} },
+            onStateChange: (e) => {
+              if (e.data === 0) {
+                const zz = this.zones[Math.max(0, this.zoneIdx)];
+                try { e.target.seekTo(zz.start, true); e.target.playVideo(); } catch (_) {}
+              }
+            },
+          },
+        });
+      } else if (tries++ < 200) setTimeout(make, 100);
+    };
+    make();
+  }
+
+  setZone(idx) {
+    if (idx === this.zoneIdx) return;
+    this.zoneIdx = idx;
+    if (idx < 0) return;
+    const z = this.zones[idx];
+    if (this.vidContainerEl) this.vidContainerEl.style.filter = z.filter;
+    if (this.playerReady && this.player && this.player.loadVideoById && this.loadedZone !== idx) {
+      this.loadedZone = idx;
+      try { this.player.loadVideoById({ videoId: z.id, startSeconds: z.start }); } catch (_) {}
+    }
+  }
+
+  // zone opacity from scroll position: soft ramp in/out at edges
+  zoneOpacity(p) {
+    const f = 0.055;
+    let best = -1, op = 0;
+    for (let i = 0; i < this.zones.length; i++) {
+      const z = this.zones[i];
+      if (p < z.a - f || p > z.b + f) continue;
+      const oIn = Math.min(1, Math.max(0, (p - z.a) / f + 1));
+      const oOut = Math.min(1, Math.max(0, (z.b - p) / f + 1));
+      const o = Math.max(0, Math.min(1, Math.min(oIn, oOut)));
+      if (o > op) { op = o; best = i; }
+    }
+    return { idx: best, op };
+  }
+
+  // ─── FAST TRAVEL ────────────────────────────────────────────────────────
+
+  preloadCampus(e) {
+    const key = e.currentTarget && e.currentTarget.getAttribute('data-uni');
+    const dest = this.campuses[key];
+    if (!dest || dest._pre) return;
+    dest._pre = true;
+    const img = new Image(); img.src = dest.img;
+  }
+
+  makeWarpLines() {
+    return Array.from({ length: 28 }, (_, i) => {
+      const deg = (i / 28) * 360 + (Math.random() - .5) * 12;
+      const green = Math.random() > .4;
+      return { key: i, deg, len: 52 + Math.random() * 90, color: green ? 'rgba(0,230,118,.7)' : 'rgba(255,255,255,.4)' };
+    });
+  }
+
+  travelTo(e) {
+    const card = e.currentTarget || (e.target && e.target.closest('[data-uni]'));
+    const key = card && card.getAttribute('data-uni');
+    const dest = this.campuses[key];
+    if (!dest) return;
+    document.body.style.overflow = 'hidden';
+    if (this.destImgEl) { this.destImgEl.style.transition = 'none'; this.destImgEl.style.opacity = '0'; this.destImgEl.style.transform = 'scale(1.14)'; }
+    if (this.destTextEl) { this.destTextEl.style.opacity = '0'; this.destTextEl.style.transform = 'translateY(30px)'; }
+    this.setState({ travelActive: true, warpLines: this.makeWarpLines() });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!this.warpEl) return;
+      this.warpEl.style.opacity = '1';
+      this.warpEl.style.transition = 'none';
+      this.warpEl.querySelectorAll('div').forEach((l, i) => {
+        const m = l.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+        const deg = m ? parseFloat(m[1]) : (i / 28) * 360;
+        l.style.transition = 'transform .88s cubic-bezier(.12,.55,.2,1), opacity .88s ease';
+        l.style.transform = 'translate(-50%,-50%) rotate(' + deg + 'deg) translateX(' + (820 + Math.random() * 520) + 'px)';
+        l.style.opacity = '0';
+      });
+    }));
+    this._travelTimer = setTimeout(() => {
+      if (this.destImgEl) { this.destImgEl.style.backgroundImage = 'url(' + dest.img + ')'; this.destImgEl.style.transition = 'opacity .95s ease, transform 7s ease-out'; this.destImgEl.style.opacity = '1'; this.destImgEl.style.transform = 'scale(1)'; }
+      if (this.destNameEl) this.destNameEl.textContent = dest.name.toUpperCase();
+      if (this.destLocEl) this.destLocEl.textContent = dest.location;
+      if (this.destMapEl) this.destMapEl.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(dest.q) + '&t=k&z=17&output=embed';
+      if (this.destEarthEl) this.destEarthEl.href = 'https://earth.google.com/web/search/' + encodeURIComponent(dest.q);
+      if (this.destStatsEl) {
+        const stats = [{ l: 'TUITION / YR', v: dest.tuition }, { l: 'VISA RATE', v: dest.visa }, { l: 'PROGRAMS', v: dest.program }];
+        this.destStatsEl.innerHTML = stats.map(s => '<div style="display:flex;flex-direction:column;gap:4px;"><div style="font-size:9px;font-weight:700;letter-spacing:.22em;color:rgba(234,244,236,.42);">' + s.l + '</div><div style="font-size:14px;font-weight:700;color:#fff;line-height:1.3;">' + s.v + '</div></div>').join('');
+      }
+      if (this.destTextEl) { this.destTextEl.style.transition = 'opacity .85s ease .2s, transform .85s cubic-bezier(.2,.7,.2,1) .2s'; this.destTextEl.style.opacity = '1'; this.destTextEl.style.transform = 'translateY(0)'; }
+      if (this.warpEl) { this.warpEl.style.transition = 'opacity .4s ease'; this.warpEl.style.opacity = '0'; }
+    }, 850);
+  }
+
+  closeTravelTo() {
+    document.body.style.overflow = '';
+    if (this._travelTimer) clearTimeout(this._travelTimer);
+    this.setState({ travelActive: false });
+  }
+
+  // ─── DEVICE TILT: steer the flight by moving your phone ─────────────────
+
+  setupTiltButton() {
+    if (!this.tiltBtnEl) return;
+    const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const supported = typeof DeviceOrientationEvent !== 'undefined';
+    if (touch && supported && !this.reduceMotion) this.tiltBtnEl.style.display = 'inline-block';
+  }
+
+  toggleTilt() {
+    if (this.tiltOn) { this.stopTilt(); return; }
+    const needsPermission = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+    const start = () => this.startTilt();
+    if (needsPermission) {
+      DeviceOrientationEvent.requestPermission().then((r) => { if (r === 'granted') start(); }).catch(() => {});
+    } else start();
+  }
+
+  startTilt() {
+    this.tiltOn = true;
+    this.tiltBase = null;
+    if (this.tiltBtnEl) { this.tiltBtnEl.textContent = 'TILT: ON'; this.tiltBtnEl.style.background = 'rgba(0,200,83,.25)'; }
+    this.onTilt = (e) => {
+      if (e.gamma == null || e.beta == null) return;
+      if (this.tiltBase === null) this.tiltBase = { g: e.gamma, b: e.beta }; // neutral = how you hold it now
+      const dx = (e.gamma - this.tiltBase.g) / 24;  // roll phone left/right
+      const dy = (e.beta - this.tiltBase.b) / 24;   // pitch phone toward/away
+      this.viewT.x = Math.max(-1, Math.min(1, dx));
+      this.viewT.y = Math.max(-1, Math.min(1, dy));
+    };
+    window.addEventListener('deviceorientation', this.onTilt);
+  }
+
+  stopTilt() {
+    this.tiltOn = false;
+    this.viewT.x = 0; this.viewT.y = 0;
+    if (this.tiltBtnEl) { this.tiltBtnEl.textContent = 'TILT: OFF'; this.tiltBtnEl.style.background = 'rgba(0,0,0,.35)'; }
+    if (this.onTilt) window.removeEventListener('deviceorientation', this.onTilt);
+  }
+
+  // ─── BENCH AI: concierge chat ────────────────────────────────────────────
+  // With window.LB_AI.endpoint set (the deployed Last Bench API), messages go
+  // to the real advisor. Without it, a built-in concierge answers from the
+  // same verified numbers shown on the cards and hands off to WhatsApp.
+
+  toggleChat() {
+    this.chatOpen = !this.chatOpen;
+    if (this.chatPanelEl) this.chatPanelEl.style.display = this.chatOpen ? 'flex' : 'none';
+    if (this.chatOpen && !this.chatBooted) {
+      this.chatBooted = true;
+      this.chatPush('ai', "Salam! I'm Bench AI. Ask me about Malaysian universities, visa success rates, or real costs for Bangladeshi students — I only answer from Last Bench's verified data.");
+      this.chatChips(['Which university fits my budget?', 'Visa success rates', 'What does it cost in BDT?', 'Talk to a human mentor']);
+    }
+    if (this.chatOpen && this.chatInputEl) this.chatInputEl.focus();
+  }
+
+  chatPush(who, text) {
+    if (!this.chatLogEl) return;
+    const div = document.createElement('div');
+    div.style.cssText = who === 'ai'
+      ? 'align-self:flex-start;max-width:88%;background:rgba(0,200,83,.12);border:1px solid rgba(0,200,83,.25);border-radius:12px 12px 12px 4px;padding:10px 13px;font-size:13.5px;line-height:1.55;color:#EAF4EC;'
+      : 'align-self:flex-end;max-width:88%;background:rgba(255,255,255,.1);border-radius:12px 12px 4px 12px;padding:10px 13px;font-size:13.5px;line-height:1.55;color:#fff;';
+    div.textContent = text;
+    this.chatLogEl.appendChild(div);
+    this.chatLogEl.scrollTop = this.chatLogEl.scrollHeight;
+  }
+
+  chatChips(labels) {
+    if (!this.chatChipsEl) return;
+    this.chatChipsEl.innerHTML = '';
+    labels.forEach((l) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = l;
+      b.style.cssText = 'background:rgba(0,0,0,.4);border:1px solid rgba(0,230,118,.35);color:#00E676;border-radius:999px;padding:7px 12px;font-size:12px;font-family:"Space Grotesk",sans-serif;cursor:pointer;';
+      b.onclick = () => this.chatSend(l);
+      this.chatChipsEl.appendChild(b);
+    });
+  }
+
+  chatAnswer(q) {
+    const t = q.toLowerCase();
+    const unis = this.renderVals().unis;
+    const rows = unis.map((u) => u.shortName + ' — ' + u.tuition + '/yr, visa ' + u.visa + ', IELTS ' + u.ielts).join('  ·  ');
+    if (/budget|cheap|afford|cost|taka|bdt|price|fee/.test(t))
+      return 'Real yearly tuition for Bangladeshi students: ' + rows + '. UTM is the most affordable public option at $3,600/yr; living costs add roughly $4,000-5,000/yr. Tell me your budget and I\u2019ll narrow it.';
+    if (/visa/.test(t))
+      return 'Verified visa success rates for our students: APU 95%, Taylor\u2019s 94%, UM 91%, UCSI 88%, UTM 87%. EMGS Category-1 universities process in 6-8 weeks on average. Your grades and documents decide most of it \u2014 a mentor can pre-check yours free.';
+    if (/ielts|english/.test(t))
+      return 'IELTS requirements: APU accepts 4.5, UTM and Taylor\u2019s 5.5, UM and UCSI 6.0. Some universities accept MUET or an English placement test instead \u2014 ask a mentor about waiver routes.';
+    if (/mentor|human|talk|call|whatsapp|contact/.test(t))
+      return 'A named mentor (not a call center) reviews every profile. WhatsApp us at 01300 801785 or 01726 494917, or claim your seat in the form above \u2014 we reply within 72 hours.';
+    if (/scholar/.test(t))
+      return 'UM, UTM and several private universities offer partial scholarships and early-bird tuition discounts for international students. The realistic range is 10-50% of tuition based on your SSC/HSC results. A mentor can check which ones your grades unlock.';
+    if (/(which|best|fit|match|recommend|university|uni\b)/.test(t))
+      return 'It depends on three things: budget, grades, and field. Quick view: ' + rows + '. Click any card in the \u201cRise Above\u201d chapter to fly to its real campus \u2014 or tell me your GPA and budget and I\u2019ll shortlist.';
+    return 'I can answer about Malaysian universities, tuition in real numbers, visa rates, IELTS, and scholarships \u2014 all from Last Bench\u2019s verified database. For anything personal to your profile, the app\u2019s full AI advisor (with memory) takes over after you sign up. What would you like to know?';
+  }
+
+  chatSend(text) {
+    const msg = (text || '').trim();
+    if (!msg) return;
+    if (this.chatInputEl) this.chatInputEl.value = '';
+    this.chatPush('user', msg);
+    this.chatChips([]);
+    const cfg = window.LB_AI || {};
+    if (cfg.endpoint) {
+      this.chatHistory.push({ role: 'user', content: msg });
+      fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: msg, history: this.chatHistory.slice(-12) }) })
+        .then((r) => r.json())
+        .then((d) => { const reply = d.reply || d.message || 'Sorry \u2014 try again.'; this.chatHistory.push({ role: 'assistant', content: reply }); this.chatPush('ai', reply); })
+        .catch(() => this.chatPush('ai', 'I couldn\u2019t reach the advisor right now. WhatsApp a mentor at 01300 801785 \u2014 they answer fast.'));
+    } else {
+      setTimeout(() => this.chatPush('ai', this.chatAnswer(msg)), 350);
+    }
+  }
+
+  // ─── REVEALS ────────────────────────────────────────────────────────────
+
+  setupReveals() {
+    if (this.reduceMotion) { this.revealEls = []; return; }
+    setTimeout(() => {
+      this.revealEls = Array.from(document.querySelectorAll('[data-reveal]'));
+      this.revealEls.forEach((el) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(34px)';
+        el.style.transition = 'opacity 1s cubic-bezier(.2,.7,.2,1), transform 1s cubic-bezier(.2,.7,.2,1)';
+      });
+    }, 400);
+  }
+
+  checkReveals() {
+    if (!this.revealEls || !this.revealEls.length) return;
+    const limit = window.innerHeight * 0.88;
+    this.revealEls = this.revealEls.filter((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.top < limit && r.bottom > 0) {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // ─── 3D WORLD (identical journey to v2) ─────────────────────────────────
+
+  texCanvas(w, h, draw) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'));
+    return new THREE.CanvasTexture(c);
+  }
+  windowTex(density, warmth) {
+    return this.texCanvas(128, 256, (ctx) => {
+      ctx.fillStyle = '#060a10'; ctx.fillRect(0, 0, 128, 256);
+      for (let i = 0; i < 8; i++) for (let j = 0; j < 20; j++) {
+        if (Math.random() > density) continue;
+        const warm = Math.random() < warmth;
+        ctx.fillStyle = warm ? 'rgba(255,205,120,' + (0.5 + Math.random() * 0.5) + ')' : 'rgba(150,215,255,' + (0.4 + Math.random() * 0.5) + ')';
+        ctx.fillRect(6 + i * 15, 6 + j * 12, 8, 6);
+      }
+    });
+  }
+  glowTex() {
+    return this.texCanvas(128, 128, (ctx) => {
+      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.35, 'rgba(255,255,255,.45)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+    });
+  }
+  streakTex() {
+    return this.texCanvas(16, 64, (ctx) => {
+      const g = ctx.createLinearGradient(0, 0, 0, 64);
+      g.addColorStop(0, 'rgba(255,255,255,0)');
+      g.addColorStop(0.5, 'rgba(255,255,255,.9)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(6, 0, 4, 64);
+    });
+  }
+  neonTex(text, color) {
+    return this.texCanvas(512, 128, (ctx) => {
+      ctx.clearRect(0, 0, 512, 128);
+      ctx.font = '700 64px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.shadowColor = color; ctx.shadowBlur = 28;
+      ctx.fillStyle = color;
+      ctx.fillText(text, 256, 64);
+      ctx.shadowBlur = 8; ctx.fillStyle = '#fff';
+      ctx.globalAlpha = 0.75; ctx.fillText(text, 256, 64);
+    });
+  }
+  facadeTex(base) {
+    return this.texCanvas(128, 128, (ctx) => {
+      ctx.fillStyle = base; ctx.fillRect(0, 0, 128, 128);
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, 128, 8);
+      for (let i = 0; i < 3; i++) {
+        const x = 14 + i * 38;
+        ctx.fillStyle = 'rgba(255,190,110,.85)';
+        ctx.beginPath(); ctx.arc(x + 10, 46, 10, Math.PI, 0); ctx.fill();
+        ctx.fillRect(x, 46, 20, 26);
+        ctx.fillStyle = 'rgba(255,190,110,.6)';
+        ctx.fillRect(x, 92, 20, 30);
+      }
+    });
+  }
+
+  init() {
+    const THREE_ = window.THREE;
+    const renderer = new THREE_.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isSmall ? 1.5 : 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.style.cssText = 'position:absolute;inset:0;display:block;';
+    this.mount.appendChild(renderer.domElement);
+    this.renderer = renderer;
+
+    const scene = new THREE_.Scene();
+    scene.background = new THREE_.Color('#070b16');
+    scene.fog = new THREE_.Fog('#0a0e1a', 30, 520);
+    this.scene = scene;
+
+    const camera = new THREE_.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 3000);
+    this.camera = camera;
+
+    const glow = this.glowTex();
+    this.beaconSpots = [];
+
+    const road = new THREE_.Mesh(new THREE_.PlaneGeometry(46, 1150), new THREE_.MeshBasicMaterial({ color: '#0c1014' }));
+    road.rotation.x = -Math.PI / 2; road.position.set(0, 0, -515);
+    scene.add(road);
+    const ground = new THREE_.Mesh(new THREE_.PlaneGeometry(1600, 2200), new THREE_.MeshBasicMaterial({ color: '#080b0f' }));
+    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.3, -800);
+    scene.add(ground);
+
+    const lawn = new THREE_.Mesh(new THREE_.PlaneGeometry(520, 360), new THREE_.MeshBasicMaterial({ color: '#0b1d11' }));
+    lawn.rotation.x = -Math.PI / 2; lawn.position.set(0, -0.1, -1330);
+    scene.add(lawn);
+    const path = new THREE_.Mesh(new THREE_.PlaneGeometry(9, 190), new THREE_.MeshBasicMaterial({ color: '#1c241d' }));
+    path.rotation.x = -Math.PI / 2; path.position.set(0, 0.02, -1290);
+    scene.add(path);
+
+    const winTexes = [this.windowTex(0.4, 0.55), this.windowTex(0.28, 0.35), this.windowTex(0.5, 0.7), this.windowTex(0.33, 0.45)];
+    const bMats = winTexes.map((t) => new THREE_.MeshBasicMaterial({ map: t }));
+    for (let i = 0; i < 210; i++) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const z = -60 - Math.random() * 1080;
+      let xOff = 26 + Math.random() * 260;
+      if (z < -760) xOff = 90 + Math.random() * 220;
+      const x = side * xOff;
+      const w = 10 + Math.random() * 16;
+      const near = Math.abs(x) < 60;
+      const h = 14 + Math.pow(Math.random(), 2) * (near ? 60 : 150);
+      const m = new THREE_.Mesh(new THREE_.BoxGeometry(w, h, w), bMats[i % 4]);
+      m.position.set(x, h / 2, z);
+      scene.add(m);
+      if (h > 105) this.beaconSpots.push([x, h + 1.5, z]);
+    }
+    for (let i = 0; i < 46; i++) {
+      const x = (Math.random() - 0.5) * 1100;
+      const h = 60 + Math.random() * 180;
+      const w = 16 + Math.random() * 22;
+      const m = new THREE_.Mesh(new THREE_.BoxGeometry(w, h, w), bMats[i % 4]);
+      const bz = -1580 - Math.random() * 120;
+      m.position.set(x, h / 2, bz);
+      scene.add(m);
+      if (h > 170) this.beaconSpots.push([x, h + 2, bz]);
+    }
+
+    const towerMat = new THREE_.MeshBasicMaterial({ map: this.windowTex(0.75, 0.15) });
+    const mkTower = (x) => {
+      const gp = new THREE_.Group();
+      const tiers = [[11, 34], [9.5, 30], [8, 26], [6.5, 22], [5, 16], [3.6, 12]];
+      let y = 0;
+      tiers.forEach(([r, hh]) => {
+        const c = new THREE_.Mesh(new THREE_.CylinderGeometry(r * 0.82, r, hh, 8), towerMat);
+        c.position.y = y + hh / 2; gp.add(c); y += hh;
+      });
+      const spire = new THREE_.Mesh(new THREE_.ConeGeometry(1.4, 26, 8), new THREE_.MeshBasicMaterial({ color: '#cfe9ff' }));
+      spire.position.y = y + 13; gp.add(spire);
+      const s = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#8fd6ff', transparent: true, opacity: 0.5, depthWrite: false }));
+      s.scale.set(46, 46, 1); s.position.y = y + 8; gp.add(s);
+      gp.position.set(x, 0, -1180);
+      scene.add(gp);
+    };
+    mkTower(-34); mkTower(34);
+    const bridge = new THREE_.Mesh(new THREE_.BoxGeometry(52, 3.4, 5), new THREE_.MeshBasicMaterial({ color: '#b9dcf2' }));
+    bridge.position.set(0, 62, -1180); scene.add(bridge);
+    this.beaconSpots.push([-34, 168, -1180], [34, 168, -1180], [-210, 134, -1060]);
+
+    const klt = new THREE_.Group();
+    const shaft = new THREE_.Mesh(new THREE_.CylinderGeometry(2.2, 3.4, 120, 8), new THREE_.MeshBasicMaterial({ color: '#131a22' }));
+    shaft.position.y = 60; klt.add(shaft);
+    const pod = new THREE_.Mesh(new THREE_.SphereGeometry(8, 12, 10), new THREE_.MeshBasicMaterial({ map: winTexes[2] }));
+    pod.position.y = 122; klt.add(pod);
+    const podGlow = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#ffd27a', transparent: true, opacity: 0.5, depthWrite: false }));
+    podGlow.scale.set(34, 34, 1); podGlow.position.y = 122; klt.add(podGlow);
+    klt.position.set(-210, 0, -1060); scene.add(klt);
+
+    {
+      const n = this.isSmall ? 280 : 500, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 2400;
+        pos[i * 3 + 1] = 160 + Math.random() * 520;
+        pos[i * 3 + 2] = -Math.random() * 2000;
+      }
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      this.stars = new THREE_.Points(gm, new THREE_.PointsMaterial({ color: '#aac6dd', size: 1.6, transparent: true, opacity: 0.75, depthWrite: false }));
+      scene.add(this.stars);
+    }
+
+    {
+      const primary = [], gold = [];
+      for (let z = -240; z > -500; z -= 20) {
+        for (let i = 0; i <= 10; i++) {
+          const t = i / 10;
+          const x = -19 + t * 38;
+          const sag = 3.4 * (1 - Math.pow(t * 2 - 1, 2));
+          ((i % 2 === 0) ? primary : gold).push(x, 13.5 - sag, z + (Math.random() - 0.5) * 2);
+        }
+      }
+      const mk = (arr, color, size) => {
+        const gm = new THREE_.BufferGeometry();
+        gm.setAttribute('position', new THREE_.BufferAttribute(new Float32Array(arr), 3));
+        const pts = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: glow, color, size, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE_.AdditiveBlending }));
+        scene.add(pts); return pts;
+      };
+      this.lanterns = mk(primary, this.props.lanternColor ?? '#FF4D2E', 5.2);
+      this.lanternsGold = mk(gold, '#FFB300', 4.4);
+    }
+
+    {
+      const signs = [
+        ['JALAN ALOR', '#FF4D2E', -1, -262, 11], ['MAKAN 24 JAM', '#00E5FF', 1, -300, 14],
+        ['NASI LEMAK', '#FFB300', -1, -340, 9], ['TEH TARIK', '#FF4DA6', 1, -378, 12],
+        ['RESTORAN', '#00E676', -1, -420, 13], ['KOPITIAM', '#FFD54F', 1, -458, 10],
+      ];
+      signs.forEach(([txt, col, side, z, y]) => {
+        const t = this.neonTex(txt, col);
+        const m = new THREE_.Mesh(new THREE_.PlaneGeometry(20, 5), new THREE_.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE_.AdditiveBlending, side: THREE_.DoubleSide }));
+        m.position.set(side * 21.5, y, z);
+        m.rotation.y = side * -Math.PI / 2 + side * 0.18;
+        scene.add(m);
+        const r = m.clone();
+        r.position.y = 0.15; r.rotation.set(-Math.PI / 2, 0, side * 0.14);
+        r.position.x = side * 14; r.material = m.material.clone(); r.material.opacity = 0.18;
+        scene.add(r);
+      });
+    }
+
+    {
+      const cols = ['#7a4a3a', '#2c6e63', '#7a3b5e', '#3e5c7a', '#907040', '#4a6b3a'];
+      let idx = 0;
+      for (let z = -520; z > -760; z -= 15) {
+        [-1, 1].forEach((side) => {
+          const h = 12 + Math.random() * 5;
+          const tex = this.facadeTex(cols[idx++ % cols.length]);
+          const m = new THREE_.Mesh(new THREE_.BoxGeometry(12, h, 14), new THREE_.MeshBasicMaterial({ map: tex }));
+          m.position.set(side * 29, h / 2, z);
+          scene.add(m);
+        });
+        if (z % 45 === 0) {
+          const lamp = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#ffbe6e', transparent: true, opacity: 0.85, depthWrite: false, blending: THREE_.AdditiveBlending }));
+          lamp.scale.set(7, 7, 1);
+          lamp.position.set((Math.random() < 0.5 ? -1 : 1) * 20, 6.5, z);
+          scene.add(lamp);
+        }
+      }
+    }
+
+    {
+      const treeMat = new THREE_.MeshBasicMaterial({ color: '#0a2013' });
+      const treeMat2 = new THREE_.MeshBasicMaterial({ color: '#0d2a19' });
+      for (let z = -780; z > -1010; z -= 12) {
+        [-1, 1].forEach((side) => {
+          const n = 2 + Math.floor(Math.random() * 3);
+          for (let k = 0; k < n; k++) {
+            const r = 5 + Math.random() * 10;
+            const h = 16 + Math.random() * 30;
+            const cone = new THREE_.Mesh(new THREE_.ConeGeometry(r, h, 7), Math.random() < 0.5 ? treeMat : treeMat2);
+            cone.position.set(side * (26 + Math.random() * 80), h / 2, z + (Math.random() - 0.5) * 8);
+            scene.add(cone);
+          }
+        });
+      }
+      const trunkMat = new THREE_.MeshBasicMaterial({ color: '#17130d' });
+      const canopyMats = [new THREE_.MeshBasicMaterial({ color: '#123522' }), new THREE_.MeshBasicMaterial({ color: '#174028' }), new THREE_.MeshBasicMaterial({ color: '#0e2c1b' })];
+      for (let i = 0; i < 42; i++) {
+        const x = (Math.random() < 0.5 ? -1 : 1) * (14 + Math.random() * 160);
+        const z = -1215 - Math.random() * 210;
+        if (Math.hypot(x, z + 1268) < 26) continue;
+        const th = 3 + Math.random() * 3;
+        const trunk = new THREE_.Mesh(new THREE_.CylinderGeometry(0.5, 0.7, th, 6), trunkMat);
+        trunk.position.set(x, th / 2, z);
+        scene.add(trunk);
+        const r = 3.5 + Math.random() * 4.5;
+        const canopy = new THREE_.Mesh(new THREE_.SphereGeometry(r, 8, 7), canopyMats[i % 3]);
+        canopy.position.set(x, th + r * 0.7, z);
+        scene.add(canopy);
+      }
+      const n = 150, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 140;
+        pos[i * 3 + 1] = 1.5 + Math.random() * 10;
+        pos[i * 3 + 2] = -1200 - Math.random() * 220;
+      }
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      this.fireflies = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: glow, color: '#7CFF9E', size: 2.4, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      scene.add(this.fireflies);
+    }
+
+    {
+      const bench = new THREE_.Group();
+      const benchMat = new THREE_.MeshBasicMaterial({ color: '#00b04c' });
+      const darkMat = new THREE_.MeshBasicMaterial({ color: '#046a30' });
+      for (let i = 0; i < 4; i++) {
+        const s = new THREE_.Mesh(new THREE_.BoxGeometry(7.2, 0.22, 0.6), benchMat);
+        s.position.set(0, 2.1, -0.9 + i * 0.62);
+        bench.add(s);
+      }
+      for (let i = 0; i < 4; i++) {
+        const s = new THREE_.Mesh(new THREE_.BoxGeometry(7.2, 0.55, 0.2), benchMat);
+        s.position.set(0, 2.9 + i * 0.72, 1.15 + i * 0.12);
+        s.rotation.x = -0.18;
+        bench.add(s);
+      }
+      [-3.1, 3.1].forEach((x) => {
+        const l1 = new THREE_.Mesh(new THREE_.BoxGeometry(0.35, 2.1, 0.35), darkMat);
+        l1.position.set(x, 1.05, -0.7); bench.add(l1);
+        const l2 = new THREE_.Mesh(new THREE_.BoxGeometry(0.35, 2.1, 0.35), darkMat);
+        l2.position.set(x, 1.05, 1.1); bench.add(l2);
+      });
+      bench.position.set(0, 0, -1268);
+      scene.add(bench);
+      const halo = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#00C853', transparent: true, opacity: 0.4, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      halo.scale.set(26, 15, 1); halo.position.set(0, 3.4, -1269.5);
+      scene.add(halo);
+      const lamp = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#ffd9a0', transparent: true, opacity: 0.75, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      lamp.scale.set(12, 12, 1); lamp.position.set(6.5, 8.5, -1272);
+      scene.add(lamp);
+      const pole = new THREE_.Mesh(new THREE_.CylinderGeometry(0.16, 0.22, 8.5, 6), new THREE_.MeshBasicMaterial({ color: '#101410' }));
+      pole.position.set(6.5, 4.25, -1272);
+      scene.add(pole);
+      this.benchHalo = halo;
+    }
+
+    // aircraft-warning beacons: slow red blink on every tall structure — the KL night signature
+    this.beacons = this.beaconSpots.map(([bx, by, bz], i) => {
+      const sp = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#ff3b30', transparent: true, opacity: 0.0, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      sp.scale.set(6, 6, 1); sp.position.set(bx, by, bz); sp.userData.phase = (i * 0.83) % (Math.PI * 2);
+      scene.add(sp); return sp;
+    });
+
+    // living highway: taillights flowing away, headlights flowing toward you
+    {
+      const lanes = [[-6.5, 1], [-3.2, 1], [3.2, -1], [6.8, -1]];
+      const perLane = this.isSmall ? 22 : 34;
+      const n = lanes.length * perLane;
+      const pos = new Float32Array(n * 3);
+      this.trafficDir = new Float32Array(n);
+      this.trafficSpd = new Float32Array(n);
+      const colors = new Float32Array(n * 3);
+      let k = 0;
+      lanes.forEach(([lx, dir]) => {
+        for (let i = 0; i < perLane; i++) {
+          pos[k * 3] = lx + (Math.random() - 0.5) * 0.8;
+          pos[k * 3 + 1] = 0.7;
+          pos[k * 3 + 2] = -40 - Math.random() * 1060;
+          this.trafficDir[k] = dir;
+          this.trafficSpd[k] = 34 + Math.random() * 30;
+          const red = dir > 0; // moving away from camera = taillights
+          colors[k * 3] = red ? 1 : 0.95; colors[k * 3 + 1] = red ? 0.16 : 0.92; colors[k * 3 + 2] = red ? 0.1 : 0.75;
+          k++;
+        }
+      });
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      gm.setAttribute('color', new THREE_.BufferAttribute(colors, 3));
+      this.traffic = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: glow, size: 3.4, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      scene.add(this.traffic);
+    }
+
+    // tropical haze: soft layers drifting over the skyline, felt most at altitude
+    this.haze = [];
+    for (let i = 0; i < (this.isSmall ? 4 : 7); i++) {
+      const sp = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#16202e', transparent: true, opacity: 0.16 + Math.random() * 0.08, depthWrite: false }));
+      sp.scale.set(420 + Math.random() * 380, 90 + Math.random() * 70, 1);
+      sp.position.set((Math.random() - 0.5) * 900, 110 + Math.random() * 210, -350 - Math.random() * 1250);
+      sp.userData.drift = 1.2 + Math.random() * 2.2;
+      scene.add(sp); this.haze.push(sp);
+    }
+
+    // wind streaks: vertical velocity lines that only exist during the dive
+    {
+      const n = 90, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 90;
+        pos[i * 3 + 1] = Math.random() * 130;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
+      }
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      this.wind = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: this.streakTex(), color: '#9fb8c8', size: 13, transparent: true, opacity: 0, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      scene.add(this.wind);
+    }
+
+    this.dawn = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#FFB300', transparent: true, opacity: 0, depthWrite: false }));
+    this.dawn.scale.set(1000, 460, 1);
+    this.dawn.position.set(0, 40, -1720);
+    scene.add(this.dawn);
+    this.dawnGreen = new THREE_.Sprite(new THREE_.SpriteMaterial({ map: glow, color: '#00C853', transparent: true, opacity: 0, depthWrite: false }));
+    this.dawnGreen.scale.set(1600, 800, 1);
+    this.dawnGreen.position.set(0, 140, -1800);
+    scene.add(this.dawnGreen);
+
+    {
+      const n = this.isSmall ? 850 : 1600;
+      const pos = new Float32Array(n * 3);
+      this.rainVel = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 240;
+        pos[i * 3 + 1] = Math.random() * 160;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 240;
+        this.rainVel[i] = 90 + Math.random() * 80;
+      }
+      const gm = new THREE_.BufferGeometry();
+      gm.setAttribute('position', new THREE_.BufferAttribute(pos, 3));
+      this.rain = new THREE_.Points(gm, new THREE_.PointsMaterial({ map: this.streakTex(), color: '#bcd8e8', size: 5, transparent: true, opacity: 0.28, depthWrite: false, blending: THREE_.AdditiveBlending }));
+      scene.add(this.rain);
+    }
+
+    this.keys = [
+      { p: 0.00, pos: [0, 175, 130], look: [0, 95, -1180] },
+      { p: 0.10, pos: [0, 105, -50], look: [0, 62, -1180] },
+      { p: 0.22, pos: [0, 9, -235], look: [0, 9, -470] },
+      { p: 0.38, pos: [0, 8, -460], look: [0, 8, -690] },
+      { p: 0.50, pos: [0, 14, -680], look: [0, 45, -1000] },
+      { p: 0.62, pos: [0, 48, -900], look: [0, 85, -1180] },
+      { p: 0.72, pos: [0, 82, -1100], look: [0, 76, -1300] },
+      { p: 0.80, pos: [0, 66, -1215], look: [0, 12, -1272] },
+      { p: 0.90, pos: [0, 22, -1290], look: [0, 6, -1266] },
+      { p: 1.00, pos: [-4, 5.5, -1308], look: [0, 4.5, -1265] },
+    ];
+    this.skyKeys = [
+      { p: 0.00, sky: '#070b16', fog: '#0a0e1a', far: 560 },
+      { p: 0.25, sky: '#130b13', fog: '#1a1016', far: 420 },
+      { p: 0.48, sky: '#0e0c12', fog: '#141017', far: 460 },
+      { p: 0.68, sky: '#0a1420', fog: '#0e1a26', far: 1000 },
+      { p: 0.84, sky: '#0d2417', fog: '#123122', far: 700 },
+      { p: 1.00, sky: '#17422c', fog: '#1f5638', far: 950 },
+    ];
+
+    this.onResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    this.onMouse = (e) => {
+      if (this.tiltOn) return; // tilt owns the view while active
+      this.viewT.x = (e.clientX / window.innerWidth) * 2 - 1;
+      this.viewT.y = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener('resize', this.onResize);
+    window.addEventListener('mousemove', this.onMouse);
+
+    this.colA = new THREE_.Color(); this.colB = new THREE_.Color();
+    this.clock = new THREE_.Clock();
+    this.chapterText = '';
+    this.loop();
+  }
+
+  lerpKeys(keys, p) {
+    let a = keys[0], b = keys[keys.length - 1];
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (p >= keys[i].p && p <= keys[i + 1].p) { a = keys[i]; b = keys[i + 1]; break; }
+    }
+    const span = b.p - a.p || 1;
+    let t = (p - a.p) / span;
+    t = t * t * (3 - 2 * t);
+    return { a, b, t };
+  }
+
+  loop() {
+    if (this.disposed) return;
+    this.raf = requestAnimationFrame(() => this.loop());
+    const dt = Math.min(this.clock.getDelta(), 0.05);
+    const time = this.clock.elapsedTime;
+
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const target = Math.min(1, Math.max(0, window.scrollY / max));
+    this.p += (target - this.p) * Math.min(1, dt * 4.5);
+    const p = this.p;
+
+    // weighted view: chase the steering target (mouse or device tilt)
+    const chase = Math.min(1, dt * (this.tiltOn ? 7 : 5));
+    this.view.x += (this.viewT.x - this.view.x) * chase;
+    this.view.y += (this.viewT.y - this.view.y) * chase;
+
+    const { a, b, t } = this.lerpKeys(this.keys, p);
+    const lerp = (i, j, k) => i + (j - i) * k;
+    const motionAmp = this.reduceMotion ? 0 : 1;
+    const sway = Math.sin(time * 0.55) * 0.9 * motionAmp;
+    const bob = Math.sin(time * 0.9) * 0.35 * motionAmp;
+    const swayAmp = p > 0.95 ? 0.25 : (p > 0.15 ? 1 : 3);
+    this.camera.position.set(
+      lerp(a.pos[0], b.pos[0], t) + sway * swayAmp,
+      Math.max(3.5, lerp(a.pos[1], b.pos[1], t) + bob * (p > 0.95 ? 0.3 : 1)),
+      lerp(a.pos[2], b.pos[2], t)
+    );
+    this.camera.lookAt(
+      lerp(a.look[0], b.look[0], t) + this.view.x * (this.tiltOn ? 22 : 14) * motionAmp,
+      lerp(a.look[1], b.look[1], t) - this.view.y * (this.tiltOn ? 14 : 8) * motionAmp,
+      lerp(a.look[2], b.look[2], t)
+    );
+    // bank into the sway like an aircraft: roll follows lateral velocity
+    this.camera.rotateZ(Math.cos(time * 0.55) * 0.012 * swayAmp * motionAmp);
+
+    const sk = this.lerpKeys(this.skyKeys, p);
+    this.colA.set(sk.a.sky); this.colB.set(sk.b.sky);
+    this.scene.background.copy(this.colA).lerp(this.colB, sk.t);
+    this.colA.set(sk.a.fog); this.colB.set(sk.b.fog);
+    this.scene.fog.color.copy(this.colA).lerp(this.colB, sk.t);
+    this.scene.fog.far = sk.a.far + (sk.b.far - sk.a.far) * sk.t;
+
+    const d = Math.max(0, (p - 0.78) / 0.22);
+    this.dawn.material.opacity = d * 0.75;
+    this.dawnGreen.material.opacity = d * 0.4;
+    this.stars.material.opacity = 0.75 * (1 - d * 0.8);
+    if (this.benchHalo) this.benchHalo.material.opacity = 0.25 + d * 0.35 + Math.sin(time * 1.6) * 0.08;
+
+    const ri = this.props.rainIntensity ?? 1;
+    this.rain.visible = ri > 0.02;
+    this.rain.material.opacity = 0.3 * ri * (1 - d * 0.85);
+    this.rain.position.set(this.camera.position.x, 0, this.camera.position.z);
+    const rp = this.rain.geometry.attributes.position;
+    for (let i = 0; i < rp.count; i++) {
+      let y = rp.getY(i) - this.rainVel[i] * dt * (0.5 + ri * 0.6);
+      if (y < 0) y = 150 + Math.random() * 10;
+      rp.setY(i, y);
+    }
+    rp.needsUpdate = true;
+
+    if (this.fireflies) {
+      this.fireflies.material.opacity = 0.55 + Math.sin(time * 2.2) * 0.35;
+      this.fireflies.position.y = Math.sin(time * 0.5) * 1.2;
+    }
+
+    const lc = this.props.lanternColor ?? '#FF4D2E';
+    if (this.lanterns && this.lastLc !== lc) { this.lanterns.material.color.set(lc); this.lastLc = lc; }
+    if (this.lanterns) this.lanterns.material.opacity = 0.85 + Math.sin(time * 7) * 0.1;
+
+    // red beacons blink slow and out of phase, like a real skyline
+    if (this.beacons) for (let i = 0; i < this.beacons.length; i++) {
+      const bcn = this.beacons[i];
+      const tw = Math.sin(time * 1.5 + bcn.userData.phase);
+      bcn.material.opacity = tw > 0.55 ? 0.85 : 0.05;
+    }
+
+    // traffic flows both ways along the highway and wraps
+    if (this.traffic) {
+      const tp = this.traffic.geometry.attributes.position;
+      const speedScale = this.reduceMotion ? 0.35 : 1;
+      for (let i = 0; i < tp.count; i++) {
+        let z = tp.getZ(i) + this.trafficDir[i] * this.trafficSpd[i] * dt * speedScale;
+        if (z > -36) z = -1100;
+        if (z < -1104) z = -40;
+        tp.setZ(i, z);
+      }
+      tp.needsUpdate = true;
+      this.traffic.material.opacity = 0.9 * (1 - d * 0.55);
+    }
+
+    // haze drifts sideways; it thickens slightly at altitude
+    if (this.haze) for (const hz of this.haze) {
+      hz.position.x += hz.userData.drift * dt * (this.reduceMotion ? 0.3 : 1);
+      if (hz.position.x > 620) hz.position.x = -620;
+      hz.material.opacity = (0.13 + (this.camera.position.y > 60 ? 0.09 : 0)) * (1 - d * 0.6);
+    }
+
+    // wind streaks exist only in the dive (p 0.08-0.26) and follow the camera
+    if (this.wind) {
+      const dive = Math.max(0, 1 - Math.abs(p - 0.16) / 0.1);
+      this.wind.material.opacity = dive * 0.5 * motionAmp;
+      this.wind.position.set(this.camera.position.x, this.camera.position.y - 60, this.camera.position.z);
+      if (dive > 0.01) {
+        const wp = this.wind.geometry.attributes.position;
+        for (let i = 0; i < wp.count; i++) {
+          let y = wp.getY(i) + 220 * dt;
+          if (y > 130) y = 0;
+          wp.setY(i, y);
+        }
+        wp.needsUpdate = true;
+      }
+    }
+
+    // monsoon lightning: rare, doubled flash on the horizon
+    if (!this.reduceMotion && this.lightningEl) {
+      if (this.nextFlash === undefined) this.nextFlash = 6 + Math.random() * 9;
+      if (time > this.nextFlash) {
+        this.flashAt = time;
+        this.nextFlash = time + 11 + Math.random() * 14;
+      }
+      if (this.flashAt !== undefined) {
+        const ft = time - this.flashAt;
+        let o = 0;
+        if (ft < 0.09) o = 0.55 * (ft / 0.09);
+        else if (ft < 0.34) o = 0.55 * (1 - (ft - 0.09) / 0.25);
+        else if (ft < 0.42) o = 0.3 * ((ft - 0.34) / 0.08);
+        else if (ft < 0.75) o = 0.3 * (1 - (ft - 0.42) / 0.33);
+        this.lightningEl.style.opacity = (o * (1 - d)).toFixed(3);
+      }
+    }
+
+    this.checkReveals();
+
+    // ── REAL FOOTAGE dissolve: 3D flight bridges the real locations ──
+    const realFootage = this.props.realFootage ?? true;
+    if (this.vidLayerEl && realFootage) {
+      const { idx, op } = this.zoneOpacity(p);
+      if (idx >= 0) this.setZone(idx);
+      const maxOp = this.props.footageOpacity ?? 1;
+      const o = op * maxOp;
+      this.vidLayerEl.style.opacity = o.toFixed(3);
+      // motion-blur at the dissolve edges — flight and footage melt into each other
+      this.vidLayerEl.style.filter = op < 0.999 ? 'blur(' + ((1 - op) * 7).toFixed(2) + 'px)' : 'none';
+      if (this.liveEl) this.liveEl.style.display = o > 0.5 ? 'flex' : 'none';
+      if (this.vidPanEl) {
+        this.vidPanEl.style.transform = 'translate(' + (this.view.x * 14) + 'px,' + (this.view.y * -9) + 'px)';
+        this.vidPanEl.style.transition = 'transform .18s linear';
+      }
+      // slow push-in within each zone for forward motion
+      if (this.vidContainerEl && idx >= 0) {
+        const z = this.zones[idx];
+        const lp = Math.max(0, Math.min(1, (p - z.a) / (z.b - z.a)));
+        // continuous push-in that keeps accelerating through the exit dissolve —
+        // you fly INTO the footage and THROUGH it back into the flight
+        const through = p > z.b ? (p - z.b) / 0.055 : 0;
+        this.vidContainerEl.style.transform = 'translate(-50%,-50%) scale(' + (1.12 + lp * 0.12 + through * 0.22).toFixed(4) + ')';
+      }
+    } else if (this.vidLayerEl) {
+      this.vidLayerEl.style.opacity = '0';
+      if (this.liveEl) this.liveEl.style.display = 'none';
+    }
+
+    if (this.progressEl) this.progressEl.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    const ch = p < 0.16 ? '01 — KUALA LUMPUR' : p < 0.45 ? '02 — JALAN ALOR' : p < 0.78 ? '03 — ABOVE THE TOWERS' : '04 — KLCC PARK';
+    if (this.chapterEl && this.chapterText !== ch) { this.chapterEl.textContent = ch; this.chapterText = ch; }
+
+    this.renderer.render(this.scene, this.camera);
+  }
+}
 </script>
 </body>
 </html>
+

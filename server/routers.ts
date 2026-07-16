@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { canTransitionPayout, validatePayoutRequest } from "../shared/payout";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const malaysiaUniversities = require("./data/malaysia-universities.json") as Array<Record<string, unknown>>;
@@ -210,13 +211,64 @@ export const appRouter = router({
     // Get commission summary
     getCommissionSummary: protectedProcedure.query(async ({ ctx }) => {
       const tutor = await db.getTutor(ctx.user.id);
-      if (!tutor) return { totalReferred: 0, totalEarned: "0", pendingCommission: "0" };
+      if (!tutor)
+        return { totalReferred: 0, totalEarned: "0", pendingCommission: "0", availableForPayout: "0" };
       const pendingCommission = await db.getPendingCommissionByTutor(tutor.id);
+      const earned = parseFloat(await db.getEarnedCommissionByTutor(tutor.id));
+      const reserved = await db.getReservedPayoutTotalByTutor(tutor.id);
       return {
         totalReferred: tutor.totalReferred,
         totalEarned: tutor.totalEarned,
         pendingCommission,
+        availableForPayout: Math.max(0, earned - reserved).toFixed(2),
       };
+    }),
+
+    // Request a commission payout via bKash/Nagad
+    requestPayout: protectedProcedure
+      .input(
+        z.object({
+          amount: z.number(),
+          method: z.enum(["bKash", "Nagad"]),
+          accountNumber: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const tutor = await db.getTutor(ctx.user.id);
+        if (!tutor) throw new Error("Tutor profile not found");
+        // Format checks first (method, wallet number, minimum) against a
+        // snapshot balance; the REAL balance check happens atomically below.
+        const earned = parseFloat(await db.getEarnedCommissionByTutor(tutor.id));
+        const reserved = await db.getReservedPayoutTotalByTutor(tutor.id);
+        const check = validatePayoutRequest({
+          amountBdt: input.amount,
+          availableBdt: Math.max(0, earned - reserved),
+          method: input.method,
+          accountNumber: input.accountNumber,
+        });
+        if (!check.ok) throw new Error(check.error);
+        // Balance reserve + insert in one transaction (tutor row locked), so
+        // concurrent requests can never double-spend the same commission.
+        const result = await db.createPayoutReserved(tutor.id, input.amount, input.method, check.accountNumber);
+        if (!result.ok) {
+          throw new Error(`Amount exceeds your available balance of \u09F3${result.available.toFixed(0)}.`);
+        }
+        const payoutId = result.payoutId;
+        await db.createAuditLog({
+          actorUserId: ctx.user.id,
+          action: "payout.requested",
+          entityType: "payout",
+          entityId: payoutId,
+          detail: JSON.stringify({ amount: input.amount, method: input.method }),
+        });
+        return { success: true, payoutId };
+      }),
+
+    // Payout history for the signed-in tutor
+    getMyPayouts: protectedProcedure.query(async ({ ctx }) => {
+      const tutor = await db.getTutor(ctx.user.id);
+      if (!tutor) return [];
+      return await db.getPayoutsByTutor(tutor.id);
     }),
   }),
 
@@ -337,6 +389,55 @@ export const appRouter = router({
         const result = await db.addStudentToCohort(input.cohortId, student.id);
         return result;
       }),
+
+    // Cohort detail (name, description, membership state)
+    getById: protectedProcedure
+      .input(z.object({ cohortId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const cohort = await db.getCohortById(input.cohortId);
+        if (!cohort) throw new Error("Cohort not found");
+        const student = await db.getStudent(ctx.user.id);
+        const isMember = student ? await db.isCohortMember(input.cohortId, student.id) : false;
+        const members = await db.getCohortMembers(input.cohortId);
+        return { ...cohort, isMember, memberCount: members.length, members };
+      }),
+
+    // Discussion feed — members only
+    getMessages: protectedProcedure
+      .input(z.object({ cohortId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const student = await db.getStudent(ctx.user.id);
+        if (!student) throw new Error("Student profile not found");
+        if (!(await db.isCohortMember(input.cohortId, student.id))) {
+          throw new Error("Join this cohort to see the discussion");
+        }
+        return await db.getCohortMessages(input.cohortId);
+      }),
+
+    // Post to the discussion — members only
+    postMessage: protectedProcedure
+      .input(z.object({ cohortId: z.number(), content: z.string().min(1).max(2000) }))
+      .mutation(async ({ ctx, input }) => {
+        const student = await db.getStudent(ctx.user.id);
+        if (!student) throw new Error("Student profile not found");
+        if (!(await db.isCohortMember(input.cohortId, student.id))) {
+          throw new Error("Join this cohort to post");
+        }
+        const id = await db.createCohortMessage({
+          cohortId: input.cohortId,
+          studentId: student.id,
+          content: input.content.trim(),
+        });
+        return { success: true, id };
+      }),
+  }),
+
+  // ============================================================================
+  // UNIVERSITY ROUTES
+  // ============================================================================
+  university: router({
+    // Verified Malaysia university database (same data the AI advisor cites)
+    getAll: publicProcedure.query(() => malaysiaUniversities),
   }),
 
   // ============================================================================
@@ -388,7 +489,15 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const before = await db.getApplication(input.applicationId);
         await db.updateApplicationStatus(input.applicationId, input.status, ctx.user.id);
+        await db.createAuditLog({
+          actorUserId: ctx.user.id,
+          action: "application.status_change",
+          entityType: "application",
+          entityId: input.applicationId,
+          detail: JSON.stringify({ from: before?.applicationStatus, to: input.status, notes: input.notes }),
+        });
         const app = await db.getApplication(input.applicationId);
         if (app) {
           const student = await db.getStudentById(app.studentId);
@@ -436,9 +545,79 @@ export const appRouter = router({
     // Update tutor commission status (admin only)
     updateCommissionStatus: adminProcedure
       .input(z.object({ referralId: z.number(), status: z.string(), amount: z.string().optional() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         await db.updateReferralCommission(input.referralId, input.amount || "0", input.status);
+        await db.createAuditLog({
+          actorUserId: ctx.user.id,
+          action: "referral.commission_change",
+          entityType: "referral",
+          entityId: input.referralId,
+          detail: JSON.stringify({ to: input.status, amount: input.amount }),
+        });
         return { success: true };
+      }),
+
+    // List payout requests (admin only)
+    listPayouts: adminProcedure.query(async () => {
+      return await db.getAllPayouts();
+    }),
+
+    // Approve / reject / mark-paid a payout (admin only)
+    updatePayoutStatus: adminProcedure
+      .input(
+        z.object({
+          payoutId: z.number(),
+          status: z.enum(["approved", "rejected", "paid"]),
+          note: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const payout = await db.getPayoutById(input.payoutId);
+        if (!payout) throw new Error("Payout not found");
+        if (!canTransitionPayout(payout.status, input.status)) {
+          throw new Error(`Cannot move a ${payout.status} payout to ${input.status}.`);
+        }
+        await db.updatePayoutStatus(input.payoutId, input.status, input.note);
+        await db.createAuditLog({
+          actorUserId: ctx.user.id,
+          action: `payout.${input.status}`,
+          entityType: "payout",
+          entityId: input.payoutId,
+          detail: JSON.stringify({ from: payout.status, to: input.status, note: input.note }),
+        });
+        const tutor = await db.getTutorById(payout.tutorId);
+        if (tutor) {
+          const titles = {
+            approved: "Payout approved",
+            rejected: "Payout rejected",
+            paid: "Payout sent",
+          } as const;
+          const messages = {
+            approved: `Your ৳${parseFloat(payout.amount).toFixed(0)} payout was approved and will be sent to your ${payout.method} number shortly.`,
+            rejected: `Your ৳${parseFloat(payout.amount).toFixed(0)} payout request was declined.${input.note ? ` Reason: ${input.note}` : ""}`,
+            paid: `৳${parseFloat(payout.amount).toFixed(0)} has been sent to your ${payout.method} number ${payout.accountNumber}.`,
+          } as const;
+          await db.createNotification({
+            userId: tutor.userId,
+            type: "payout_update",
+            title: titles[input.status],
+            message: messages[input.status],
+            relatedEntityId: input.payoutId,
+          });
+        }
+        return { success: true };
+      }),
+
+    // Aggregated system analytics (admin only)
+    getAnalytics: adminProcedure.query(async () => {
+      return await db.getAdminAnalytics();
+    }),
+
+    // Audit trail (admin only)
+    getAuditLogs: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getAuditLogs(input?.limit ?? 100);
       }),
 
     // Create skill (admin only)
