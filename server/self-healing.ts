@@ -164,7 +164,7 @@ export async function diagnoseSignature(signature: string): Promise<ErrorFix | u
       messages: [
         {
           role: "system",
-          content: `You are the self-healing engine of The Last Bench backend (Express + tRPC + Drizzle + MySQL).
+          content: `You are the self-healing engine of The Last Bench backend (Express + tRPC + Drizzle + Postgres/Supabase).
 Diagnose the error and choose ONE auto-fix strategy:
 - "retry": transient failure, retry with backoff is enough
 - "reconnect": stale DB/socket connection, reset the connection pool
