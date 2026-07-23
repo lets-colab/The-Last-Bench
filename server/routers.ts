@@ -336,6 +336,11 @@ export const appRouter = router({
   // MESSAGE ROUTES
   // ============================================================================
   message: router({
+    // Distinct people the user has a thread with (last message + unread count)
+    getConversations: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getConversationsForUser(ctx.user.id);
+    }),
+
     // Get messages between two users
     getThread: protectedProcedure
       .input(z.object({ otherUserId: z.number() }))

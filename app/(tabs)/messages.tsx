@@ -38,22 +38,23 @@ interface Conversation {
 export default function MessagesScreen() {
   const { user } = useAuth();
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const scrollViewRef = useRef<ScrollView>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // tRPC mutations and queries
+  // tRPC mutations and queries — the conversation list is real data, not mocks
   const sendMessageMutation = trpc.message.send.useMutation();
   const markAsReadMutation = trpc.message.markAsRead.useMutation();
+  const conversationsQuery = trpc.message.getConversations.useQuery(undefined, {
+    enabled: !!user,
+  });
   const getThreadQuery = trpc.message.getThread.useQuery(
     { otherUserId: activeConversation || 0 },
     { enabled: !!activeConversation }
   );
+  const conversations: Conversation[] = conversationsQuery.data || [];
 
   if (!user) {
     return (
@@ -63,10 +64,10 @@ export default function MessagesScreen() {
     );
   }
 
-  // Load messages when conversation changes
+  // Load messages when conversation changes (server returns newest-first; UI renders oldest-first)
   useEffect(() => {
     if (activeConversation && getThreadQuery.data) {
-      setMessages(getThreadQuery.data as ChatMessage[]);
+      setMessages([...(getThreadQuery.data as ChatMessage[])].reverse());
       // Mark messages as read
       getThreadQuery.data.forEach((msg: ChatMessage) => {
         if (msg.recipientId === user.id && !msg.isRead) {
@@ -119,49 +120,13 @@ export default function MessagesScreen() {
 
       setMessages((prev) => [...prev, newMessage]);
 
-      // Simulate receiving a response after a delay
-      setTimeout(() => {
-        const responseMessage: ChatMessage = {
-          id: Date.now() + 1,
-          senderId: activeConversation,
-          recipientId: user.id,
-          content: "Thanks for your message! I'll get back to you soon.",
-          isRead: 0,
-          createdAt: new Date(),
-        };
-        setMessages((prev) => [...prev, responseMessage]);
-      }, 1500);
+      // Sync with the server so the thread and conversation list reflect reality
+      void getThreadQuery.refetch();
+      void conversationsQuery.refetch();
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
-
-  // Mock conversations data
-  useEffect(() => {
-    setConversations([
-      {
-        userId: 2,
-        name: "Sarah Johnson",
-        lastMessage: "Great! Let's schedule a call next week.",
-        lastMessageTime: new Date(Date.now() - 3600000),
-        unreadCount: 0,
-      },
-      {
-        userId: 3,
-        name: "Dr. Ahmed Hassan",
-        lastMessage: "Your profile looks excellent for MIT!",
-        lastMessageTime: new Date(Date.now() - 7200000),
-        unreadCount: 2,
-      },
-      {
-        userId: 4,
-        name: "Emily Chen",
-        lastMessage: "Have you submitted your IELTS scores?",
-        lastMessageTime: new Date(Date.now() - 86400000),
-        unreadCount: 1,
-      },
-    ]);
-  }, []);
 
   if (!activeConversation) {
     return (
@@ -175,7 +140,11 @@ export default function MessagesScreen() {
             </View>
 
             {/* Conversations List */}
-            {conversations.length > 0 ? (
+            {conversationsQuery.isLoading ? (
+              <View className="flex-1 justify-center items-center py-12">
+                <ActivityIndicator size="large" color="#0a7ea4" />
+              </View>
+            ) : conversations.length > 0 ? (
               <View className="gap-2">
                 {conversations.map((conversation) => (
                   <TouchableOpacity
@@ -200,7 +169,7 @@ export default function MessagesScreen() {
                         {conversation.lastMessage}
                       </Text>
                       <Text className="text-xs text-muted">
-                        {conversation.lastMessageTime.toLocaleTimeString([], {
+                        {new Date(conversation.lastMessageTime).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -305,7 +274,7 @@ export default function MessagesScreen() {
                           isOwn ? "text-background/70" : "text-muted"
                         }`}
                       >
-                        {message.createdAt.toLocaleTimeString([], {
+                        {new Date(message.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
