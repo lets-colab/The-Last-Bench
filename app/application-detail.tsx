@@ -3,147 +3,103 @@ import {
   Text,
   View,
   TouchableOpacity,
-  Modal,
   ActivityIndicator,
   Alert,
+  Linking,
 } from "react-native";
-import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
 
-interface TimelineEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  status: "completed" | "in-progress" | "pending";
-  icon: string;
-}
-
-interface Document {
-  id: string;
-  name: string;
-  type: string;
-  uploadedDate: string;
-  size: string;
-}
+// Ordered pipeline stages — must match app/(tabs)/applications.tsx and the
+// applicationStatus enum in drizzle/schema.ts.
+const STAGES: { key: string; title: string; description: string; icon: string }[] = [
+  { key: "draft", title: "Draft", description: "Application started", icon: "📝" },
+  { key: "documents_received", title: "Documents Received", description: "Your documents are in", icon: "📄" },
+  { key: "profile_analyzed", title: "Profile Analyzed", description: "Your academic profile has been reviewed", icon: "🔍" },
+  { key: "shortlisted", title: "Shortlisted", description: "University confirmed on your shortlist", icon: "⭐" },
+  { key: "application_drafted", title: "Application Drafted", description: "Essays and statements completed", icon: "✍️" },
+  { key: "submitted_to_university", title: "Submitted", description: "Application sent to admissions", icon: "📮" },
+  { key: "under_review", title: "Under Review", description: "Admissions team is reviewing", icon: "⏳" },
+  { key: "offer_received", title: "Offer Received", description: "Congratulations — you have an offer", icon: "🎉" },
+  { key: "visa_application_filed", title: "Visa Filed", description: "EMGS visa application submitted", icon: "📋" },
+  { key: "visa_decision", title: "Visa Decision", description: "Visa outcome received", icon: "✈️" },
+  { key: "pre_departure", title: "Pre-Departure", description: "Preparing for Malaysia", icon: "🚀" },
+];
 
 /**
- * Application Detail Screen - Premium Application Management
- * 
- * Features:
- * - Document upload with drag-and-drop
- * - Application timeline with status history
- * - Mentor notes with rich formatting
- * - Action buttons for scheduling and uploads
+ * Application Detail Screen
+ *
+ * Every field on this screen is the student's real application data —
+ * no placeholder content (design.md: Trust Through Transparency).
  */
 export default function ApplicationDetailScreen() {
   const colors = useColors();
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [showDocumentModal, setShowDocumentModal] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const applicationId = Number(params.id) || 0;
 
-  // Mock data
-  const application = {
-    id: params.id || "1",
-    university: "MIT",
-    program: "Computer Science",
-    status: "review",
-    progress: 100,
-    deadline: "2024-03-15",
-    acceptanceRate: "3.2%",
-    visaSuccessRate: "92%",
-    estimatedCost: "$75,000/year",
-  };
+  const applicationQuery = trpc.application.getById.useQuery(
+    { id: applicationId },
+    { enabled: applicationId > 0 }
+  );
+  const documentsQuery = trpc.document.getByApplication.useQuery(
+    { applicationId },
+    { enabled: applicationId > 0 }
+  );
 
-  const timeline: TimelineEvent[] = [
-    {
-      id: "1",
-      title: "Profile Analyzed",
-      description: "Your academic profile has been reviewed",
-      date: "Jan 15, 2024",
-      status: "completed",
-      icon: "✓",
-    },
-    {
-      id: "2",
-      title: "Application Drafted",
-      description: "Essay and personal statement completed",
-      date: "Jan 20, 2024",
-      status: "completed",
-      icon: "✓",
-    },
-    {
-      id: "3",
-      title: "Submitted to University",
-      description: "Application sent to admissions office",
-      date: "Jan 25, 2024",
-      status: "completed",
-      icon: "✓",
-    },
-    {
-      id: "4",
-      title: "Under Review",
-      description: "Admissions team is reviewing your application",
-      date: "Jan 25 - Mar 15",
-      status: "in-progress",
-      icon: "⏳",
-    },
-    {
-      id: "5",
-      title: "Decision Expected",
-      description: "Admission decision will be announced",
-      date: "Mar 15, 2024",
-      status: "pending",
-      icon: "📬",
-    },
-  ];
+  const app = applicationQuery.data;
+  const documents = documentsQuery.data || [];
 
-  const documents: Document[] = [
-    {
-      id: "1",
-      name: "Transcript.pdf",
-      type: "Transcript",
-      uploadedDate: "Jan 10, 2024",
-      size: "2.4 MB",
-    },
-    {
-      id: "2",
-      name: "SAT_Scores.pdf",
-      type: "Test Scores",
-      uploadedDate: "Jan 12, 2024",
-      size: "1.1 MB",
-    },
-    {
-      id: "3",
-      name: "Essay_Final.pdf",
-      type: "Essay",
-      uploadedDate: "Jan 20, 2024",
-      size: "0.8 MB",
-    },
-  ];
+  if (applicationQuery.isLoading) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center">
+        <ActivityIndicator size="large" color={colors.primary} />
+      </ScreenContainer>
+    );
+  }
 
-  const mentorNotes =
-    "Aisha, your profile is exceptionally strong. Your GPA and test scores are well above MIT's median. The essay shows genuine passion for computer science. I recommend emphasizing your robotics project more in the interview. Schedule a mock interview with me next week to prepare.";
+  if (!app) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-4xl">📭</Text>
+        <Text className="text-xl font-bold text-foreground">Application not found</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="bg-primary rounded-lg px-6 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Go back</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
 
-  const handleUploadDocument = async () => {
-    setIsUploading(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Simulate upload
-    setTimeout(() => {
-      setIsUploading(false);
-      setShowDocumentModal(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Success", "Document uploaded successfully");
-    }, 2000);
-  };
+  const currentIndex = Math.max(
+    STAGES.findIndex((s) => s.key === app.applicationStatus),
+    0
+  );
+  const isRejected = app.applicationStatus === "rejected";
+  const progress = isRejected ? 0 : Math.round(((currentIndex + 1) / STAGES.length) * 100);
+  const currentStage = isRejected
+    ? { title: "Not Successful", icon: "✗", description: "This application was not successful" }
+    : STAGES[currentIndex];
+
+  const lastUpdated = app.lastUpdatedAt
+    ? new Date(app.lastUpdatedAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   const handleScheduleCall = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert("Schedule Call", "Redirecting to calendar...");
+    // Mentor calls are arranged over WhatsApp today — honest, working path.
+    Linking.openURL("https://wa.me/8801300801785").catch(() =>
+      Alert.alert("Schedule Call", "Reach your mentor on WhatsApp: 01300 801785")
+    );
   };
 
   return (
@@ -155,8 +111,9 @@ export default function ApplicationDetailScreen() {
             <Text className="text-2xl">←</Text>
             <Text className="text-sm font-semibold text-primary">Back</Text>
           </TouchableOpacity>
-          <Text className="text-3xl font-bold text-foreground">{application.university}</Text>
-          <Text className="text-base text-muted">{application.program}</Text>
+          <Text className="text-3xl font-bold text-foreground">{app.universityName}</Text>
+          <Text className="text-base text-muted">{app.programName}</Text>
+          {app.country && <Text className="text-xs text-muted">📍 {app.country}</Text>}
         </View>
 
         {/* Status Card */}
@@ -165,134 +122,164 @@ export default function ApplicationDetailScreen() {
             <View className="flex-row items-center justify-between">
               <View className="gap-1">
                 <Text className="text-sm text-muted font-semibold">Current Status</Text>
-                <Text className="text-2xl font-bold text-primary">Under Review</Text>
+                <Text className="text-2xl font-bold text-primary">{currentStage.title}</Text>
               </View>
               <View className="w-16 h-16 rounded-full bg-primary/20 items-center justify-center">
-                <Text className="text-3xl">⏳</Text>
+                <Text className="text-3xl">{currentStage.icon}</Text>
               </View>
             </View>
 
             <View className="gap-2">
               <View className="flex-row items-center justify-between">
                 <Text className="text-xs font-semibold text-muted">Progress</Text>
-                <Text className="text-xs font-bold text-foreground">100%</Text>
+                <Text className="text-xs font-bold text-foreground">{progress}%</Text>
               </View>
               <View className="h-2 bg-border rounded-full overflow-hidden">
-                <View className="h-full w-full bg-primary rounded-full" />
+                <View style={{ width: `${progress}%` }} className="h-full bg-primary rounded-full" />
               </View>
             </View>
 
-            <View className="flex-row gap-3 pt-2">
-              <View className="flex-1 gap-1">
-                <Text className="text-xs text-muted">Deadline</Text>
-                <Text className="text-sm font-bold text-foreground">Mar 15, 2024</Text>
-              </View>
-              <View className="flex-1 gap-1">
-                <Text className="text-xs text-muted">Acceptance Rate</Text>
-                <Text className="text-sm font-bold text-foreground">3.2%</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Quick Stats */}
-        <View className="px-6 pb-6 gap-3">
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-              <Text className="text-xs text-muted font-medium">Visa Success</Text>
-              <Text className="text-xl font-bold text-foreground">92%</Text>
-            </View>
-            <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-              <Text className="text-xs text-muted font-medium">Est. Cost</Text>
-              <Text className="text-xl font-bold text-foreground">$75K/yr</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Timeline Section */}
-        <View className="px-6 pb-6 gap-4">
-          <Text className="text-lg font-bold text-foreground">Application Timeline</Text>
-
-          <View className="gap-4">
-            {timeline.map((event, index) => (
-              <View key={event.id} className="flex-row gap-4">
-                {/* Timeline Line */}
-                <View className="items-center">
-                  <View
-                    className={`w-10 h-10 rounded-full items-center justify-center border-2 ${
-                      event.status === "completed"
-                        ? "bg-primary border-primary"
-                        : event.status === "in-progress"
-                          ? "bg-warning/20 border-warning"
-                          : "bg-surface border-border"
-                    }`}
-                  >
-                    <Text className="text-lg">{event.icon}</Text>
-                  </View>
-                  {index < timeline.length - 1 && (
-                    <View
-                      className={`w-1 h-12 mt-2 ${
-                        event.status === "completed" ? "bg-primary" : "bg-border"
-                      }`}
-                    />
-                  )}
-                </View>
-
-                {/* Event Details */}
-                <View className="flex-1 pt-1 pb-4">
-                  <Text className="text-base font-bold text-foreground">{event.title}</Text>
-                  <Text className="text-sm text-muted mt-1">{event.description}</Text>
-                  <Text className="text-xs text-muted mt-2">{event.date}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Documents Section */}
-        <View className="px-6 pb-6 gap-4">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-foreground">Documents</Text>
-            <TouchableOpacity
-              onPress={() => setShowDocumentModal(true)}
-              className="bg-primary rounded-lg px-4 py-2 active:opacity-80"
-            >
-              <Text className="text-white text-xs font-bold">+ Upload</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="gap-2">
-            {documents.map((doc) => (
-              <TouchableOpacity
-                key={doc.id}
-                className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
-              >
+            {lastUpdated && (
+              <View className="flex-row gap-3 pt-2">
                 <View className="flex-1 gap-1">
-                  <Text className="text-base font-semibold text-foreground">📄 {doc.name}</Text>
-                  <Text className="text-xs text-muted">
-                    {doc.type} • {doc.size} • {doc.uploadedDate}
-                  </Text>
+                  <Text className="text-xs text-muted">Last updated</Text>
+                  <Text className="text-sm font-bold text-foreground">{lastUpdated}</Text>
                 </View>
-                <Text className="text-lg text-primary">↓</Text>
-              </TouchableOpacity>
-            ))}
+                {app.acceptanceRate && (
+                  <View className="flex-1 gap-1">
+                    <Text className="text-xs text-muted">Acceptance Rate</Text>
+                    <Text className="text-sm font-bold text-foreground">{app.acceptanceRate}</Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Mentor Notes */}
+        {/* Quick Stats — only shown when we actually have the data */}
+        {(app.visaSuccessRate || app.estimatedCost) && (
+          <View className="px-6 pb-6 gap-3">
+            <View className="flex-row gap-3">
+              {app.visaSuccessRate && (
+                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
+                  <Text className="text-xs text-muted font-medium">Visa Success</Text>
+                  <Text className="text-xl font-bold text-foreground">{app.visaSuccessRate}</Text>
+                </View>
+              )}
+              {app.estimatedCost && (
+                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
+                  <Text className="text-xs text-muted font-medium">Est. Cost</Text>
+                  <Text className="text-xl font-bold text-foreground">{app.estimatedCost}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Timeline — derived from the real pipeline stage */}
+        {!isRejected && (
+          <View className="px-6 pb-6 gap-4">
+            <Text className="text-lg font-bold text-foreground">Application Timeline</Text>
+
+            <View className="gap-4">
+              {STAGES.map((stage, index) => {
+                const status =
+                  index < currentIndex ? "completed" : index === currentIndex ? "in-progress" : "pending";
+                return (
+                  <View key={stage.key} className="flex-row gap-4">
+                    <View className="items-center">
+                      <View
+                        className={`w-10 h-10 rounded-full items-center justify-center border-2 ${
+                          status === "completed"
+                            ? "bg-primary border-primary"
+                            : status === "in-progress"
+                              ? "bg-warning/20 border-warning"
+                              : "bg-surface border-border"
+                        }`}
+                      >
+                        <Text className="text-lg">{status === "completed" ? "✓" : stage.icon}</Text>
+                      </View>
+                      {index < STAGES.length - 1 && (
+                        <View
+                          className={`w-1 h-8 mt-2 ${status === "completed" ? "bg-primary" : "bg-border"}`}
+                        />
+                      )}
+                    </View>
+
+                    <View className="flex-1 pt-1 pb-2">
+                      <Text
+                        className={`text-base font-bold ${
+                          status === "pending" ? "text-muted" : "text-foreground"
+                        }`}
+                      >
+                        {stage.title}
+                      </Text>
+                      <Text className="text-sm text-muted mt-1">{stage.description}</Text>
+                      {status === "in-progress" && lastUpdated && (
+                        <Text className="text-xs text-muted mt-2">Since {lastUpdated}</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Documents — real records; uploads arrive via your mentor for now */}
         <View className="px-6 pb-6 gap-4">
-          <Text className="text-lg font-bold text-foreground">Mentor Notes</Text>
-          <View className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 gap-3">
-            <View className="flex-row items-start gap-3">
-              <Text className="text-2xl">👩‍🏫</Text>
-              <View className="flex-1 gap-2">
-                <Text className="font-semibold text-foreground">Sarah Johnson</Text>
-                <Text className="text-sm text-muted leading-relaxed">{mentorNotes}</Text>
-                <Text className="text-xs text-muted mt-2">Updated 2 days ago</Text>
+          <Text className="text-lg font-bold text-foreground">Documents</Text>
+
+          {documentsQuery.isLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : documents.length > 0 ? (
+            <View className="gap-2">
+              {documents.map((doc) => (
+                <TouchableOpacity
+                  key={doc.id}
+                  onPress={() => doc.fileUrl && Linking.openURL(doc.fileUrl).catch(() => {})}
+                  className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+                >
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-semibold text-foreground">📄 {doc.fileName}</Text>
+                    <Text className="text-xs text-muted">
+                      {doc.documentType}
+                      {doc.createdAt
+                        ? ` • ${new Date(doc.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                        : ""}
+                    </Text>
+                  </View>
+                  <Text className="text-lg text-primary">↓</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View className="bg-surface border border-border rounded-xl p-4 gap-1">
+              <Text className="text-sm font-semibold text-foreground">No documents yet</Text>
+              <Text className="text-xs text-muted leading-relaxed">
+                Send your transcript and certificates to your mentor on WhatsApp — they'll be attached
+                here after review. In-app upload is coming soon.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Mentor Notes — only rendered when a real note exists */}
+        {app.notes && (
+          <View className="px-6 pb-6 gap-4">
+            <Text className="text-lg font-bold text-foreground">Mentor Notes</Text>
+            <View className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 gap-3">
+              <View className="flex-row items-start gap-3">
+                <Text className="text-2xl">👩‍🏫</Text>
+                <View className="flex-1 gap-2">
+                  <Text className="font-semibold text-foreground">From your mentor team</Text>
+                  <Text className="text-sm text-muted leading-relaxed">{app.notes}</Text>
+                  {lastUpdated && <Text className="text-xs text-muted mt-2">Updated {lastUpdated}</Text>}
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Action Buttons */}
         <View className="px-6 pb-12 gap-3">
@@ -300,75 +287,10 @@ export default function ApplicationDetailScreen() {
             onPress={handleScheduleCall}
             className="bg-primary rounded-xl py-4 active:opacity-80"
           >
-            <Text className="text-white font-bold text-center">📞 Schedule Mentor Call</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity className="bg-surface border border-border rounded-xl py-4 active:opacity-80">
-            <Text className="text-foreground font-bold text-center">📧 Contact University</Text>
+            <Text className="text-white font-bold text-center">📞 Talk to your mentor</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Document Upload Modal */}
-      <Modal visible={showDocumentModal} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-background rounded-t-3xl p-6 gap-4">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-2xl font-bold text-foreground">Upload Document</Text>
-              <TouchableOpacity
-                onPress={() => setShowDocumentModal(false)}
-                className="w-8 h-8 rounded-full bg-surface items-center justify-center"
-              >
-                <Text className="text-lg">✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Upload Area */}
-            <View className="border-2 border-dashed border-primary/30 rounded-xl p-8 items-center gap-3 bg-primary/5">
-              <Text className="text-4xl">📤</Text>
-              <Text className="text-base font-semibold text-foreground text-center">
-                Tap to select or drag files
-              </Text>
-              <Text className="text-xs text-muted">PDF, DOC, DOCX • Max 10 MB</Text>
-            </View>
-
-            {/* Document Type Selection */}
-            <View className="gap-2">
-              <Text className="text-sm font-semibold text-muted">Document Type</Text>
-              <View className="flex-row gap-2">
-                {["Transcript", "Essay", "Test Scores", "Other"].map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    className="flex-1 bg-surface border border-border rounded-lg py-2 active:opacity-80"
-                  >
-                    <Text className="text-xs font-semibold text-foreground text-center">{type}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Upload Button */}
-            <TouchableOpacity
-              onPress={handleUploadDocument}
-              disabled={isUploading}
-              className="bg-primary rounded-lg py-4 active:opacity-80"
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text className="text-white font-bold text-center">Upload Document</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowDocumentModal(false)}
-              className="bg-surface border border-border rounded-lg py-3"
-            >
-              <Text className="text-foreground font-semibold text-center">Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </ScreenContainer>
   );
 }

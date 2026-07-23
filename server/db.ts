@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -382,12 +382,60 @@ export async function createMessage(data: InsertMessage) {
 export async function getMessagesBetween(userId1: number, userId2: number) {
   const db = await getDb();
   if (!db) return [];
+  // Both directions: a thread is everything either party sent the other.
   return await db.select().from(messages).where(
-    and(
-      eq(messages.senderId, userId1),
-      eq(messages.recipientId, userId2)
+    or(
+      and(eq(messages.senderId, userId1), eq(messages.recipientId, userId2)),
+      and(eq(messages.senderId, userId2), eq(messages.recipientId, userId1))
     )
   ).orderBy(desc(messages.createdAt));
+}
+
+export type ConversationSummary = {
+  userId: number;
+  name: string;
+  lastMessage: string;
+  lastMessageTime: Date;
+  unreadCount: number;
+};
+
+// Distinct counterparties the user has exchanged messages with, newest first.
+export async function getConversationsForUser(userId: number): Promise<ConversationSummary[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const involving = await db
+    .select()
+    .from(messages)
+    .where(or(eq(messages.senderId, userId), eq(messages.recipientId, userId)))
+    .orderBy(desc(messages.createdAt));
+
+  const byPartner = new Map<number, { last: (typeof involving)[number]; unread: number }>();
+  for (const m of involving) {
+    const partnerId = m.senderId === userId ? m.recipientId : m.senderId;
+    const entry = byPartner.get(partnerId);
+    const unreadInc = m.recipientId === userId && !m.isRead ? 1 : 0;
+    if (!entry) {
+      byPartner.set(partnerId, { last: m, unread: unreadInc });
+    } else {
+      entry.unread += unreadInc;
+    }
+  }
+  if (byPartner.size === 0) return [];
+
+  const partnerIds = Array.from(byPartner.keys());
+  const partners = await db.select().from(users).where(inArray(users.id, partnerIds));
+  const nameById = new Map(partners.map((u) => [u.id, u.name || "Member"]));
+
+  return partnerIds.map((id) => {
+    const { last, unread } = byPartner.get(id)!;
+    return {
+      userId: id,
+      name: nameById.get(id) || "Member",
+      lastMessage: last.content,
+      lastMessageTime: last.createdAt,
+      unreadCount: unread,
+    };
+  });
 }
 
 export async function markMessageAsRead(messageId: number) {
