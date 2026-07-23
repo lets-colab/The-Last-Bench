@@ -49,10 +49,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="discover"
+        name="universities"
         options={{
-          title: "Discover",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="sparkles" color={color} />,
+          title: "Universities",
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="graduationcap.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -70,6 +70,7 @@ export default function TabLayout() {
         }}
       />
       {/* Hidden from tab bar — accessible via deep links */}
+      <Tabs.Screen name="discover" options={{ href: null }} />
       <Tabs.Screen name="community" options={{ href: null }} />
       <Tabs.Screen name="messages" options={{ href: null }} />
     </Tabs>

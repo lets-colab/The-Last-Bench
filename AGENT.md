@@ -151,11 +151,15 @@ before it's fully production-ready:
   in production; until then `aiGuidance.chat` will error on the missing column.
 - **Founder photos** — the design uses circular photo slots per founder; production needs
   real photos of Sayem, Fahim, and Erfan (ask the owner).
-- Not yet built from the same design: the **Universities** discovery screen (per-university
-  match score against the real student profile — NOT the design's fixed per-university
-  percentages, which are illustrative — plus a real campus 360° view) and the **Documents**
-  tracker view described in the design's README. Both are real, scoped, buildable features;
-  just not done yet.
+- **Universities** discovery screen — BUILT (`app/(tabs)/universities.tsx`, in the tab bar
+  in place of the now-hidden `discover`). Real deterministic match score per university
+  (`shared/university-match.ts`, unit-tested) against the student's real GPA/field — NOT the
+  design's illustrative fixed percentages. Free campus 360° via `components/campus-view*.tsx`:
+  web embeds a live Google Street View (`output=svembed`, no API key) for the 5 campuses with
+  verified coords, satellite map for the rest; native opens Google Maps. "Ask Fahim why"
+  deep-links to the AI Guides tab with the fahim guide + a prefilled question.
+- Still not built from the design: the **Documents** tracker view (the `documents` backend
+  exists; needs the tracker UI + a file picker — see gap #1). Real, scoped, not done yet.
 - **This project's migration journal is stale**: `drizzle/meta/_journal.json` only has 2
   entries, but the live DB has 16 tables including several (payouts, auditLogs,
   cohortMessages) added directly via Supabase SQL, never through `drizzle-kit generate`.
@@ -175,9 +179,10 @@ before it's fully production-ready:
 3. **Social login** — replace Manus OAuth with Supabase Auth (Google first; Facebook
    needs Meta business verification + app review, which takes weeks). Requires the
    owner to create provider credentials; agent scaffolds code + env vars.
-4. **Campus "virtual visit"** — currently a static satellite iframe per university.
-   Real version needs Google Maps Platform key (Street View Embed/Static API) — see
-   the AI Guides section above; this is the same "Universities" screen work.
+4. **Campus 360° coordinate coverage** — only 5 of 15 universities have verified Street
+   View coordinates (`CAMPUS_COORDS` in `universities.tsx`); the other 10 fall back to a
+   satellite map. Add real lat/lng for the rest to give them true 360° walks. No API key
+   needed (`output=svembed` is free).
 5. **`app/(tabs)/discover.tsx` duplicates the AI Guides chat and community.tsx's
    cohorts/skills** — pre-existing redundancy (three screens doing overlapping things:
    `discover.tsx`, `community.tsx`, `ai-guidance.tsx`). `discover.tsx`'s "AI Advisor"
