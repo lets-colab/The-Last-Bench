@@ -1,5 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity, TextInput } from "react-native";
 import { useState, useEffect, useRef } from "react";
+import { useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -44,9 +45,19 @@ const CINE = {
 
 export default function AIGuidesScreen() {
   const { user } = useAuth();
+  // Deep-link handoff: e.g. the Universities screen's "Ask Fahim why" sends
+  // { guide: "fahim", q: "Why is <uni> a good match for me?" }.
+  const params = useLocalSearchParams<{ guide?: string; q?: string }>();
   const [activeGuide, setActiveGuide] = useState<GuideKey>("sayem");
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (params.guide === "sayem" || params.guide === "fahim" || params.guide === "erfan") {
+      setActiveGuide(params.guide);
+    }
+    if (params.q) setDraft(String(params.q));
+  }, [params.guide, params.q]);
 
   const historyQuery = trpc.aiGuidance.getChatHistory.useQuery(
     { guide: activeGuide },

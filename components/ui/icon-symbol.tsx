@@ -20,6 +20,7 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   "chat-bubble.fill": "chat",
   "bubble.left.and.bubble.right.fill": "chat",
+  "graduationcap.fill": "school",
   "sparkles": "auto-awesome",
   "person.fill": "person",
   "bell.fill": "notifications",
