@@ -121,38 +121,73 @@ pnpm build:web               # Expo web export → dist/ (COMMIT the dist change
 ## 4. Current state — what is real vs. gap (audited 2026-07-23)
 
 **Real and working:** student profile + onboarding; applications pipeline with 11-stage
-tracking; document metadata + storage plumbing; tutor referral/commission/payout system
-with audit logs; cohorts + cohort discussions; AI advisor chat with persistent per-student
-memory (`aiChatMessages`/`aiMemories`) grounded on a verified Malaysia university dataset;
-admin dashboard (students/applications/tutors/payouts/analytics); notifications;
-self-healing error engine; home dashboard wired to real data (fixed 2026-07-22).
+tracking (real timeline + documents + mentor notes on `app/application-detail.tsx`);
+document metadata + storage plumbing; tutor referral/commission/payout system with audit
+logs; cohorts + cohort discussions; messages tab with a real conversation list
+(`message.getConversations`) and two-directional threads; three-persona AI advisor
+("AI Guides" tab — Sayem/Fahim/Erfan, real co-founders, see below) with persistent
+per-guide chat history (`aiChatMessages.guide`) and shared per-student memory
+(`aiMemories`), grounded on a verified Malaysia university dataset; admin dashboard
+(students/applications/tutors/payouts/analytics); notifications; self-healing error
+engine; home dashboard wired to real data; bench-icon loading indicator
+(`components/bench-loader.tsx`) on every full-screen/section loading state and on
+initial JS bundle load (`scripts/build-site.mjs` injects it into the exported HTML shell).
+
+**AI Guides — design source and what's imported (2026-07-23):** a Claude Design project
+("3D Malaysian Cinematic Experience", `b1b8d436-bfc0-46ca-a294-c03dba13ebb1`) contains a
+high-fidelity dashboard reference (`Last Bench Dashboard.dc.html` + README) naming three
+real co-founders whose AI personas run the app: **Sayem Ahmed** (CEO, main journey AI),
+**Fahim Shahbaz** (career/university-matching AI), **Erfan Uddin** (community AI — this
+is the account owner running this session). Implemented so far: the three-persona chat
+backend (`server/routers.ts` `AI_GUIDES` + `aiGuidance.chat/getChatHistory`, each with its
+own system prompt, all grounded — no canned/scripted replies, unlike the design mockup's
+prototype JS) and the `app/(tabs)/ai-guidance.tsx` screen (now in the tab bar). Needs
+before it's fully production-ready:
+- **Apply the schema migration** — `drizzle/0002_ai_guide_personas.sql` (adds the
+  `ai_guide` enum + `aiChatMessages.guide` column) is written but NOT yet applied to the
+  live Supabase project (no DB credential available in this session to run it, and the
+  project's migration journal is already out of sync with reality — see the note below).
+  Apply it via the Supabase SQL editor or `apply_migration` MCP before this feature works
+  in production; until then `aiGuidance.chat` will error on the missing column.
+- **Founder photos** — the design uses circular photo slots per founder; production needs
+  real photos of Sayem, Fahim, and Erfan (ask the owner).
+- Not yet built from the same design: the **Universities** discovery screen (per-university
+  match score against the real student profile — NOT the design's fixed per-university
+  percentages, which are illustrative — plus a real campus 360° view) and the **Documents**
+  tracker view described in the design's README. Both are real, scoped, buildable features;
+  just not done yet.
+- **This project's migration journal is stale**: `drizzle/meta/_journal.json` only has 2
+  entries, but the live DB has 16 tables including several (payouts, auditLogs,
+  cohortMessages) added directly via Supabase SQL, never through `drizzle-kit generate`.
+  Don't run `drizzle-kit migrate` expecting it to reconcile this — hand-write and
+  hand-apply SQL files like `0002_ai_guide_personas.sql` until someone reconciles the
+  journal against the live schema properly.
 
 **Known gaps, in priority order:**
 
-1. **Messages tab conversation list is mock data** (`app/(tabs)/messages.tsx` —
-   hardcoded "Sarah Johnson"/"Dr. Ahmed Hassan", fake auto-replies). The send/thread
-   backend is real but there is no "list my conversations" endpoint. Fix: add a
-   `message.getConversations` tRPC query (distinct counterparties + last message +
-   unread count) and wire the tab to it.
-2. **`app/application-detail.tsx` hardcodes mentor name** — look up the real
-   `mentorAssigned` user.
-3. **No file-picker UI anywhere** — `document.upload` / `student.uploadTranscript`
+1. **No file-picker UI anywhere** — `document.upload` / `student.uploadTranscript`
    backends exist but no screen calls them. Add expo-document-picker flow.
-4. **No leads capture** — landing form posts to Netlify Forms (leads live in the
+2. **No leads capture** — landing form posts to Netlify Forms (leads live in the
    Netlify dashboard, disconnected from the DB). For Meta ads attribution +
    outbound-call automation: add a `leads` table + public tRPC endpoint capturing
    `fbclid`/UTM, point the form at it, then integrate a telephony provider
    (Twilio/Vonage — needs an account + Bangladesh calling compliance decision).
-5. **Social login** — replace Manus OAuth with Supabase Auth (Google first; Facebook
+3. **Social login** — replace Manus OAuth with Supabase Auth (Google first; Facebook
    needs Meta business verification + app review, which takes weeks). Requires the
    owner to create provider credentials; agent scaffolds code + env vars.
-6. **Campus "virtual visit"** — currently a static satellite iframe per university.
-   Real version needs Google Maps Platform key (Street View Embed/Static API).
-7. **`.env.example` Forge URL guidance is wrong** — `BUILT_IN_FORGE_API_URL` example
+4. **Campus "virtual visit"** — currently a static satellite iframe per university.
+   Real version needs Google Maps Platform key (Street View Embed/Static API) — see
+   the AI Guides section above; this is the same "Universities" screen work.
+5. **`app/(tabs)/discover.tsx` duplicates the AI Guides chat and community.tsx's
+   cohorts/skills** — pre-existing redundancy (three screens doing overlapping things:
+   `discover.tsx`, `community.tsx`, `ai-guidance.tsx`). `discover.tsx`'s "AI Advisor"
+   segment was patched to default to Sayem's guide so it compiles, but the real fix is
+   to remove the duplicate chat UI there and point it at the AI Guides tab.
+6. **`.env.example` Forge URL guidance is wrong** — `BUILT_IN_FORGE_API_URL` example
    says `api.anthropic.com`, but `storage.ts` calls `/v1/storage/presign/*` on that
    host, which is a Manus/Forge endpoint, not Anthropic. Verify what's actually set
    in Render before touching storage.
-8. 2 Dependabot alerts on main (1 high, 1 moderate) — uninvestigated.
+7. 2 Dependabot alerts on main (1 high, 1 moderate) — uninvestigated.
 
 ---
 

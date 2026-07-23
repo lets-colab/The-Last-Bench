@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import { BenchLoader } from "@/components/bench-loader";
 
 /**
  * Community Tab - Connect with peers and join cohorts
@@ -37,7 +38,7 @@ export default function CommunityScreen() {
   if (cohortsQuery.isLoading || skillsQuery.isLoading) {
     return (
       <ScreenContainer className="p-6 justify-center items-center">
-        <ActivityIndicator size="large" color="#0a7ea4" />
+        <BenchLoader />
       </ScreenContainer>
     );
   }

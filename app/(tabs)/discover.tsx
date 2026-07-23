@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import { BenchLoader } from "@/components/bench-loader";
 
 interface ChatMsg { id: string; role: "user" | "assistant"; content: string }
 
@@ -20,8 +21,9 @@ export default function DiscoverScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+  // Sayem's AI (the main journey advisor) — see the AI Guides tab for Fahim/Erfan.
   const chatMutation = trpc.aiGuidance.chat.useMutation();
-  const historyQuery = trpc.aiGuidance.getChatHistory.useQuery(undefined, { enabled: !!user });
+  const historyQuery = trpc.aiGuidance.getChatHistory.useQuery({ guide: "sayem" }, { enabled: !!user });
   const cohortsQuery = trpc.cohort.getAll.useQuery();
   const skillsQuery = trpc.skill.getAll.useQuery();
 
@@ -58,7 +60,7 @@ export default function DiscoverScreen() {
     setInputText("");
     setIsLoading(true);
     try {
-      const response = await chatMutation.mutateAsync({ message: text });
+      const response = await chatMutation.mutateAsync({ message: text, guide: "sayem" });
       setMessages((prev) => [
         ...prev,
         { id: (Date.now() + 1).toString(), role: "assistant", content: response.message },
@@ -172,7 +174,7 @@ export default function DiscoverScreen() {
       {activeTab === "community" && (
         <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 24 }}>
           {cohortsQuery.isLoading || skillsQuery.isLoading ? (
-            <ActivityIndicator size="large" color="#16a34a" className="mt-12" />
+            <BenchLoader />
           ) : (
             <View className="gap-6">
               {cohorts.length > 0 && (

@@ -12,6 +12,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
+import { BenchLoader } from "@/components/bench-loader";
 
 // Ordered pipeline stages — must match app/(tabs)/applications.tsx and the
 // applicationStatus enum in drizzle/schema.ts.
@@ -56,7 +57,7 @@ export default function ApplicationDetailScreen() {
   if (applicationQuery.isLoading) {
     return (
       <ScreenContainer className="p-6 justify-center items-center">
-        <ActivityIndicator size="large" color={colors.primary} />
+        <BenchLoader />
       </ScreenContainer>
     );
   }

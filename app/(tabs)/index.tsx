@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
+import { BenchLoader } from "@/components/bench-loader";
 
 // Ordered pipeline stages — mirrors app/(tabs)/applications.tsx so "journey
 // progress" here matches the detail screen's own progress ring exactly.
@@ -124,7 +125,7 @@ export default function HomeScreen() {
 
         {isLoading ? (
           <View className="py-12 items-center">
-            <ActivityIndicator size="large" color={colors.primary} />
+            <BenchLoader />
           </View>
         ) : applications.length === 0 ? (
           /* Empty state for brand-new students — no fabricated progress */

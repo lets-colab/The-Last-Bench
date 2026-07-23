@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import { BenchLoader } from "@/components/bench-loader";
 
 interface ChatMessage {
   id: number;
@@ -142,7 +143,7 @@ export default function MessagesScreen() {
             {/* Conversations List */}
             {conversationsQuery.isLoading ? (
               <View className="flex-1 justify-center items-center py-12">
-                <ActivityIndicator size="large" color="#0a7ea4" />
+                <BenchLoader />
               </View>
             ) : conversations.length > 0 ? (
               <View className="gap-2">
@@ -221,7 +222,7 @@ export default function MessagesScreen() {
         {/* Messages */}
         {getThreadQuery.isLoading ? (
           <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#0a7ea4" />
+            <BenchLoader />
           </View>
         ) : (
           <ScrollView
