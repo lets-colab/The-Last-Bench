@@ -83,13 +83,19 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // Redirect to the frontend URL (Expo web on port 8081)
-      // Cookie is set with parent domain so it works across both 3000 and 8081 subdomains
-      const frontendUrl =
-        process.env.EXPO_WEB_PREVIEW_URL ||
-        process.env.EXPO_PACKAGER_PROXY_URL ||
-        "http://localhost:8081";
-      res.redirect(302, frontendUrl);
+      // Redirect back to the app. In production the built app is served under
+      // /app (see netlify.toml + scripts/build-site.mjs) at the FRONTEND_URL
+      // origin (e.g. https://www.lastbenchbd.com) — without FRONTEND_URL set,
+      // this used to fall back to http://localhost:8081 for every real user.
+      // In local dev (`pnpm dev`), Expo serves the app at the dev-server root,
+      // not under /app, so the dev fallbacks are left unsuffixed.
+      const frontendUrl = process.env.FRONTEND_URL;
+      const redirectTo = frontendUrl
+        ? frontendUrl.replace(/\/+$/, "") + "/app"
+        : process.env.EXPO_WEB_PREVIEW_URL ||
+          process.env.EXPO_PACKAGER_PROXY_URL ||
+          "http://localhost:8081";
+      res.redirect(302, redirectTo);
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

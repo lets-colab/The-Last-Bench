@@ -44,15 +44,24 @@ server/       Express + tRPC v11 — 55 procedures across 15 routers
                    stored in errorLogs/errorFixes; learns which fix strategies work
 drizzle/      schema.ts (16 pg tables) + generated SQL migrations
 landing/      Static cinematic marketing site (no build step) — "Malaysia Experience"
+scripts/build-site.mjs  Assembles dist/: landing/ at /, Expo web export at /app
 dist/         COMMITTED build output — Netlify deploys this. Rebuild + commit together.
 ```
+
+**One merged site (as of the 2026-07-23 site/app merge — do not re-split these):**
+`pnpm build:web` runs `scripts/build-site.mjs`, which exports the Expo app with
+`EXPO_BASE_URL=/app` into `dist/app/` and copies `landing/` into `dist/` unchanged.
+Netlify serves it all from one site (`netlify.toml`): `/` is the marketing landing
+page, `/app/*` is the student app (SPA-fallback redirect keeps client-side routes
+like `/app/profile` working). The landing page's "Sign up"/"Student login" links
+point at `/app` (relative — works on any domain/preview URL). There is no more
+separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
 
 **Deploy topology (all verified live):**
 
 | Surface | Host | Source | Trigger |
 |---|---|---|---|
-| Student app (the product) | Netlify, site `exitbd` → exitbd.netlify.app | committed `dist/` | push to `main` |
-| Marketing site | GitHub Pages | `landing/` | `.github/workflows/deploy-pages.yml` on `main` |
+| Whole site (landing at `/`, app at `/app`) | Netlify, site `exitbd` → exitbd.netlify.app | committed `dist/` (built by `scripts/build-site.mjs`) | push to `main` |
 | API server | Render (`render.yaml`, `last-bench-api`, Singapore) | `pnpm build` → `dist/index.js` | Render git integration |
 | Database | Supabase Postgres 17, project `tocxdyqlrvzthpexnmxe` (ap-southeast-1) | — | — |
 
@@ -61,19 +70,25 @@ dist/         COMMITTED build output — Netlify deploys this. Rebuild + commit 
   presign broker (`server/storage.ts`); downloads proxied at `/manus-storage/*`.
 - Auth today: Manus OAuth (`oauth.manus.space`) + JWT cookie. Social login (Google/FB)
   is NOT yet implemented — planned route is Supabase Auth (see roadmap).
+- **`FRONTEND_URL` must be set on Render** (e.g. `https://www.lastbenchbd.com`) —
+  the OAuth callback redirects to `${FRONTEND_URL}/app` after login. Without it,
+  this fell back to `http://localhost:8081` for every real user in production —
+  found and fixed 2026-07-23; don't reintroduce the un-set fallback as the primary path.
 - Supabase free tier **auto-pauses after ~1 week idle**. Symptom: all DB calls fail.
   Fix: restore from the Supabase dashboard (or MCP `restore_project`), takes ~2 min.
 - RLS is ENABLED on all 16 tables with **no policies** (default-deny for anon/authenticated
   REST access). This is intentional: the server connects as the table owner and bypasses
   RLS. If you add Supabase client-side access, you must write policies.
+- Domain: point `www.lastbenchbd.com` (CNAME → `exitbd.netlify.app`) and add it as a
+  custom domain on the Netlify site — that's the single front door now (no more `app.`
+  subdomain plan; the app lives at `www.lastbenchbd.com/app`).
 
-**Domain (user owns lastbenchbd.com):** intended layout —
-`www.lastbenchbd.com` → GitHub Pages landing (CNAME file already at `landing/CNAME`);
-`app.lastbenchbd.com` → Netlify `exitbd`. DNS records needed at the registrar:
+**Domain (user owns lastbenchbd.com):** one host now — `www.lastbenchbd.com` → Netlify
+`exitbd` (landing at `/`, app at `/app`). DNS record needed at the registrar (only
+action left that requires the owner — no registrar access exists in this session):
 
 ```
-CNAME  www  lets-colab.github.io
-CNAME  app  exitbd.netlify.app        (also add the domain in Netlify site settings)
+CNAME  www  exitbd.netlify.app        (also add the domain in Netlify site settings)
 ```
 
 ---
