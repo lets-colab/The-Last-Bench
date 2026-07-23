@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
+import { BenchLoader } from "@/components/bench-loader";
 
 /**
  * Applications Screen - Premium Status Tracking
@@ -145,7 +146,7 @@ export default function ApplicationsScreen() {
         {/* Applications List */}
         {applicationsQuery.isLoading ? (
           <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color={colors.primary} />
+            <BenchLoader />
           </View>
         ) : filteredApplications.length > 0 ? (
           <View className="px-6 pb-12 gap-3">

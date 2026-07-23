@@ -26,6 +26,9 @@ export const payoutStatusEnum = pgEnum("payout_status", ["requested", "approved"
 export const verificationStatusEnum = pgEnum("verification_status", ["pending", "verified", "rejected"]);
 export const difficultyEnum = pgEnum("difficulty", ["beginner", "intermediate", "advanced"]);
 export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
+// The three founder-trained AI advisors — see server/routers.ts aiGuidance for each persona's prompt.
+export const aiGuideEnum = pgEnum("ai_guide", ["sayem", "fahim", "erfan"]);
+export type AiGuide = "sayem" | "fahim" | "erfan";
 export const errorStatusEnum = pgEnum("error_status", ["open", "diagnosed", "healed", "ignored"]);
 export const fixStrategyEnum = pgEnum("fix_strategy", ["retry", "fallback", "degrade", "reconnect", "manual"]);
 
@@ -264,6 +267,9 @@ export type InsertNotification = typeof notifications.$inferInsert;
 export const aiChatMessages = pgTable("aiChatMessages", {
   id: serial("id").primaryKey(),
   studentId: integer("studentId").notNull(),
+  // Which of the three founder-trained AI advisors this message belongs to.
+  // Defaults to "sayem" (the main journey AI) so existing rows stay valid.
+  guide: aiGuideEnum("guide").notNull().default("sayem"),
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

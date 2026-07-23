@@ -28,6 +28,7 @@ import {
   notifications,
   aiChatMessages,
   InsertAiChatMessage,
+  AiGuide,
   aiMemories,
   InsertAiMemory,
   payouts,
@@ -522,13 +523,13 @@ export async function saveAIChatMessage(data: InsertAiChatMessage) {
   await db.insert(aiChatMessages).values(data);
 }
 
-export async function getAIChatHistory(studentId: number, limit = 30) {
+export async function getAIChatHistory(studentId: number, guide: AiGuide, limit = 30) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
     .select()
     .from(aiChatMessages)
-    .where(eq(aiChatMessages.studentId, studentId))
+    .where(and(eq(aiChatMessages.studentId, studentId), eq(aiChatMessages.guide, guide)))
     .orderBy(desc(aiChatMessages.createdAt))
     .limit(limit);
   return rows.reverse();

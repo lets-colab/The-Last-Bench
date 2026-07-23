@@ -1,36 +1,62 @@
-import { ScrollView, Text, View, TouchableOpacity, TextInput, ActivityIndicator, FlatList } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, TextInput } from "react-native";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
+import { BenchLoader } from "@/components/bench-loader";
 
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: number;
-}
+type GuideKey = "sayem" | "fahim" | "erfan";
 
-/**
- * AI Guidance Chat Screen - Get personalized university recommendations
- */
-export default function AIGuidanceScreen() {
+// Display copy only — the real system prompts/grounding rules live server-side
+// in server/routers.ts (AI_GUIDES). Real people: co-founders of Last Bench.
+const GUIDES: Record<GuideKey, { name: string; tag: string; duty: string; placeholder: string }> = {
+  sayem: {
+    name: "Sayem Ahmed",
+    tag: "THE MAIN AI · CEO",
+    duty: "Runs your whole journey. Tracks every file, every update.",
+    placeholder: "Ask about your journey, your tracker, anything…",
+  },
+  fahim: {
+    name: "Fahim Shahbaz",
+    tag: "CAREER GUIDE AI",
+    duty: "Matches you to the right university and career path.",
+    placeholder: "Ask which university fits you and why…",
+  },
+  erfan: {
+    name: "Erfan Uddin",
+    tag: "COMMUNITY AI",
+    duty: "Connects you to the room — knowledge, innovation, people.",
+    placeholder: "Ask who to meet, what to join, where to start…",
+  },
+};
+
+const CINE = {
+  bg: "#04140B",
+  panel: "rgba(5,16,10,.7)",
+  border: "rgba(0,200,83,.25)",
+  borderActive: "#00E676",
+  green: "#00C853",
+  brightGreen: "#00E676",
+  amber: "#FFB300",
+  text: "#EAF4EC",
+  dim: "rgba(234,244,236,.6)",
+};
+
+export default function AIGuidesScreen() {
   const { user } = useAuth();
-  const router = useRouter();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showRecommendations, setShowRecommendations] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeGuide, setActiveGuide] = useState<GuideKey>("sayem");
+  const [draft, setDraft] = useState("");
+  const scrollRef = useRef<ScrollView>(null);
 
-  // Fetch AI chat
+  const historyQuery = trpc.aiGuidance.getChatHistory.useQuery(
+    { guide: activeGuide },
+    { enabled: !!user }
+  );
   const chatMutation = trpc.aiGuidance.chat.useMutation();
 
-  // Fetch recommendations
-  const recommendationsQuery = trpc.aiGuidance.getRecommendations.useQuery(undefined, {
-    enabled: false,
-  });
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [historyQuery.data, chatMutation.isPending]);
 
   if (!user) {
     return (
@@ -40,226 +66,145 @@ export default function AIGuidanceScreen() {
     );
   }
 
-  // Load initial welcome message
-  useEffect(() => {
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content:
-          "Hello! I'm your study-abroad advisor. I can help you explore universities, understand application processes, and answer questions about studying abroad. What would you like to know?",
-        timestamp: Date.now(),
-      },
-    ]);
-  }, []);
+  const guide = GUIDES[activeGuide];
+  const messages = historyQuery.data || [];
 
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
-
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
-
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: inputText,
-      timestamp: Date.now(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputText("");
-    setIsLoading(true);
-
-    try {
-      // Send to AI (the server owns conversation history now)
-      const response = await chatMutation.mutateAsync({
-        message: inputText,
-      });
-
-      // Add assistant response
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: typeof response.message === "string" ? response.message : JSON.stringify(response.message),
-        timestamp: Date.now(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGetRecommendations = async () => {
-    setIsLoading(true);
-    try {
-      const recommendations = await recommendationsQuery.refetch();
-      setShowRecommendations(true);
-    } catch (error) {
-      console.error("Error fetching recommendations:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Render message bubble
-  const renderMessage = (message: ChatMessage) => {
-    const isUser = message.role === "user";
-
-    return (
-      <View
-        key={message.id}
-        className={`flex-row mb-4 ${isUser ? "justify-end" : "justify-start"}`}
-      >
-        <View
-          className={`max-w-xs px-4 py-3 rounded-2xl ${
-            isUser ? "bg-primary rounded-br-none" : "bg-surface border border-border rounded-bl-none"
-          }`}
-        >
-          <Text className={`text-base leading-relaxed ${isUser ? "text-background" : "text-foreground"}`}>
-            {message.content}
-          </Text>
-        </View>
-      </View>
-    );
+  const handleSend = async () => {
+    const text = draft.trim();
+    if (!text || chatMutation.isPending) return;
+    setDraft("");
+    await chatMutation.mutateAsync({ message: text, guide: activeGuide });
+    void historyQuery.refetch();
   };
 
   return (
-    <ScreenContainer className="p-4 flex-1">
-      <View className="flex-1 gap-4">
-        {/* Header */}
-        <View className="gap-2 pb-2 border-b border-border">
-          <Text className="text-2xl font-bold text-foreground">AI Advisor</Text>
-          <Text className="text-sm text-muted">Get personalized guidance for your study-abroad journey</Text>
-        </View>
+    <ScreenContainer className="p-0" style={{ backgroundColor: CINE.bg }}>
+      <View className="px-6 pt-8 pb-4 gap-1">
+        <Text style={{ fontFamily: "Anton_400Regular", letterSpacing: 1 }} className="text-3xl text-white">
+          THREE GUIDES, ONE BENCH.
+        </Text>
+        <Text style={{ color: CINE.dim }} className="text-sm">
+          Sayem, Fahim and Erfan each trained an AI on everything they know. Pick one and ask.
+        </Text>
+      </View>
 
-        {/* Chat Messages */}
-        <ScrollView
-          ref={scrollViewRef}
-          className="flex-1"
-          contentContainerStyle={{ paddingVertical: 12 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {messages.map((message) => renderMessage(message))}
+      {/* Guide selector */}
+      <View className="flex-row px-4 gap-2 pb-3">
+        {(Object.keys(GUIDES) as GuideKey[]).map((key) => {
+          const g = GUIDES[key];
+          const active = key === activeGuide;
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => setActiveGuide(key)}
+              className="flex-1 rounded-2xl p-3 gap-1"
+              style={{
+                backgroundColor: active ? "rgba(0,200,83,.12)" : CINE.panel,
+                borderWidth: 1,
+                borderColor: active ? CINE.borderActive : CINE.border,
+              }}
+            >
+              <Text className="text-white font-bold text-xs" numberOfLines={1}>
+                {g.name}
+              </Text>
+              <Text style={{ color: CINE.brightGreen, letterSpacing: 1 }} className="text-[8px] font-bold" numberOfLines={1}>
+                {g.tag}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-          {isLoading && (
-            <View className="flex-row justify-start mb-4">
-              <View className="bg-surface border border-border px-4 py-3 rounded-2xl rounded-bl-none gap-2">
-                <ActivityIndicator size="small" color="#0a7ea4" />
-                <Text className="text-sm text-muted">Thinking...</Text>
-              </View>
-            </View>
-          )}
+      {/* Active guide's duty line */}
+      <View className="px-6 pb-3">
+        <Text style={{ color: CINE.dim }} className="text-xs leading-relaxed">
+          {guide.duty}
+        </Text>
+      </View>
 
-          {/* Quick Actions */}
-          {messages.length <= 1 && !isLoading && (
-            <View className="gap-3 mt-6">
-              <Text className="text-sm font-semibold text-muted">Quick Questions:</Text>
-
-              <TouchableOpacity
-                onPress={() => router.push("/compare")}
-                className="bg-primary/10 border border-primary/20 rounded-lg p-3 active:opacity-80"
-              >
-                <Text className="text-sm font-semibold text-primary">⚖️ Compare universities side by side</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setInputText("What universities would be good for my profile?");
-                }}
-                className="bg-surface border border-border rounded-lg p-3 active:opacity-80"
-              >
-                <Text className="text-sm font-semibold text-foreground">
-                  What universities would be good for me?
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setInputText("What is the visa process for studying in the US?");
-                }}
-                className="bg-surface border border-border rounded-lg p-3 active:opacity-80"
-              >
-                <Text className="text-sm font-semibold text-foreground">Tell me about visa processes</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setInputText("How much does it cost to study abroad?");
-                }}
-                className="bg-surface border border-border rounded-lg p-3 active:opacity-80"
-              >
-                <Text className="text-sm font-semibold text-foreground">What are typical costs?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleGetRecommendations}
-                className="bg-primary rounded-lg p-3 active:opacity-80"
-              >
-                <Text className="text-background font-semibold text-center">Get Personalized Recommendations</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Recommendations Modal */}
-        {showRecommendations && recommendationsQuery.data && (
-          <View className="bg-surface border border-border rounded-lg p-4 mb-4 gap-3 max-h-64">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg font-bold text-foreground">Recommendations</Text>
-              <TouchableOpacity
-                onPress={() => setShowRecommendations(false)}
-                className="px-3 py-1 rounded-full bg-border"
-              >
-                <Text className="text-sm font-semibold text-foreground">Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} className="max-h-48">
-              {Array.isArray(recommendationsQuery.data) &&
-                recommendationsQuery.data.map((rec: any, idx: number) => (
-                  <View key={idx} className="mb-3 pb-3 border-b border-border last:border-b-0">
-                    <Text className="font-bold text-foreground">{rec.universityName || rec.name}</Text>
-                    <Text className="text-sm text-muted mt-1">{rec.programName || rec.program}</Text>
-                    <Text className="text-xs text-muted mt-2">{rec.whyGoodFit || rec.reason}</Text>
-                  </View>
-                ))}
-            </ScrollView>
+      {/* Chat */}
+      <View
+        className="flex-1 mx-4 mb-4 rounded-2xl overflow-hidden"
+        style={{ borderWidth: 1, borderColor: CINE.border, backgroundColor: CINE.panel }}
+      >
+        {historyQuery.isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <BenchLoader />
           </View>
+        ) : (
+          <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={{ padding: 16, gap: 12 }}>
+            {messages.length === 0 && (
+              <Text style={{ color: CINE.dim }} className="text-sm text-center py-8">
+                Say hello to {guide.name.split(" ")[0]}'s AI.
+              </Text>
+            )}
+            {messages.map((m) => {
+              const isYou = m.role === "user";
+              return (
+                <View key={m.id} style={{ alignSelf: isYou ? "flex-end" : "flex-start", maxWidth: "82%", gap: 4 }}>
+                  <Text
+                    style={{ color: "rgba(234,244,236,.4)", letterSpacing: 1.5, alignSelf: isYou ? "flex-end" : "flex-start" }}
+                    className="text-[8px] font-bold"
+                  >
+                    {isYou ? "YOU" : guide.tag}
+                  </Text>
+                  <View
+                    className="rounded-2xl px-4 py-3"
+                    style={{
+                      backgroundColor: isYou ? CINE.green : "rgba(255,255,255,.05)",
+                      borderWidth: 1,
+                      borderColor: isYou ? CINE.green : CINE.border,
+                    }}
+                  >
+                    <Text
+                      style={{ color: isYou ? "#04140b" : "rgba(234,244,236,.9)" }}
+                      className="text-sm leading-relaxed"
+                    >
+                      {m.content}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+            {chatMutation.isPending && (
+              <View style={{ alignSelf: "flex-start" }}>
+                <View
+                  className="rounded-2xl px-4 py-3"
+                  style={{ backgroundColor: "rgba(255,255,255,.05)", borderWidth: 1, borderColor: CINE.border }}
+                >
+                  <Text style={{ color: CINE.brightGreen, letterSpacing: 4 }} className="text-sm">
+                    •••
+                  </Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
         )}
 
-        {/* Input Area */}
-        <View className="flex-row items-end gap-2 pt-2 border-t border-border">
+        {/* Input */}
+        <View
+          className="flex-row items-center gap-2 px-4 py-3"
+          style={{ borderTopWidth: 1, borderTopColor: CINE.border }}
+        >
           <TextInput
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Ask me anything about studying abroad..."
-            placeholderTextColor="#687076"
-            multiline
-            maxLength={500}
-            editable={!isLoading}
-            className="flex-1 bg-surface border border-border rounded-lg px-4 py-3 text-foreground text-base"
-            style={{ maxHeight: 100 }}
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={guide.placeholder}
+            placeholderTextColor="rgba(234,244,236,.38)"
+            editable={!chatMutation.isPending}
+            onSubmitEditing={handleSend}
+            className="flex-1 rounded-full px-4 py-3 text-white text-sm"
+            style={{ backgroundColor: "rgba(255,255,255,.06)", borderWidth: 1, borderColor: "rgba(255,255,255,.16)" }}
           />
           <TouchableOpacity
-            onPress={handleSendMessage}
-            disabled={!inputText.trim() || isLoading}
-            className={`px-4 py-3 rounded-lg ${
-              inputText.trim() && !isLoading ? "bg-primary" : "bg-muted opacity-50"
-            }`}
+            onPress={handleSend}
+            disabled={!draft.trim() || chatMutation.isPending}
+            className="rounded-full px-5 py-3"
+            style={{ backgroundColor: draft.trim() && !chatMutation.isPending ? CINE.green : "rgba(255,255,255,.1)" }}
           >
-            <Text className="text-background font-semibold">Send</Text>
+            <Text style={{ color: draft.trim() && !chatMutation.isPending ? "#04140b" : CINE.dim }} className="font-bold text-sm">
+              Send
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

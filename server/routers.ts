@@ -9,6 +9,39 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const malaysiaUniversities = require("./data/malaysia-universities.json") as Array<Record<string, unknown>>;
 
+// The three founder-trained AI advisors. Real people, real specialties — each
+// persona is grounded on the same verified data and shares the student's
+// memory file, so switching guides never loses context.
+const AI_GUIDES = {
+  sayem: {
+    name: "Sayem Ahmed",
+    systemPrompt: `You are Sayem's AI — trained by Sayem Ahmed, CEO and co-founder of Last Bench.
+Sayem runs the whole student journey: you are the main advisor, focused on the student's
+application pipeline, document tracker, and overall status. Speak like a founder who is
+personally invested in this student succeeding — direct, warm, practical. When a student asks
+something outside your lane (deep university comparisons, community connections), answer what
+you can from the shared student file, then suggest they also ask Fahim's AI (career/university
+matching) or Erfan's AI (community) by name.`,
+  },
+  fahim: {
+    name: "Fahim Shahbaz",
+    systemPrompt: `You are Fahim's AI — trained by Fahim Shahbaz, the career guide at Last Bench.
+Fahim's expertise is matching students to the right university and program: comparing costs,
+visa success rates, GPA fit, and career outcomes. Speak like a sharp, honest career counselor —
+give real tradeoffs, not just cheerleading. Defer to Sayem's AI for tracker/document status
+questions, and to Erfan's AI for community questions.`,
+  },
+  erfan: {
+    name: "Erfan Uddin",
+    systemPrompt: `You are Erfan's AI — trained by Erfan Uddin, who runs the Last Bench community.
+Erfan's focus is connecting students to each other and to the community: cohorts, peer support,
+shared experience. You do NOT have access to a live feed of community posts or events — if asked
+about specific threads, events, or other students, be honest that you don't have that data and
+point them to the Community tab in the app instead of inventing anything. Speak like a warm,
+plugged-in community organizer.`,
+  },
+} as const;
+
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
@@ -648,27 +681,29 @@ export const appRouter = router({
   // AI GUIDANCE ROUTES
   // ============================================================================
   aiGuidance: router({
-    // Persistent chat — saves every message to DB, injects memories into each prompt
+    // Persistent chat — saves every message to DB, injects memories into each prompt.
+    // Three real personas (Sayem/Fahim/Erfan), one grounded backend — see AI_GUIDES below.
     chat: protectedProcedure
-      .input(z.object({ message: z.string() }))
+      .input(z.object({ message: z.string(), guide: z.enum(["sayem", "fahim", "erfan"]).default("sayem") }))
       .mutation(async ({ ctx, input }) => {
         const { invokeLLM } = await import("./_core/llm");
 
         const student = await db.getStudent(ctx.user.id);
         const studentId = student?.id ?? 0;
 
-        // Load persistent memory for this student
+        // Memory is shared across all three guides — one student file, three voices onto it.
         const [chatHistory, memories] = await Promise.all([
-          db.getAIChatHistory(studentId, 20),
+          db.getAIChatHistory(studentId, input.guide, 20),
           db.getAIMemories(studentId),
         ]);
 
         const memorySummary = memories.length > 0
-          ? `\nWhat I remember about this student:\n${memories.map((m) => `- ${m.memoryKey}: ${m.memoryValue}`).join("\n")}`
+          ? `\nWhat the team remembers about this student:\n${memories.map((m) => `- ${m.memoryKey}: ${m.memoryValue}`).join("\n")}`
           : "";
 
         const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
-        const systemPrompt = `You are an expert study-abroad advisor for Last Bench — an AI platform helping Bangladeshi secondary school students study in Malaysia.
+        const persona = AI_GUIDES[input.guide];
+        const systemPrompt = `${persona.systemPrompt}
 
 Student Profile:
 - Class: ${student?.class || "Not specified"}
@@ -680,13 +715,14 @@ ${memorySummary}
 VERIFIED MALAYSIA UNIVERSITY DATABASE (ONLY cite from this list):
 ${universityKnowledge}
 
-STRICT RULES:
+STRICT RULES (apply no matter which advisor you are):
 1. Only recommend universities from the verified database above
 2. Never invent acceptance rates, costs, visa statistics, or GPA requirements not in the data
-3. If asked about universities NOT in the database, say you don't have verified data
-4. If a student seems distressed or borderline eligible, add: "I recommend speaking with one of our mentors to verify this before applying."
-5. Always cite which university you are referencing
-6. GPA scale is 5.0; convert 4.0-scale scores by multiplying by 1.25
+3. Never invent specific community events, threads, or other students' stories you don't have real data for
+4. If asked about universities NOT in the database, say you don't have verified data
+5. If a student seems distressed or borderline eligible, add: "I recommend speaking with one of our mentors to verify this before applying."
+6. Always cite which university you are referencing
+7. GPA scale is 5.0; convert 4.0-scale scores by multiplying by 1.25
 
 After each response, if you learned something important about this student (a goal, concern, preferred university, timeline), output it on a NEW LINE in this exact format:
 MEMORY::key::value
@@ -694,7 +730,7 @@ Example: MEMORY::target_university::Universiti Malaya
 Only emit MEMORY lines for genuinely new, important facts — not for every message.`;
 
         // Save the user's message to DB
-        await db.saveAIChatMessage({ studentId, role: "user", content: input.message });
+        await db.saveAIChatMessage({ studentId, guide: input.guide, role: "user", content: input.message });
 
         const messages = [
           { role: "system" as const, content: systemPrompt },
@@ -726,7 +762,7 @@ Only emit MEMORY lines for genuinely new, important facts — not for every mess
           assistantMessage = assistantMessage.replace(/^MEMORY::.+$/gm, "").trim();
 
           // Save AI response to DB
-          await db.saveAIChatMessage({ studentId, role: "assistant", content: assistantMessage });
+          await db.saveAIChatMessage({ studentId, guide: input.guide, role: "assistant", content: assistantMessage });
 
           return { success: true, message: assistantMessage, conversationId: ctx.user.id };
         } catch (error) {
@@ -735,12 +771,14 @@ Only emit MEMORY lines for genuinely new, important facts — not for every mess
         }
       }),
 
-    // Return persistent chat history for the current student
-    getChatHistory: protectedProcedure.query(async ({ ctx }) => {
-      const student = await db.getStudent(ctx.user.id);
-      if (!student) return [];
-      return await db.getAIChatHistory(student.id, 50);
-    }),
+    // Return persistent chat history for the current student with one guide
+    getChatHistory: protectedProcedure
+      .input(z.object({ guide: z.enum(["sayem", "fahim", "erfan"]).default("sayem") }))
+      .query(async ({ ctx, input }) => {
+        const student = await db.getStudent(ctx.user.id);
+        if (!student) return [];
+        return await db.getAIChatHistory(student.id, input.guide, 50);
+      }),
 
     // Get university recommendations
     getRecommendations: protectedProcedure.query(async ({ ctx }) => {

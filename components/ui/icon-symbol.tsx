@@ -19,6 +19,7 @@ const MAPPING = {
   "chevron.left.forwardslash.chevron.right": "explore",
   "chevron.right": "chevron-right",
   "chat-bubble.fill": "chat",
+  "bubble.left.and.bubble.right.fill": "chat",
   "sparkles": "auto-awesome",
   "person.fill": "person",
   "bell.fill": "notifications",

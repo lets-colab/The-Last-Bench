@@ -5,9 +5,21 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { useFonts } from "expo-font";
+import { Anton_400Regular } from "@expo-google-fonts/anton";
+import {
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
+import * as SplashScreen from "expo-splash-screen";
+import { BenchLoader } from "@/components/bench-loader";
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -32,6 +44,18 @@ export default function RootLayout() {
 
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
+
+  const [fontsLoaded] = useFonts({
+    Anton_400Regular,
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded]);
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
@@ -77,6 +101,14 @@ export default function RootLayout() {
       },
     };
   }, [initialInsets, initialFrame]);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0F2A1E", alignItems: "center", justifyContent: "center" }}>
+        <BenchLoader />
+      </View>
+    );
+  }
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>

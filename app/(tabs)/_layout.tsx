@@ -56,6 +56,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai-guidance"
+        options={{
+          title: "AI Guides",
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="bubble.left.and.bubble.right.fill" color={color} />
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
@@ -64,7 +71,6 @@ export default function TabLayout() {
       />
       {/* Hidden from tab bar — accessible via deep links */}
       <Tabs.Screen name="community" options={{ href: null }} />
-      <Tabs.Screen name="ai-guidance" options={{ href: null }} />
       <Tabs.Screen name="messages" options={{ href: null }} />
     </Tabs>
   );

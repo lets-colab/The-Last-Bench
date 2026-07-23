@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BenchLoader } from "@/components/bench-loader";
 
 export default function OAuthCallback() {
   const router = useRouter();
@@ -239,7 +240,7 @@ export default function OAuthCallback() {
       <ThemedView className="flex-1 items-center justify-center gap-4 p-5">
         {status === "processing" && (
           <>
-            <ActivityIndicator size="large" />
+            <BenchLoader />
             <Text className="mt-4 text-base leading-6 text-center text-foreground">
               Completing authentication...
             </Text>
