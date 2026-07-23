@@ -65,6 +65,38 @@ export function resetDb() {
   _client = null;
 }
 
+// Idempotent, boot-time schema guarantees. This project's Drizzle migration
+// journal is out of sync with the live DB (several tables were applied directly
+// via Supabase SQL), so instead of `drizzle-kit migrate` we make the server
+// self-heal its own schema on startup — matching the app's self-healing ethos.
+// Every statement here MUST be safe to run repeatedly. Call from startServer()
+// and AWAIT it before the server begins serving, so no request hits a missing
+// column. See drizzle/0002_ai_guide_personas.sql for the canonical DDL.
+export async function ensureSchema() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[schema] no database — skipping ensureSchema");
+    return;
+  }
+  try {
+    // CREATE TYPE has no IF NOT EXISTS; swallow duplicate_object on re-run.
+    await db.execute(sql`
+      DO $$ BEGIN
+        CREATE TYPE ai_guide AS ENUM ('sayem', 'fahim', 'erfan');
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    `);
+    await db.execute(sql`
+      ALTER TABLE "aiChatMessages"
+      ADD COLUMN IF NOT EXISTS "guide" ai_guide DEFAULT 'sayem' NOT NULL;
+    `);
+    console.log("[schema] ensured aiChatMessages.guide column");
+  } catch (error) {
+    // Non-fatal: the server still boots. If the column genuinely can't be
+    // added, aiGuidance.chat's self-healing wrapper will surface it per-request.
+    console.warn("[schema] ensureSchema failed (non-fatal):", error);
+  }
+}
+
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");

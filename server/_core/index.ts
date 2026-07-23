@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { logError, getHealthSnapshot } from "../self-healing";
+import { ensureSchema } from "../db";
 
 // The server never dies from an unhandled error: every crash-class failure
 // is captured, logged to the knowledge base, and diagnosed in the background.
@@ -89,6 +90,10 @@ async function startServer() {
       res.status(500).json({ ok: false, error: "Something went wrong — the system is healing itself. Please retry." });
     }
   });
+
+  // Guarantee the schema is current before we serve a single request, so a
+  // fresh deploy can't hit a missing column (e.g. aiChatMessages.guide).
+  await ensureSchema();
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
