@@ -1,3 +1,0 @@
-# Static landing page for www.lastbenchbd.com — no build step needed
-[build]
-  publish = "."

@@ -18,6 +18,9 @@ services:
         sync: false
       - key: OAUTH_SERVER_URL
         sync: false
+      - key: FRONTEND_URL
+        sync: false # e.g. https://www.lastbenchbd.com — required so OAuth login
+                    # redirects real users to /app instead of localhost:8081
       - key: VITE_APP_ID
         sync: false
       - key: OWNER_OPEN_ID

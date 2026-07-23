@@ -1,6 +1,23 @@
+# One site, one host: the cinematic landing is the front door at /,
+# the student app (Expo web, base URL /app) lives at /app.
+
 [build]
   publish = "dist"
 
+# SPA fallback for the app's client-side routes (/app/profile, /app/admin, …).
+# Order matters: this must match before the landing catch-all below.
+[[redirects]]
+  from = "/app/*"
+  to = "/app/index.html"
+  status = 200
+
+# The OAuth portal may still return users to the app's old root callback path.
+[[redirects]]
+  from = "/oauth/callback"
+  to = "/app/oauth/callback"
+  status = 301
+
+# Landing catch-all (real files — thanks.html, assets, vendor — win automatically).
 [[redirects]]
   from = "/*"
   to = "/index.html"
