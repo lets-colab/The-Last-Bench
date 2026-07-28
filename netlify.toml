@@ -2,7 +2,12 @@
 # the student app (Expo web, base URL /app) lives at /app.
 
 [build]
+  command = "pnpm build:web:production"
   publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9.12.0"
 
 # SPA fallback for the app's client-side routes (/app/profile, /app/admin, …).
 # Order matters: this must match before the landing catch-all below.

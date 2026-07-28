@@ -37,7 +37,14 @@ export default function AdminDashboardScreen() {
     return acc;
   }, {});
 
-  const activeApps = (allApplications ?? []).filter((a: any) => !["enrolled", "rejected"].includes(a.applicationStatus)).length;
+  const activeApps = (allApplications ?? []).filter(
+    (a: any) => a.applicationStatus !== "rejected",
+  ).length;
+  const applicationsNeedingAttention = (allApplications ?? []).filter(
+    (a: any) =>
+      a.applicationStatus === "draft" ||
+      a.applicationStatus === "documents_received",
+  );
 
   return (
     <ScreenContainer className="p-0">
@@ -64,12 +71,12 @@ export default function AdminDashboardScreen() {
                 <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-1">
                   <Text className="text-xs text-muted font-semibold">STUDENTS</Text>
                   <Text className="text-3xl font-bold text-foreground">{allStudents?.length ?? 0}</Text>
-                  <Text className="text-xs text-muted">total enrolled</Text>
+                  <Text className="text-xs text-muted">student profiles</Text>
                 </View>
                 <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-1">
                   <Text className="text-xs text-muted font-semibold">APPLICATIONS</Text>
                   <Text className="text-3xl font-bold text-foreground">{allApplications?.length ?? 0}</Text>
-                  <Text className="text-xs text-primary text-xs">{activeApps} active</Text>
+                  <Text className="text-xs text-primary">{activeApps} active</Text>
                 </View>
                 <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-1">
                   <Text className="text-xs text-muted font-semibold">TUTORS</Text>
@@ -122,8 +129,7 @@ export default function AdminDashboardScreen() {
         {/* Recent Applications needing action */}
         <View className="px-6 pb-12 gap-3">
           <Text className="text-lg font-bold text-foreground">Needs Attention</Text>
-          {(allApplications ?? [])
-            .filter((a: any) => a.applicationStatus === "inquiry" || a.applicationStatus === "document_collection")
+          {applicationsNeedingAttention
             .slice(0, 3)
             .map((app: any) => (
               <TouchableOpacity
@@ -139,7 +145,7 @@ export default function AdminDashboardScreen() {
                 <Text className="text-primary">→</Text>
               </TouchableOpacity>
             ))}
-          {(allApplications ?? []).filter((a: any) => a.applicationStatus === "inquiry" || a.applicationStatus === "document_collection").length === 0 && (
+          {applicationsNeedingAttention.length === 0 && (
             <View className="bg-surface border border-border rounded-xl p-4">
               <Text className="text-sm text-muted text-center">All caught up!</Text>
             </View>

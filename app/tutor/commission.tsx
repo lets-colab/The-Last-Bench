@@ -3,7 +3,6 @@ import { ScrollView, Text, View, TouchableOpacity, Alert, ActivityIndicator, Tex
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/hooks/use-auth";
 import { MIN_PAYOUT_BDT, PAYOUT_METHODS, validatePayoutRequest, type PayoutMethod } from "@/shared/payout";
 import * as Haptics from "expo-haptics";
 
@@ -16,7 +15,6 @@ const PAYOUT_STATUS_STYLES: Record<string, { chip: string; text: string; label: 
 
 export default function CommissionScreen() {
   const router = useRouter();
-  const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data: tutorProfile } = trpc.tutor.getProfile.useQuery();
   const { data: commission, isLoading } = trpc.tutor.getCommissionSummary.useQuery(undefined, { enabled: !!tutorProfile });
@@ -39,7 +37,7 @@ export default function CommissionScreen() {
       setAmountText("");
       utils.tutor.getMyPayouts.invalidate();
       utils.tutor.getCommissionSummary.invalidate();
-      Alert.alert("Payout requested", "We'll review it and send the money within 3-5 working days.");
+      Alert.alert("Payout requested", "Your request is recorded. Check this screen for status updates.");
     },
     onError: (e) => Alert.alert("Could not request payout", e.message),
   });

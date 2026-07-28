@@ -1,22 +1,7 @@
-import { ScrollView, Text, View, ActivityIndicator, RefreshControl } from "react-native";
+import { ScrollView, Text, View, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { trpc } from "@/lib/trpc";
 import { useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
-
-const STAGE_LABELS: Record<string, string> = {
-  inquiry: "Inquiry",
-  profile_assessment: "Profile Assessment",
-  document_collection: "Documents",
-  application_submitted: "Applied",
-  under_review: "Under Review",
-  conditional_offer: "Conditional Offer",
-  offer_received: "Offer Received",
-  visa_preparation: "Visa Prep",
-  visa_applied: "Visa Applied",
-  visa_approved: "Visa Approved",
-  enrolled: "Enrolled",
-};
 
 function stageColor(status: string) {
   if (status === "enrolled" || status === "visa_approved") return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";

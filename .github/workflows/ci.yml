@@ -6,13 +6,23 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
 
       - uses: actions/setup-node@v4
         with:
@@ -23,7 +33,31 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: pnpm check
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Tests
         run: pnpm test
+
+      - name: Production dependency audit (critical only)
+        run: pnpm audit --prod --audit-level critical
+
+      - name: Build API server
+        run: |
+          pnpm build
+          test -s server-dist/index.js
+
+      - name: Build complete Netlify site
+        run: pnpm build:web:production
+        env:
+          EXPO_PUBLIC_API_BASE_URL: https://api.example.invalid
+          EXPO_PUBLIC_OAUTH_PORTAL_URL: https://portal.example.invalid
+          EXPO_PUBLIC_OAUTH_SERVER_URL: https://oauth.example.invalid
+          EXPO_PUBLIC_APP_ID: ci-app-id
+          EXPO_PUBLIC_OWNER_OPEN_ID: ci-owner-id
+          EXPO_PUBLIC_OWNER_NAME: Last Bench
+
+      - name: Check patch integrity
+        run: git diff --check

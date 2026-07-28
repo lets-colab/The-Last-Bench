@@ -18,8 +18,6 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 import * as SplashScreen from "expo-splash-screen";
 import { BenchLoader } from "@/components/bench-loader";
-
-SplashScreen.preventAutoHideAsync().catch(() => {});
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -30,6 +28,8 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -45,7 +45,7 @@ export default function RootLayout() {
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
@@ -53,9 +53,20 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
   });
 
+  // Web must never be held behind a remote/font asset. Render immediately with
+  // system fallbacks while the brand fonts load. Native keeps the branded
+  // splash until fonts either load or fail.
+  const canRender = Platform.OS === "web" || fontsLoaded || Boolean(fontError);
+
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+    if (canRender) SplashScreen.hideAsync().catch(() => {});
+  }, [canRender]);
+
+  useEffect(() => {
+    if (fontError) {
+      console.warn("[fonts] Brand fonts unavailable; using system fallbacks.", fontError.message);
+    }
+  }, [fontError]);
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
@@ -102,7 +113,7 @@ export default function RootLayout() {
     };
   }, [initialInsets, initialFrame]);
 
-  if (!fontsLoaded) {
+  if (!canRender) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0F2A1E", alignItems: "center", justifyContent: "center" }}>
         <BenchLoader />
@@ -120,6 +131,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
+            <Stack.Screen name="onboarding" />
             <Stack.Screen name="tutor/index" />
             <Stack.Screen name="tutor/onboard" />
             <Stack.Screen name="tutor/students" />

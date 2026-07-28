@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,6 +39,24 @@ export default function CommunityScreen() {
     return (
       <ScreenContainer className="p-6 justify-center items-center">
         <BenchLoader />
+      </ScreenContainer>
+    );
+  }
+
+  if (cohortsQuery.isError || skillsQuery.isError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-4xl">↻</Text>
+        <Text className="text-xl font-bold text-foreground">Community unavailable</Text>
+        <Text className="text-sm text-muted text-center leading-relaxed">
+          We could not load cohorts and learning resources. Check your connection and try again.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void Promise.all([cohortsQuery.refetch(), skillsQuery.refetch()])}
+          className="bg-primary rounded-lg px-6 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Retry</Text>
+        </TouchableOpacity>
       </ScreenContainer>
     );
   }
@@ -115,9 +133,9 @@ export default function CommunityScreen() {
                   <Text className="text-base font-semibold text-foreground">{category}</Text>
 
                   {categorySkills.map((skill) => (
-                    <TouchableOpacity
+                    <View
                       key={skill.id}
-                      className="bg-surface rounded-lg p-4 border border-border active:opacity-80 gap-2"
+                      className="bg-surface rounded-lg p-4 border border-border gap-2"
                     >
                       <View className="flex-row items-start justify-between gap-3">
                         <View className="flex-1 gap-1">
@@ -134,9 +152,9 @@ export default function CommunityScreen() {
                             )}
                           </View>
                         </View>
-                        <Text className="text-lg text-muted">→</Text>
+                        <Text className="text-[10px] font-semibold text-muted uppercase">Preview</Text>
                       </View>
-                    </TouchableOpacity>
+                    </View>
                   ))}
                 </View>
               ))}

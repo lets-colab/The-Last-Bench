@@ -4,14 +4,12 @@ services:
     env: node
     plan: free
     region: singapore
-    buildCommand: npm install -g pnpm@9 && pnpm install --frozen-lockfile && pnpm build
+    buildCommand: corepack enable && corepack prepare pnpm@9.12.0 --activate && pnpm install --frozen-lockfile && pnpm build
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
@@ -19,8 +17,11 @@ services:
       - key: OAUTH_SERVER_URL
         sync: false
       - key: FRONTEND_URL
-        sync: false # e.g. https://www.lastbenchbd.com — required so OAuth login
-                    # redirects real users to /app instead of localhost:8081
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        value: "1"
       - key: VITE_APP_ID
         sync: false
       - key: OWNER_OPEN_ID
@@ -28,4 +29,6 @@ services:
       - key: BUILT_IN_FORGE_API_URL
         sync: false
       - key: BUILT_IN_FORGE_API_KEY
+        sync: false
+      - key: AI_GUIDANCE_MODEL
         sync: false

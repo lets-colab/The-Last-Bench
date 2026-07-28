@@ -1,16 +1,94 @@
 import { COOKIE_NAME } from "../shared/const.js";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { canTransitionPayout, validatePayoutRequest } from "../shared/payout";
+import type { Application, User } from "../drizzle/schema";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const malaysiaUniversities = require("./data/malaysia-universities.json") as Array<Record<string, unknown>>;
+const malaysiaUniversities = require("./data/malaysia-universities.json") as Record<string, unknown>[];
+const universityDirectory = malaysiaUniversities.map((university) => ({
+  name: university.name,
+  shortName: university.shortName,
+  location: university.location,
+  type: university.type,
+  programs: university.programs,
+}));
 
-// The three founder-trained AI advisors. Real people, real specialties — each
-// persona is grounded on the same verified data and shares the student's
+const applicationStatusSchema = z.enum([
+  "draft",
+  "documents_received",
+  "profile_analyzed",
+  "shortlisted",
+  "application_drafted",
+  "submitted_to_university",
+  "under_review",
+  "offer_received",
+  "visa_application_filed",
+  "visa_decision",
+  "pre_departure",
+  "rejected",
+]);
+
+const reviewedDocumentUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(2048)
+  .refine((value) => new URL(value).protocol === "https:", {
+    message: "Document URL must use HTTPS",
+  });
+
+async function requireStudentProfile(userId: number) {
+  const student = await db.getStudent(userId);
+  if (!student) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Complete your student profile before using AI guidance.",
+    });
+  }
+  return student;
+}
+
+async function requireApplicationAccess(
+  user: Pick<User, "id" | "role">,
+  applicationId: number,
+) {
+  const application = await db.getApplication(applicationId);
+  if (!application) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Application not found" });
+  }
+
+  const canManage = user.role === "admin" || application.mentorAssigned === user.id;
+  const student = canManage ? undefined : await db.getStudent(user.id);
+  const ownsApplication = student?.id === application.studentId;
+
+  if (!canManage && !ownsApplication) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have access to this application",
+    });
+  }
+
+  return { application, canViewInternalNotes: canManage };
+}
+
+function toStudentSafeApplication(application: Application) {
+  const {
+    notes: _internalNotes,
+    estimatedCost: _unverifiedCost,
+    visaSuccessRate: _unverifiedVisaRate,
+    acceptanceRate: _unverifiedAcceptanceRate,
+    ...studentSafeApplication
+  } = application;
+  return studentSafeApplication;
+}
+
+// The three founder-trained AI advisors. Each persona shares the student's
 // memory file, so switching guides never loses context.
 const AI_GUIDES = {
   sayem: {
@@ -18,18 +96,21 @@ const AI_GUIDES = {
     systemPrompt: `You are Sayem's AI — trained by Sayem Ahmed, CEO and co-founder of Last Bench.
 Sayem runs the whole student journey: you are the main advisor, focused on the student's
 application pipeline, document tracker, and overall status. Speak like a founder who is
-personally invested in this student succeeding — direct, warm, practical. When a student asks
-something outside your lane (deep university comparisons, community connections), answer what
-you can from the shared student file, then suggest they also ask Fahim's AI (career/university
-matching) or Erfan's AI (community) by name.`,
+personally invested in this student succeeding — direct, warm, practical. You do not receive
+live application or document status in this chat, so never claim that a stage is complete or a
+document is approved; direct the student to their tracker or mentor for current status. When a
+student asks something outside your lane (deep university comparisons, community connections),
+answer what you can from the shared student file, then suggest they also ask Fahim's AI
+(career/university matching) or Erfan's AI (community) by name.`,
   },
   fahim: {
     name: "Fahim Shahbaz",
     systemPrompt: `You are Fahim's AI — trained by Fahim Shahbaz, the career guide at Last Bench.
-Fahim's expertise is matching students to the right university and program: comparing costs,
-visa success rates, GPA fit, and career outcomes. Speak like a sharp, honest career counselor —
-give real tradeoffs, not just cheerleading. Defer to Sayem's AI for tracker/document status
-questions, and to Erfan's AI for community questions.`,
+Fahim's expertise is helping students research universities and programs: comparing study areas,
+questions to ask, and career directions. Treat all time-sensitive details
+as unverified until the student checks an official university or government source. Speak like a
+sharp, honest career counselor — give real tradeoffs, not just cheerleading. Defer to Sayem's AI
+for tracker/document status questions, and to Erfan's AI for community questions.`,
   },
   erfan: {
     name: "Erfan Uddin",
@@ -70,33 +151,43 @@ export const appRouter = router({
     createProfile: protectedProcedure
       .input(
         z.object({
-          class: z.string().optional(),
-          fieldOfInterest: z.string().optional(),
-          destinationPreference: z.string().optional(),
-          gpa: z.string().optional(),
-          referralCode: z.string().optional(),
-        })
+          class: z.string().trim().min(1).max(50).optional(),
+          fieldOfInterest: z.string().trim().min(1).max(100).optional(),
+          destinationPreference: z.string().trim().min(1).max(100).optional(),
+          gpa: z.string().trim().max(10).optional(),
+          referralCode: z.string().trim().max(50).optional(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
-        const result = await db.createStudent({
-          userId: ctx.user.id,
-          ...input,
-        });
-        return result;
+        const existing = await db.getStudent(ctx.user.id);
+        if (existing) {
+          await db.updateStudent(ctx.user.id, input);
+        } else {
+          await db.createStudent({
+            userId: ctx.user.id,
+            ...input,
+          });
+        }
+        return await db.getStudent(ctx.user.id);
       }),
 
     // Update student profile
     updateProfile: protectedProcedure
       .input(
         z.object({
-          class: z.string().optional(),
-          fieldOfInterest: z.string().optional(),
-          destinationPreference: z.string().optional(),
-          gpa: z.string().optional(),
-        })
+          class: z.string().trim().min(1).max(50).optional(),
+          fieldOfInterest: z.string().trim().min(1).max(100).optional(),
+          destinationPreference: z.string().trim().min(1).max(100).optional(),
+          gpa: z.string().trim().max(10).optional(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
-        await db.updateStudent(ctx.user.id, input);
+        const existing = await db.getStudent(ctx.user.id);
+        if (existing) {
+          await db.updateStudent(ctx.user.id, input);
+        } else {
+          await db.createStudent({ userId: ctx.user.id, ...input });
+        }
         return { success: true };
       }),
 
@@ -117,26 +208,30 @@ export const appRouter = router({
     getByStudent: protectedProcedure.query(async ({ ctx }) => {
       const student = await db.getStudent(ctx.user.id);
       if (!student) return [];
-      return await db.getApplicationsByStudent(student.id);
+      const studentApplications = await db.getApplicationsByStudent(student.id);
+      return studentApplications.map(toStudentSafeApplication);
     }),
 
     // Get single application
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getApplication(input.id);
+      .query(async ({ ctx, input }) => {
+        const { application, canViewInternalNotes } = await requireApplicationAccess(
+          ctx.user,
+          input.id,
+        );
+        if (canViewInternalNotes) return application;
+
+        return toStudentSafeApplication(application);
       }),
 
     // Create application
     create: protectedProcedure
       .input(
         z.object({
-          universityName: z.string(),
-          programName: z.string(),
-          country: z.string().optional(),
-          estimatedCost: z.string().optional(),
-          visaSuccessRate: z.string().optional(),
-          acceptanceRate: z.string().optional(),
+          universityName: z.string().trim().min(2).max(255),
+          programName: z.string().trim().min(2).max(255),
+          country: z.string().trim().min(2).max(100).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -156,8 +251,8 @@ export const appRouter = router({
       .input(
         z.object({
           applicationId: z.number(),
-          status: z.string(),
-          notes: z.string().optional(),
+          status: applicationStatusSchema,
+          notes: z.string().trim().max(5000).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -168,7 +263,12 @@ export const appRouter = router({
         if (!isAdmin && !isMentor) {
           throw new Error("Not authorized to update this application");
         }
-        await db.updateApplicationStatus(input.applicationId, input.status, ctx.user.id);
+        await db.updateApplicationStatus(
+          input.applicationId,
+          input.status,
+          ctx.user.id,
+          input.notes,
+        );
         return { success: true };
       }),
   }),
@@ -180,21 +280,37 @@ export const appRouter = router({
     // Get documents for an application
     getByApplication: protectedProcedure
       .input(z.object({ applicationId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        await requireApplicationAccess(ctx.user, input.applicationId);
         return await db.getDocumentsByApplication(input.applicationId);
       }),
 
-    // Upload document
+    // Register a document that an assigned mentor or admin has already
+    // reviewed and placed in the approved HTTPS storage flow.
     upload: protectedProcedure
       .input(
         z.object({
           applicationId: z.number(),
-          documentType: z.string(),
-          fileUrl: z.string(),
-          fileName: z.string(),
+          documentType: z.string().trim().min(1).max(80),
+          fileUrl: reviewedDocumentUrlSchema,
+          fileName: z
+            .string()
+            .trim()
+            .min(1)
+            .max(255)
+            .refine((value) => !/[\\/]/.test(value), {
+              message: "File name must not contain a path",
+            }),
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const access = await requireApplicationAccess(ctx.user, input.applicationId);
+        if (!access.canViewInternalNotes) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only the assigned mentor or an administrator can attach reviewed documents",
+          });
+        }
         const result = await db.createDocument({
           applicationId: input.applicationId,
           documentType: input.documentType,
@@ -331,8 +447,36 @@ export const appRouter = router({
     // Get referral by student and tutor
     getByStudentAndTutor: protectedProcedure
       .input(z.object({ studentId: z.number(), tutorId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getReferralByStudentAndTutor(input.studentId, input.tutorId);
+      .query(async ({ ctx, input }) => {
+        const referral = await db.getReferralByStudentAndTutor(input.studentId, input.tutorId);
+        if (!referral) return undefined;
+
+        if (ctx.user.role === "admin") return referral;
+
+        const [student, tutor] = await Promise.all([
+          db.getStudent(ctx.user.id),
+          db.getTutor(ctx.user.id),
+        ]);
+        const isStudent = student?.id === input.studentId;
+        const isTutor = tutor?.id === input.tutorId;
+        if (!isStudent && !isTutor) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have access to this referral",
+          });
+        }
+
+        if (isTutor) return referral;
+
+        const {
+          commissionPercentage: _commissionPercentage,
+          commissionAmount: _commissionAmount,
+          commissionStatus: _commissionStatus,
+          payoutMethod: _payoutMethod,
+          payoutDetails: _payoutDetails,
+          ...studentSafeReferral
+        } = referral;
+        return studentSafeReferral;
       }),
   }),
 
@@ -403,8 +547,16 @@ export const appRouter = router({
     // Mark message as read
     markAsRead: protectedProcedure
       .input(z.object({ messageId: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.markMessageAsRead(input.messageId);
+      .mutation(async ({ ctx, input }) => {
+        await db.markMessageAsRead(input.messageId, ctx.user.id);
+        return { success: true };
+      }),
+
+    // Mark all incoming messages in one conversation as read
+    markThreadAsRead: protectedProcedure
+      .input(z.object({ otherUserId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.markThreadAsRead(ctx.user.id, input.otherUserId);
         return { success: true };
       }),
   }),
@@ -474,8 +626,9 @@ export const appRouter = router({
   // UNIVERSITY ROUTES
   // ============================================================================
   university: router({
-    // Verified Malaysia university database (same data the AI advisor cites)
-    getAll: publicProcedure.query(() => malaysiaUniversities),
+    // Discovery directory only. Time-sensitive fees, entry rules, rankings,
+    // visa claims, and processing times are intentionally not exposed.
+    getAll: publicProcedure.query(() => universityDirectory),
   }),
 
   // ============================================================================
@@ -507,8 +660,8 @@ export const appRouter = router({
     // Mark notification as read
     markAsRead: protectedProcedure
       .input(z.object({ notificationId: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.markNotificationAsRead(input.notificationId);
+      .mutation(async ({ ctx, input }) => {
+        await db.markNotificationAsRead(input.notificationId, ctx.user.id);
         return { success: true };
       }),
   }),
@@ -522,13 +675,18 @@ export const appRouter = router({
       .input(
         z.object({
           applicationId: z.number(),
-          status: z.string(),
-          notes: z.string().optional(),
+          status: applicationStatusSchema,
+          notes: z.string().trim().max(5000).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
         const before = await db.getApplication(input.applicationId);
-        await db.updateApplicationStatus(input.applicationId, input.status, ctx.user.id);
+        await db.updateApplicationStatus(
+          input.applicationId,
+          input.status,
+          ctx.user.id,
+          input.notes,
+        );
         await db.createAuditLog({
           actorUserId: ctx.user.id,
           action: "application.status_change",
@@ -684,12 +842,17 @@ export const appRouter = router({
     // Persistent chat — saves every message to DB, injects memories into each prompt.
     // Three real personas (Sayem/Fahim/Erfan), one grounded backend — see AI_GUIDES below.
     chat: protectedProcedure
-      .input(z.object({ message: z.string(), guide: z.enum(["sayem", "fahim", "erfan"]).default("sayem") }))
+      .input(
+        z.object({
+          message: z.string().trim().min(1).max(2000),
+          guide: z.enum(["sayem", "fahim", "erfan"]).default("sayem"),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
         const { invokeLLM } = await import("./_core/llm");
 
-        const student = await db.getStudent(ctx.user.id);
-        const studentId = student?.id ?? 0;
+        const student = await requireStudentProfile(ctx.user.id);
+        const studentId = student.id;
 
         // Memory is shared across all three guides — one student file, three voices onto it.
         const [chatHistory, memories] = await Promise.all([
@@ -701,28 +864,27 @@ export const appRouter = router({
           ? `\nWhat the team remembers about this student:\n${memories.map((m) => `- ${m.memoryKey}: ${m.memoryValue}`).join("\n")}`
           : "";
 
-        const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
+        const universityKnowledge = JSON.stringify(universityDirectory, null, 2);
         const persona = AI_GUIDES[input.guide];
         const systemPrompt = `${persona.systemPrompt}
 
 Student Profile:
-- Class: ${student?.class || "Not specified"}
-- GPA: ${student?.gpa || "Not specified"}
-- Field of Interest: ${student?.fieldOfInterest || "Not specified"}
-- Destination Preference: ${student?.destinationPreference || "Not specified"}
+- Class: ${student.class || "Not specified"}
+- GPA: ${student.gpa || "Not specified"}
+- Field of Interest: ${student.fieldOfInterest || "Not specified"}
+- Destination Preference: ${student.destinationPreference || "Not specified"}
 ${memorySummary}
 
-VERIFIED MALAYSIA UNIVERSITY DATABASE (ONLY cite from this list):
+MALAYSIA UNIVERSITY DISCOVERY DIRECTORY:
 ${universityKnowledge}
 
 STRICT RULES (apply no matter which advisor you are):
-1. Only recommend universities from the verified database above
-2. Never invent acceptance rates, costs, visa statistics, or GPA requirements not in the data
+1. Use the directory only to orient the student to names, locations, and broad study areas
+2. Never invent or present current acceptance rates, fees, visa statistics, GPA requirements, rankings, scholarships, or processing times
 3. Never invent specific community events, threads, or other students' stories you don't have real data for
-4. If asked about universities NOT in the database, say you don't have verified data
+4. Tell students to verify current programme and entry details on official university and government sources before applying
 5. If a student seems distressed or borderline eligible, add: "I recommend speaking with one of our mentors to verify this before applying."
-6. Always cite which university you are referencing
-7. GPA scale is 5.0; convert 4.0-scale scores by multiplying by 1.25
+6. Clearly name which university you are discussing
 
 After each response, if you learned something important about this student (a goal, concern, preferred university, timeline), output it on a NEW LINE in this exact format:
 MEMORY::key::value
@@ -742,7 +904,7 @@ Only emit MEMORY lines for genuinely new, important facts — not for every mess
           const { withSelfHealing } = await import("./self-healing");
           const result = await withSelfHealing(
             "llm:aiGuidance.chat",
-            () => invokeLLM({ messages, model: "claude-3-5-sonnet-20241022", maxTokens: 1024 }),
+            () => invokeLLM({ messages, model: ENV.aiGuidanceModel, maxTokens: 1024 }),
             { maxRetries: 2 },
           );
           const rawContent = result.choices[0]?.message?.content;
@@ -785,38 +947,31 @@ Only emit MEMORY lines for genuinely new, important facts — not for every mess
       const { invokeLLM } = await import("./_core/llm");
       
       // Get student profile
-      const student = await db.getStudent(ctx.user.id);
+      const student = await requireStudentProfile(ctx.user.id);
       
-      if (!student) {
-        throw new Error("Student profile not found");
-      }
-      
-      const universityKnowledge = JSON.stringify(malaysiaUniversities, null, 2);
-      const prompt = `Based on this student profile, recommend 3-5 universities from the VERIFIED DATABASE ONLY.
+      const universityKnowledge = JSON.stringify(universityDirectory, null, 2);
+      const prompt = `Based on this student profile, suggest 3-5 universities to research from the discovery directory.
 
 Student Profile:
 - Class: ${student.class}
-- GPA: ${student.gpa} (on 5.0 scale)
+- GPA/result: ${student.gpa} (as entered by the student; the scale may vary)
 - Field of Interest: ${student.fieldOfInterest}
 - Destination Preference: ${student.destinationPreference}
 
-VERIFIED MALAYSIA UNIVERSITY DATABASE:
+MALAYSIA UNIVERSITY DISCOVERY DIRECTORY:
 ${universityKnowledge}
 
 Instructions:
-- Only recommend universities from the database above
+- Only suggest universities from the directory above
 - Match programs to the student's field of interest
-- Only recommend universities where the student's GPA meets the minimum requirement
-- Use exact cost and visa data from the database
+- Do not claim the student is eligible; current entry requirements must be verified with the university
+- Do not provide fees, visa odds, rankings, scholarships, acceptance rates, or processing times
+- Explain that the list is a research starting point, not an admission or visa prediction
 
 Return a JSON object with key "recommendations" containing an array where each item has:
 - universityName (string)
 - programName (string)
-- whyGoodFit (string, 2-3 sentences)
-- estimatedCostUSD (string, e.g. "$9,500/year")
-- visaSuccessRate (string, from database)
-- gpaRequired (string, from database)
-- emgsCategory (string, from database)`;
+- whyGoodFit (string, 2-3 sentences, including what the student should verify next)`;
       
       try {
         const result = await invokeLLM({
@@ -826,7 +981,7 @@ Return a JSON object with key "recommendations" containing an array where each i
               content: prompt,
             },
           ],
-          model: "claude-3-5-sonnet-20241022",
+          model: ENV.aiGuidanceModel,
           maxTokens: 2048,
           responseFormat: { type: "json_object" },
         });
@@ -845,10 +1000,11 @@ Return a JSON object with key "recommendations" containing an array where each i
     }),
   }),
 
-  // Self-healing engine: the system logs every error, auto-recovers where
-  // safe, and learns from each fix. Admin can inspect what it has learned.
+  // Privacy-bounded diagnostics: errors are redacted before storage, only
+  // deterministic transient retries run automatically, and AI fixes stay
+  // advisory. Diagnostic data and actions are admin-only.
   selfHealing: router({
-    health: publicProcedure.query(async () => {
+    health: adminProcedure.query(async () => {
       const { getHealthSnapshot } = await import("./self-healing");
       return getHealthSnapshot();
     }),

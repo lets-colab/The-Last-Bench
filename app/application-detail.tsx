@@ -62,6 +62,24 @@ export default function ApplicationDetailScreen() {
     );
   }
 
+  if (applicationQuery.isError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-4xl">↻</Text>
+        <Text className="text-xl font-bold text-foreground">Application unavailable</Text>
+        <Text className="text-sm text-muted text-center leading-relaxed">
+          We could not load this application. Check your connection and try again.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void applicationQuery.refetch()}
+          className="bg-primary rounded-lg px-6 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Retry</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
+
   if (!app) {
     return (
       <ScreenContainer className="p-6 justify-center items-center gap-4">
@@ -82,7 +100,10 @@ export default function ApplicationDetailScreen() {
     0
   );
   const isRejected = app.applicationStatus === "rejected";
-  const progress = isRejected ? 0 : Math.round(((currentIndex + 1) / STAGES.length) * 100);
+  const stagePosition = currentIndex + 1;
+  const pipelineWidth: `${number}%` = isRejected
+    ? "0%"
+    : `${Math.round((stagePosition / STAGES.length) * 100)}%`;
   const currentStage = isRejected
     ? { title: "Not Successful", icon: "✗", description: "This application was not successful" }
     : STAGES[currentIndex];
@@ -132,50 +153,24 @@ export default function ApplicationDetailScreen() {
 
             <View className="gap-2">
               <View className="flex-row items-center justify-between">
-                <Text className="text-xs font-semibold text-muted">Progress</Text>
-                <Text className="text-xs font-bold text-foreground">{progress}%</Text>
+                <Text className="text-xs font-semibold text-muted">Pipeline position</Text>
+                <Text className="text-xs font-bold text-foreground">
+                  {isRejected ? "Closed" : `Stage ${stagePosition} of ${STAGES.length}`}
+                </Text>
               </View>
               <View className="h-2 bg-border rounded-full overflow-hidden">
-                <View style={{ width: `${progress}%` }} className="h-full bg-primary rounded-full" />
+                <View style={{ width: pipelineWidth }} className="h-full bg-primary rounded-full" />
               </View>
             </View>
 
             {lastUpdated && (
-              <View className="flex-row gap-3 pt-2">
-                <View className="flex-1 gap-1">
-                  <Text className="text-xs text-muted">Last updated</Text>
-                  <Text className="text-sm font-bold text-foreground">{lastUpdated}</Text>
-                </View>
-                {app.acceptanceRate && (
-                  <View className="flex-1 gap-1">
-                    <Text className="text-xs text-muted">Acceptance Rate</Text>
-                    <Text className="text-sm font-bold text-foreground">{app.acceptanceRate}</Text>
-                  </View>
-                )}
+              <View className="gap-1 pt-2">
+                <Text className="text-xs text-muted">Last updated</Text>
+                <Text className="text-sm font-bold text-foreground">{lastUpdated}</Text>
               </View>
             )}
           </View>
         </View>
-
-        {/* Quick Stats — only shown when we actually have the data */}
-        {(app.visaSuccessRate || app.estimatedCost) && (
-          <View className="px-6 pb-6 gap-3">
-            <View className="flex-row gap-3">
-              {app.visaSuccessRate && (
-                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-xs text-muted font-medium">Visa Success</Text>
-                  <Text className="text-xl font-bold text-foreground">{app.visaSuccessRate}</Text>
-                </View>
-              )}
-              {app.estimatedCost && (
-                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-xs text-muted font-medium">Est. Cost</Text>
-                  <Text className="text-xl font-bold text-foreground">{app.estimatedCost}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
 
         {/* Timeline — derived from the real pipeline stage */}
         {!isRejected && (
@@ -233,12 +228,30 @@ export default function ApplicationDetailScreen() {
 
           {documentsQuery.isLoading ? (
             <ActivityIndicator size="small" color={colors.primary} />
+          ) : documentsQuery.isError ? (
+            <View className="bg-surface border border-border rounded-xl p-4 gap-3">
+              <Text className="text-sm font-semibold text-foreground">Documents unavailable</Text>
+              <Text className="text-xs text-muted leading-relaxed">
+                We could not load the reviewed documents for this application.
+              </Text>
+              <TouchableOpacity
+                onPress={() => void documentsQuery.refetch()}
+                className="self-start bg-primary rounded-lg px-4 py-2 active:opacity-80"
+              >
+                <Text className="text-background text-xs font-bold">Retry</Text>
+              </TouchableOpacity>
+            </View>
           ) : documents.length > 0 ? (
             <View className="gap-2">
               {documents.map((doc) => (
                 <TouchableOpacity
                   key={doc.id}
-                  onPress={() => doc.fileUrl && Linking.openURL(doc.fileUrl).catch(() => {})}
+                  onPress={() =>
+                    doc.fileUrl &&
+                    Linking.openURL(doc.fileUrl).catch(() =>
+                      Alert.alert("Document unavailable", "This document link could not be opened."),
+                    )
+                  }
                   className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
                 >
                   <View className="flex-1 gap-1">
@@ -258,29 +271,12 @@ export default function ApplicationDetailScreen() {
             <View className="bg-surface border border-border rounded-xl p-4 gap-1">
               <Text className="text-sm font-semibold text-foreground">No documents yet</Text>
               <Text className="text-xs text-muted leading-relaxed">
-                Send your transcript and certificates to your mentor on WhatsApp — they'll be attached
+                Send your transcript and certificates to your mentor on WhatsApp — they&apos;ll be attached
                 here after review. In-app upload is coming soon.
               </Text>
             </View>
           )}
         </View>
-
-        {/* Mentor Notes — only rendered when a real note exists */}
-        {app.notes && (
-          <View className="px-6 pb-6 gap-4">
-            <Text className="text-lg font-bold text-foreground">Mentor Notes</Text>
-            <View className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 gap-3">
-              <View className="flex-row items-start gap-3">
-                <Text className="text-2xl">👩‍🏫</Text>
-                <View className="flex-1 gap-2">
-                  <Text className="font-semibold text-foreground">From your mentor team</Text>
-                  <Text className="text-sm text-muted leading-relaxed">{app.notes}</Text>
-                  {lastUpdated && <Text className="text-xs text-muted mt-2">Updated {lastUpdated}</Text>}
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Action Buttons */}
         <View className="px-6 pb-12 gap-3">

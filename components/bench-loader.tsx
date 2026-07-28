@@ -1,4 +1,4 @@
-import { Animated, Easing, Image, View } from "react-native";
+import { Animated, Easing, Image, Platform, View } from "react-native";
 import { useEffect, useRef } from "react";
 
 /**
@@ -18,13 +18,13 @@ export function BenchLoader({ size = 64 }: { size?: number }) {
           toValue: 1,
           duration: 1200,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(phase, {
           toValue: 0,
           duration: 1200,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ])
     );

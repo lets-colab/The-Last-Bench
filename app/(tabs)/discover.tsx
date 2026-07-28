@@ -1,5 +1,14 @@
-import { ScrollView, Text, View, TouchableOpacity, TextInput, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  Text,
+  View,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { trpc } from "@/lib/trpc";
@@ -15,6 +24,8 @@ const WELCOME: ChatMsg = {
 
 export default function DiscoverScreen() {
   const { user } = useAuth();
+  const router = useRouter();
+  const utils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState<"ai" | "community">("ai");
   const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState<ChatMsg[]>([WELCOME]);
@@ -26,6 +37,13 @@ export default function DiscoverScreen() {
   const historyQuery = trpc.aiGuidance.getChatHistory.useQuery({ guide: "sayem" }, { enabled: !!user });
   const cohortsQuery = trpc.cohort.getAll.useQuery();
   const skillsQuery = trpc.skill.getAll.useQuery();
+  const joinCohort = trpc.cohort.join.useMutation({
+    onSuccess: async (_data, variables) => {
+      await utils.cohort.getById.invalidate({ cohortId: variables.cohortId });
+      router.push(`/cohort/${variables.cohortId}`);
+    },
+    onError: (error) => Alert.alert("Could not join cohort", error.message),
+  });
 
   // Load persistent history from server on mount
   useEffect(() => {
@@ -123,6 +141,21 @@ export default function DiscoverScreen() {
             {historyQuery.isLoading && (
               <ActivityIndicator size="small" color="#16a34a" className="mt-4 mb-2" />
             )}
+            {historyQuery.isError && (
+              <View className="bg-surface border border-border rounded-xl p-4 gap-3 mb-3">
+                <Text className="text-sm font-semibold text-foreground">Conversation history unavailable</Text>
+                <Text className="text-xs text-muted leading-relaxed">
+                  Your saved conversation could not be loaded. New messages may still work, but verify
+                  important advice with your mentor and official sources.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => void historyQuery.refetch()}
+                  className="self-start bg-primary rounded-lg px-4 py-2 active:opacity-80"
+                >
+                  <Text className="text-background text-xs font-bold">Retry history</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             {messages.map((msg) => (
               <View
                 key={msg.id}
@@ -175,6 +208,20 @@ export default function DiscoverScreen() {
         <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 24 }}>
           {cohortsQuery.isLoading || skillsQuery.isLoading ? (
             <BenchLoader />
+          ) : cohortsQuery.isError || skillsQuery.isError ? (
+            <View className="items-center pt-12 gap-3">
+              <Text className="text-4xl">↻</Text>
+              <Text className="text-base font-semibold text-foreground">Community unavailable</Text>
+              <Text className="text-sm text-muted text-center">
+                We could not load cohorts and learning resources. Check your connection and try again.
+              </Text>
+              <TouchableOpacity
+                onPress={() => void Promise.all([cohortsQuery.refetch(), skillsQuery.refetch()])}
+                className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+              >
+                <Text className="text-background font-bold">Retry</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View className="gap-6">
               {cohorts.length > 0 && (
@@ -192,8 +239,14 @@ export default function DiscoverScreen() {
                           <Text className="text-sm text-muted">{cohort.description}</Text>
                         )}
                       </View>
-                      <TouchableOpacity className="bg-primary rounded-lg py-2 items-center">
-                        <Text className="text-white font-semibold text-sm">Join Cohort</Text>
+                      <TouchableOpacity
+                        onPress={() => joinCohort.mutate({ cohortId: cohort.id })}
+                        disabled={joinCohort.isPending}
+                        className="bg-primary rounded-lg py-2 items-center active:opacity-80"
+                      >
+                        <Text className="text-white font-semibold text-sm">
+                          {joinCohort.isPending ? "Joining…" : "Join Cohort"}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -207,7 +260,7 @@ export default function DiscoverScreen() {
                     <View key={category} className="gap-2">
                       <Text className="text-sm font-semibold text-muted uppercase tracking-wide">{category}</Text>
                       {categorySkills.map((skill) => (
-                        <TouchableOpacity
+                        <View
                           key={skill.id}
                           className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between"
                         >
@@ -221,8 +274,8 @@ export default function DiscoverScreen() {
                               {skill.difficulty && <Text className="text-xs text-muted">· {skill.difficulty}</Text>}
                             </View>
                           </View>
-                          <Text className="text-primary text-lg ml-3">→</Text>
-                        </TouchableOpacity>
+                          <Text className="text-[10px] font-semibold text-muted uppercase ml-3">Preview</Text>
+                        </View>
                       ))}
                     </View>
                   ))}

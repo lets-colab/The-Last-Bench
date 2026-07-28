@@ -10,7 +10,9 @@ export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
-  const tabBarHeight = 56 + bottomPadding;
+  // Leave enough vertical room for the 24px icon and a readable 11px label.
+  // React Navigation subtracts the bar padding from the button height on web.
+  const tabBarHeight = 64 + bottomPadding;
 
   return (
     <Tabs

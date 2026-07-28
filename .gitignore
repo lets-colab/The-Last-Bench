@@ -1,10 +1,12 @@
-node_modules/
+/node_modules/
 .expo/
 .next/
-# dist/ tracked for Netlify zero-build deployment
-# but the server bundle (pnpm build) is rebuilt on Render at deploy time
-dist/index.js
-build/
+# Browser and server bundles are rebuilt by Netlify and Render.
+/dist/
+server-dist/
+.dist-build-*
+.dist-previous-*
+/build/
 .env
 .env.local
 .env.*.local

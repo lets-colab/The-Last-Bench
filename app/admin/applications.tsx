@@ -6,21 +6,41 @@ import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
 
 const ALL_STATUSES = [
-  "inquiry", "profile_assessment", "document_collection", "application_submitted",
-  "under_review", "conditional_offer", "offer_received", "visa_preparation",
-  "visa_applied", "visa_approved", "enrolled",
-];
+  "draft",
+  "documents_received",
+  "profile_analyzed",
+  "shortlisted",
+  "application_drafted",
+  "submitted_to_university",
+  "under_review",
+  "offer_received",
+  "visa_application_filed",
+  "visa_decision",
+  "pre_departure",
+  "rejected",
+] as const;
+type ApplicationStatus = (typeof ALL_STATUSES)[number];
+const FILTER_STATUSES = ["all", ...ALL_STATUSES] as const;
+
+function isApplicationStatus(value: unknown): value is ApplicationStatus {
+  return ALL_STATUSES.includes(value as ApplicationStatus);
+}
 
 function StatusBadge({ status }: { status: string }) {
-  const isLate = ["inquiry", "document_collection"].includes(status);
-  const isGood = ["offer_received", "visa_approved", "enrolled"].includes(status);
-  const bgClass = isGood
+  const needsAction = ["draft", "documents_received"].includes(status);
+  const isGood = ["offer_received", "pre_departure"].includes(status);
+  const isRejected = status === "rejected";
+  const bgClass = isRejected
+    ? "bg-red-100 dark:bg-red-900/30"
+    : isGood
     ? "bg-green-100 dark:bg-green-900/30"
-    : isLate ? "bg-yellow-100 dark:bg-yellow-900/30"
+    : needsAction ? "bg-yellow-100 dark:bg-yellow-900/30"
     : "bg-surface";
-  const textClass = isGood
+  const textClass = isRejected
+    ? "text-red-700 dark:text-red-300"
+    : isGood
     ? "text-green-700 dark:text-green-300"
-    : isLate ? "text-yellow-700 dark:text-yellow-300"
+    : needsAction ? "text-yellow-700 dark:text-yellow-300"
     : "text-muted";
   return (
     <View className={`px-2 py-1 rounded-full border border-border ${bgClass}`}>
@@ -34,9 +54,9 @@ function StatusBadge({ status }: { status: string }) {
 export default function AdminApplicationsScreen() {
   const router = useRouter();
   const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [newStatus, setNewStatus] = useState("");
+  const [newStatus, setNewStatus] = useState<ApplicationStatus | "">("");
   const [notes, setNotes] = useState("");
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<ApplicationStatus | "all">("all");
 
   const { data: allApplications, isLoading, refetch, isRefetching } = trpc.admin.getAllApplications.useQuery();
   const utils = trpc.useUtils();
@@ -80,7 +100,7 @@ export default function AdminApplicationsScreen() {
 
         {/* Filter chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-6 pb-4" contentContainerStyle={{ gap: 8, paddingRight: 24 }}>
-          {["all", ...ALL_STATUSES].map((s) => (
+          {FILTER_STATUSES.map((s) => (
             <TouchableOpacity
               key={s}
               onPress={() => setFilter(s)}
@@ -106,7 +126,13 @@ export default function AdminApplicationsScreen() {
             filtered.map((app: any) => (
               <TouchableOpacity
                 key={app.id}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedApp(app); setNewStatus(app.applicationStatus ?? ""); }}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedApp(app);
+                  setNewStatus(
+                    isApplicationStatus(app.applicationStatus) ? app.applicationStatus : "",
+                  );
+                }}
                 activeOpacity={0.7}
                 className="bg-surface border border-border rounded-xl p-4 gap-3 active:opacity-80"
               >

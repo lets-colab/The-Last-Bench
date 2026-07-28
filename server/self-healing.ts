@@ -3,16 +3,14 @@
  * ───────────────────
  * The system never just fails. Every error is:
  *   1. Fingerprinted and logged (errorLogs)
- *   2. Auto-recovered where safe (retry with backoff, DB reconnect,
- *      graceful fallback) using the strategy that has worked best before
- *   3. Diagnosed by the AI, with every *past successful fix* injected into
- *      the prompt — so each fix makes the next diagnosis smarter
- *   4. Scored: strategies that work gain successCount, ones that don't gain
- *      failureCount. The engine always picks the highest-scoring strategy.
+ *   2. Retried automatically only when a deterministic transient-error check
+ *      says that retrying is safe
+ *   3. Available for redacted, admin-initiated diagnosis
+ *   4. Kept advisory until an operator explicitly approves a strategy
  */
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { errorLogs, errorFixes, ErrorLog, ErrorFix } from "../drizzle/schema";
-import { getDb, resetDb } from "./db";
+import { getDb } from "./db";
 
 // ── health stats (in-memory, cheap) ─────────────────────────────────────────
 const startedAt = Date.now();
@@ -31,11 +29,28 @@ export function getHealthSnapshot() {
   };
 }
 
+export function redactErrorText(value: unknown, limit = 4000): string {
+  return String(value ?? "")
+    .replace(/postgres(?:ql)?:\/\/[^@\s]+@/gi, "postgres://[redacted]@")
+    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[redacted-jwt]")
+    .replace(
+      /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+      "[redacted-email]",
+    )
+    .replace(/\b(?:\+?88)?01[3-9]\d{8}\b/g, "[redacted-phone]")
+    .replace(
+      /([?&](?:code|state|token|key|secret|password)=)[^&\s]+/gi,
+      "$1[redacted]",
+    )
+    .slice(0, limit);
+}
+
 // ── error fingerprinting ────────────────────────────────────────────────────
 // Normalize an error into a stable signature so the same root cause always
 // maps to the same knowledge-base entry regardless of ids/values in the text.
 export function computeSignature(source: string, error: unknown): string {
-  const msg = error instanceof Error ? error.message : String(error);
+  const msg = redactErrorText(error instanceof Error ? error.message : error, 1000);
   const normalized = msg
     .replace(/\d+/g, "#")
     .replace(/'[^']*'/g, "'…'")
@@ -71,17 +86,18 @@ export async function logError(source: string, error: unknown, context?: Record<
       .values({
         signature,
         source,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack?.slice(0, 4000) : undefined,
-        context: context ? JSON.stringify(context).slice(0, 2000) : undefined,
+        message: redactErrorText(error instanceof Error ? error.message : error),
+        stack: error instanceof Error ? redactErrorText(error.stack) : undefined,
+        context: context ? redactErrorText(JSON.stringify(context), 2000) : undefined,
       })
       .onConflictDoUpdate({
         target: errorLogs.signature,
         set: { occurrences: sql`${errorLogs.occurrences} + 1`, lastSeenAt: new Date() },
       })
       .returning({ inserted: sql<boolean>`(xmax = 0)` });
-    if (row?.inserted) {
-      // First time we see this signature → diagnose it in the background.
+    if (row?.inserted && process.env.AUTO_DIAGNOSE_ERRORS === "true") {
+      // Explicit opt-in only. The stored text is redacted before it reaches
+      // the diagnostic model, and generated fixes remain advisory.
       void diagnoseSignature(signature).catch(() => {});
     }
   } catch {
@@ -90,73 +106,18 @@ export async function logError(source: string, error: unknown, context?: Record<
   return signature;
 }
 
-export async function getBestFix(signature: string): Promise<ErrorFix | undefined> {
-  try {
-    const db = await getDb();
-    if (!db) return undefined;
-    const rows = await db
-      .select()
-      .from(errorFixes)
-      .where(eq(errorFixes.errorSignature, signature))
-      .orderBy(desc(sql`${errorFixes.successCount} - ${errorFixes.failureCount}`))
-      .limit(1);
-    return rows[0];
-  } catch {
-    return undefined;
-  }
-}
-
-// The learning loop: every outcome adjusts the strategy's score.
-export async function recordFixOutcome(fixId: number, success: boolean) {
-  try {
-    const db = await getDb();
-    if (!db) return;
-    await db
-      .update(errorFixes)
-      .set(
-        success
-          ? { successCount: sql`${errorFixes.successCount} + 1` }
-          : { failureCount: sql`${errorFixes.failureCount} + 1` },
-      )
-      .where(eq(errorFixes.id, fixId));
-    if (success) {
-      const fix = await db.select().from(errorFixes).where(eq(errorFixes.id, fixId)).limit(1);
-      if (fix[0]) {
-        await db
-          .update(errorLogs)
-          .set({ status: "healed" })
-          .where(eq(errorLogs.signature, fix[0].errorSignature));
-      }
-    }
-  } catch {}
-}
-
-// ── AI diagnosis: learns from every past successful fix ─────────────────────
+// ── AI diagnosis: redacted and advisory only ────────────────────────────────
 export async function diagnoseSignature(signature: string): Promise<ErrorFix | undefined> {
   try {
     const db = await getDb();
     if (!db) return undefined;
-    const [errRows, pastFixes] = await Promise.all([
-      db.select().from(errorLogs).where(eq(errorLogs.signature, signature)).limit(1),
-      db
-        .select()
-        .from(errorFixes)
-        .where(sql`${errorFixes.successCount} > 0`)
-        .orderBy(desc(errorFixes.successCount))
-        .limit(15),
-    ]);
+    const errRows = await db
+      .select()
+      .from(errorLogs)
+      .where(eq(errorLogs.signature, signature))
+      .limit(1);
     const errorLog = errRows[0];
     if (!errorLog) return undefined;
-
-    const learnedContext =
-      pastFixes.length > 0
-        ? `Fixes that have WORKED before on this system (learn from these):\n${pastFixes
-            .map(
-              (f) =>
-                `- [${f.fixStrategy}] for "${f.errorSignature}" (worked ${f.successCount}×): ${f.diagnosis.slice(0, 200)}`,
-            )
-            .join("\n")}`
-        : "No prior fixes recorded yet — this is the system's first lesson.";
 
     const { invokeLLM } = await import("./_core/llm");
     stats.diagnosesRun++;
@@ -165,20 +126,18 @@ export async function diagnoseSignature(signature: string): Promise<ErrorFix | u
         {
           role: "system",
           content: `You are the self-healing engine of The Last Bench backend (Express + tRPC + Drizzle + Postgres/Supabase).
-Diagnose the error and choose ONE auto-fix strategy:
+Diagnose the redacted error and recommend ONE advisory strategy:
 - "retry": transient failure, retry with backoff is enough
 - "reconnect": stale DB/socket connection, reset the connection pool
 - "fallback": return a safe empty/default value to the client
 - "degrade": disable the failing sub-feature, keep the rest running
 - "manual": needs a human code change (explain exactly what to change)
 
-${learnedContext}
-
 Respond with STRICT JSON only: {"diagnosis": "...", "strategy": "retry|reconnect|fallback|degrade|manual", "detail": "step-by-step remediation"}`,
         },
         {
           role: "user",
-          content: `Error signature: ${errorLog.signature}\nSource: ${errorLog.source}\nMessage: ${errorLog.message}\nOccurrences: ${errorLog.occurrences}\nStack (trimmed):\n${(errorLog.stack || "n/a").slice(0, 1500)}`,
+          content: `Error signature: ${errorLog.signature}\nSource: ${errorLog.source}\nRedacted message: ${errorLog.message}\nOccurrences: ${errorLog.occurrences}`,
         },
       ],
       maxTokens: 600,
@@ -196,15 +155,20 @@ Respond with STRICT JSON only: {"diagnosis": "...", "strategy": "retry|reconnect
       ? parsed.strategy
       : "manual") as ErrorFix["fixStrategy"];
 
-    await db.insert(errorFixes).values({
-      errorSignature: signature,
-      diagnosis: parsed.diagnosis || "No diagnosis produced",
-      fixStrategy: strategy,
-      fixDetail: parsed.detail,
-      autoApplied: strategy === "manual" ? 0 : 1,
-    });
+    const [fix] = await db
+      .insert(errorFixes)
+      .values({
+        errorSignature: signature,
+        diagnosis: parsed.diagnosis || "No diagnosis produced",
+        fixStrategy: strategy,
+        fixDetail: parsed.detail,
+        // AI-generated operational advice must never execute without a
+        // separate, explicit approval workflow.
+        autoApplied: 0,
+      })
+      .returning();
     await db.update(errorLogs).set({ status: "diagnosed" }).where(eq(errorLogs.signature, signature));
-    return (await getBestFix(signature))!;
+    return fix;
   } catch {
     return undefined;
   }
@@ -237,33 +201,20 @@ export async function withSelfHealing<T>(
       return value;
     } catch (error) {
       lastError = error;
-      const signature = computeSignature(source, error);
-      const learned = await getBestFix(signature);
-      const strategy = learned?.fixStrategy ?? (isTransient(error) ? "retry" : undefined);
+      const strategy = isTransient(error) ? "retry" : undefined;
 
-      if (strategy === "reconnect") {
-        resetDb();
-      }
-      if ((strategy === "retry" || strategy === "reconnect") && attempt < maxRetries) {
+      if (strategy === "retry" && attempt < maxRetries) {
         stats.retriesPerformed++;
         await new Promise((r) => setTimeout(r, BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)]));
-        if (learned) void recordFixOutcome(learned.id, true).catch(() => {});
         continue;
-      }
-      if ((strategy === "fallback" || strategy === "degrade") && opts.fallback !== undefined) {
-        void logError(source, error, opts.context);
-        if (learned) void recordFixOutcome(learned.id, true).catch(() => {});
-        stats.errorsHealed++;
-        return opts.fallback;
       }
       break;
     }
   }
 
-  // All recovery failed — log, mark the learned fix as failed, rethrow.
-  const signature = await logError(source, lastError, opts.context);
-  const learned = await getBestFix(signature);
-  if (learned) void recordFixOutcome(learned.id, false).catch(() => {});
+  // All deterministic retries failed — store a redacted record, then use only
+  // an explicit caller-provided fallback or rethrow.
+  await logError(source, lastError, opts.context);
   if (opts.fallback !== undefined) {
     stats.errorsHealed++;
     return opts.fallback;

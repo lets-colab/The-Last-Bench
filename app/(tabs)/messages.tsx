@@ -5,8 +5,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  FlatList,
-  Image,
+  Linking,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { ScreenContainer } from "@/components/screen-container";
@@ -37,25 +36,86 @@ interface Conversation {
  * Messages Tab - Real-time chat between students and mentors
  */
 export default function MessagesScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
-  const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
+  const [sendError, setSendError] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // tRPC mutations and queries — the conversation list is real data, not mocks
   const sendMessageMutation = trpc.message.send.useMutation();
-  const markAsReadMutation = trpc.message.markAsRead.useMutation();
+  const markThreadAsReadMutation = trpc.message.markThreadAsRead.useMutation();
   const conversationsQuery = trpc.message.getConversations.useQuery(undefined, {
     enabled: !!user,
+    refetchInterval: 10_000,
   });
   const getThreadQuery = trpc.message.getThread.useQuery(
     { otherUserId: activeConversation || 0 },
-    { enabled: !!activeConversation }
+    {
+      enabled: !!activeConversation,
+      refetchInterval: activeConversation ? 5_000 : false,
+    },
   );
   const conversations: Conversation[] = conversationsQuery.data || [];
+  const userId = user?.id;
+  const markThreadAsRead = markThreadAsReadMutation.mutateAsync;
+  const refetchConversations = conversationsQuery.refetch;
+  const refetchThread = getThreadQuery.refetch;
+
+  // Load messages when conversation changes (server returns newest-first; UI renders oldest-first)
+  useEffect(() => {
+    if (activeConversation && getThreadQuery.data && userId) {
+      setMessages([...(getThreadQuery.data as ChatMessage[])].reverse());
+      const hasUnreadMessages = getThreadQuery.data.some(
+        (msg: ChatMessage) => msg.recipientId === userId && !msg.isRead,
+      );
+      if (hasUnreadMessages) {
+        void markThreadAsRead({ otherUserId: activeConversation })
+          .then(() => Promise.all([refetchThread(), refetchConversations()]))
+          .catch((error: unknown) => {
+            console.warn("[Messages] Unable to mark conversation as read", error);
+          });
+      }
+    }
+  }, [
+    getThreadQuery.data,
+    activeConversation,
+    userId,
+    markThreadAsRead,
+    refetchThread,
+    refetchConversations,
+  ]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
+
+  if (authLoading) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center">
+        <BenchLoader />
+      </ScreenContainer>
+    );
+  }
+
+  if (authError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-xl font-bold text-foreground text-center">Messages unavailable</Text>
+        <Text className="text-sm text-muted text-center">
+          Your workspace could not connect to Last Bench services. Please try again in a moment.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void refreshAuth()}
+          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Retry connection</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
 
   if (!user) {
     return (
@@ -65,42 +125,11 @@ export default function MessagesScreen() {
     );
   }
 
-  // Load messages when conversation changes (server returns newest-first; UI renders oldest-first)
-  useEffect(() => {
-    if (activeConversation && getThreadQuery.data) {
-      setMessages([...(getThreadQuery.data as ChatMessage[])].reverse());
-      // Mark messages as read
-      getThreadQuery.data.forEach((msg: ChatMessage) => {
-        if (msg.recipientId === user.id && !msg.isRead) {
-          markAsReadMutation.mutate({ messageId: msg.id });
-        }
-      });
-    }
-  }, [getThreadQuery.data, activeConversation, user.id]);
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
-
-  // Simulate typing indicator
-  const handleTyping = () => {
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    typingTimeoutRef.current = setTimeout(() => {
-      setTypingUsers((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(activeConversation || 0);
-        return newSet;
-      });
-    }, 2000);
-  };
-
   const handleSendMessage = async () => {
     if (!inputText.trim() || !activeConversation) return;
 
-    const messageText = inputText;
+    const messageText = inputText.trim();
+    setSendError(null);
     setInputText("");
 
     try {
@@ -124,8 +153,9 @@ export default function MessagesScreen() {
       // Sync with the server so the thread and conversation list reflect reality
       void getThreadQuery.refetch();
       void conversationsQuery.refetch();
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } catch {
+      setInputText(messageText);
+      setSendError("Your message was not sent. Check your connection and try again.");
     }
   };
 
@@ -144,6 +174,19 @@ export default function MessagesScreen() {
             {conversationsQuery.isLoading ? (
               <View className="flex-1 justify-center items-center py-12">
                 <BenchLoader />
+              </View>
+            ) : conversationsQuery.isError ? (
+              <View className="flex-1 justify-center items-center py-12 gap-3">
+                <Text className="text-lg font-semibold text-foreground">Could not load messages</Text>
+                <Text className="text-sm text-muted text-center">
+                  Check your connection and try again.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => void conversationsQuery.refetch()}
+                  className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+                >
+                  <Text className="text-background font-bold">Retry</Text>
+                </TouchableOpacity>
               </View>
             ) : conversations.length > 0 ? (
               <View className="gap-2">
@@ -210,19 +253,23 @@ export default function MessagesScreen() {
           </TouchableOpacity>
           <View className="flex-1 gap-1">
             <Text className="text-lg font-bold text-foreground">{currentConversation?.name}</Text>
-            {typingUsers.has(activeConversation) && (
-              <Text className="text-xs text-muted">typing...</Text>
-            )}
           </View>
-          <TouchableOpacity className="px-3 py-2 rounded-lg bg-surface active:opacity-80">
-            <Text className="text-lg text-foreground">⋮</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Messages */}
         {getThreadQuery.isLoading ? (
           <View className="flex-1 justify-center items-center">
             <BenchLoader />
+          </View>
+        ) : getThreadQuery.isError ? (
+          <View className="flex-1 justify-center items-center gap-3">
+            <Text className="text-lg font-semibold text-foreground">Could not load this conversation</Text>
+            <TouchableOpacity
+              onPress={() => void getThreadQuery.refetch()}
+              className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+            >
+              <Text className="text-background font-bold">Retry</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <ScrollView
@@ -263,7 +310,10 @@ export default function MessagesScreen() {
 
                       {/* File Preview */}
                       {message.fileUrl && (
-                        <TouchableOpacity className="mt-2 bg-black/20 rounded-lg p-2 active:opacity-80">
+                        <TouchableOpacity
+                          onPress={() => void Linking.openURL(message.fileUrl!)}
+                          className="mt-2 bg-black/20 rounded-lg p-2 active:opacity-80"
+                        >
                           <Text className={`text-xs font-semibold ${isOwn ? "text-background" : "text-foreground"}`}>
                             📎 View File
                           </Text>
@@ -286,34 +336,19 @@ export default function MessagesScreen() {
               })
             )}
 
-            {/* Typing Indicator */}
-            {typingUsers.has(activeConversation) && (
-              <View className="flex-row justify-start mb-4">
-                <View className="bg-surface border border-border px-4 py-3 rounded-2xl rounded-bl-none gap-2">
-                  <View className="flex-row gap-1">
-                    <View className="w-2 h-2 bg-muted rounded-full animate-pulse" />
-                    <View className="w-2 h-2 bg-muted rounded-full animate-pulse" />
-                    <View className="w-2 h-2 bg-muted rounded-full animate-pulse" />
-                  </View>
-                </View>
-              </View>
-            )}
           </ScrollView>
         )}
 
+        {sendError && <Text className="text-xs text-red-600 dark:text-red-400">{sendError}</Text>}
+
         {/* Input Area */}
         <View className="flex-row items-end gap-2 pt-3 border-t border-border">
-          {/* File Upload Button */}
-          <TouchableOpacity className="px-3 py-3 rounded-lg bg-surface active:opacity-80">
-            <Text className="text-lg">📎</Text>
-          </TouchableOpacity>
-
           {/* Message Input */}
           <TextInput
             value={inputText}
             onChangeText={(text) => {
               setInputText(text);
-              handleTyping();
+              setSendError(null);
             }}
             placeholder="Type a message..."
             placeholderTextColor="#687076"
