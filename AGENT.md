@@ -129,6 +129,9 @@ pnpm build:web:production    # Netlify path; requires real EXPO_PUBLIC_* values
 CI exercises the production build contract with non-sensitive validation values.
 Netlify rebuilds the ignored artifact with its own production public configuration;
 never deploy a locally generated `dist/` as a substitute for that build.
+Netlify deploy previews use committed `.invalid` values so UI review remains
+available before production credentials exist; the preview app must therefore show
+its explicit service-unavailable state instead of pretending its backend is live.
 
 **Post-deploy release gate:**
 
