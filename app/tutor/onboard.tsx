@@ -4,18 +4,10 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
+import { COMMISSION_PER_STUDENT_BDT, formatBdt } from "@/shared/commission";
 
 const LOCATIONS = ["Dhaka", "Chittagong", "Sylhet", "Rajshahi", "Khulna", "Barisal", "Rangpur", "Mymensingh"];
 const EXPERTISE = ["Malaysia", "Canada", "UK", "Australia", "Germany", "USA", "Engineering", "Business", "Medicine", "Computer Science"];
-
-function generateReferralCode(centerName: string): string {
-  const slug = centerName
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 6);
-  const digits = Math.floor(1000 + Math.random() * 9000);
-  return `TLB-${slug}-${digits}`;
-}
 
 export default function TutorOnboardScreen() {
   const router = useRouter();
@@ -24,9 +16,17 @@ export default function TutorOnboardScreen() {
   const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
 
   const createProfile = trpc.tutor.createProfile.useMutation({
-    onSuccess: () => {
+    onSuccess: ({ referralCode }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/tutor");
+      // The code is issued by the server. Show it before leaving the screen —
+      // it is the only thing the tutor needs to start earning.
+      Alert.alert(
+        "Your referral code",
+        `${referralCode}\n\nShare this with students. You earn ${formatBdt(
+          COMMISSION_PER_STUDENT_BDT
+        )} for each referred student, confirmed by an admin before payout.`,
+        [{ text: "Got it", onPress: () => router.replace("/tutor") }]
+      );
     },
     onError: (err) => {
       Alert.alert("Error", err.message);
@@ -45,12 +45,10 @@ export default function TutorOnboardScreen() {
       Alert.alert("Required", "Please enter your center name.");
       return;
     }
-    const referralCode = generateReferralCode(centerName);
     createProfile.mutate({
       centerName: centerName.trim(),
       location,
       expertiseAreas: selectedExpertise.join(", "),
-      referralCode,
     });
   };
 

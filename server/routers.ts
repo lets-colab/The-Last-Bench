@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_
 import { z } from "zod";
 import * as db from "./db";
 import { canTransitionPayout, validatePayoutRequest } from "../shared/payout";
+import { COMMISSION_PER_STUDENT_BDT, normalizeReferralCode } from "../shared/commission";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const malaysiaUniversities = require("./data/malaysia-universities.json") as Array<Record<string, unknown>>;
@@ -82,7 +83,25 @@ export const appRouter = router({
           userId: ctx.user.id,
           ...input,
         });
-        return result;
+
+        // Attribute the referral so the tutor is actually credited. Previously
+        // the code was stored on the student row and nothing else happened, so
+        // no tutor ever earned anything.
+        let referral: { attributed: boolean; reason?: string } = { attributed: false };
+        if (input.referralCode) {
+          const student = await db.getStudent(ctx.user.id);
+          if (student) {
+            const outcome = await db.createReferralFromCode({
+              studentId: student.id,
+              rawCode: input.referralCode,
+            });
+            referral = outcome.ok ? { attributed: true } : { attributed: false, reason: outcome.reason };
+          }
+        }
+
+        // A bad code must not fail signup — the student still gets an account,
+        // and the caller can surface `referral.reason` to let them retry.
+        return { ...result, referral };
       }),
 
     // Update student profile
@@ -220,18 +239,22 @@ export const appRouter = router({
     createProfile: protectedProcedure
       .input(
         z.object({
-          centerName: z.string(),
+          centerName: z.string().min(1),
           location: z.string().optional(),
           expertiseAreas: z.string().optional(),
-          referralCode: z.string(),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const result = await db.createTutor({
+        // The referral code is issued by the server, not chosen by the client.
+        // Client-supplied codes collided against the unique index and surfaced
+        // a raw Postgres error to the tutor.
+        const referralCode = await db.allocateReferralCode();
+        await db.createTutor({
           userId: ctx.user.id,
           ...input,
+          referralCode,
         });
-        return result;
+        return { referralCode };
       }),
 
     // Get referred students
@@ -249,11 +272,16 @@ export const appRouter = router({
       const pendingCommission = await db.getPendingCommissionByTutor(tutor.id);
       const earned = parseFloat(await db.getEarnedCommissionByTutor(tutor.id));
       const reserved = await db.getReservedPayoutTotalByTutor(tutor.id);
+      const referrals = await db.getReferralsByTutor(tutor.id);
       return {
-        totalReferred: tutor.totalReferred,
-        totalEarned: tutor.totalEarned,
+        // Derived from the ledger, not from the cached columns on `tutors` —
+        // those used to read a stale "0" next to correct computed values.
+        totalReferred: referrals.length,
+        totalEarned: earned.toFixed(2),
         pendingCommission,
         availableForPayout: Math.max(0, earned - reserved).toFixed(2),
+        commissionPerStudent: COMMISSION_PER_STUDENT_BDT,
+        referralCode: tutor.referralCode,
       };
     }),
 
@@ -315,17 +343,38 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const student = await db.getStudent(ctx.user.id);
         if (!student) throw new Error("Student profile not found");
-        const tutor = await db.getTutorByReferralCode(input.referralCode);
-        if (!tutor) throw new Error("Invalid referral code");
 
-        const result = await db.createReferral({
-          tutorId: tutor.id,
+        const outcome = await db.createReferralFromCode({
           studentId: student.id,
-          referralCode: input.referralCode,
-          commissionPercentage: "5",
-          commissionStatus: "pending",
+          rawCode: input.referralCode,
         });
-        return result;
+        if (!outcome.ok) {
+          throw new Error(
+            outcome.reason === "invalid_format"
+              ? "That referral code isn't in the right format (it looks like LB-XXXXX)."
+              : outcome.reason === "self_referral"
+                ? "You can't use your own referral code."
+                : "We couldn't find that referral code."
+          );
+        }
+        return { attributed: true, created: outcome.created, referral: outcome.referral };
+      }),
+
+    /**
+     * Check a code before signup so the student sees who referred them instead
+     * of discovering a typo after their account exists. Read-only: it reveals
+     * only the centre name, never the tutor's identity or earnings.
+     */
+    checkCode: publicProcedure
+      .input(z.object({ referralCode: z.string() }))
+      .query(async ({ input }) => {
+        const code = normalizeReferralCode(input.referralCode);
+        if (!code) return { valid: false as const, reason: "invalid_format" as const };
+        const tutor = await db.getTutorByReferralCode(code);
+        if (!tutor || tutor.status !== "active") {
+          return { valid: false as const, reason: "unknown_code" as const };
+        }
+        return { valid: true as const, code, centerName: tutor.centerName };
       }),
 
     // Get referral by student and tutor
@@ -582,9 +631,16 @@ export const appRouter = router({
 
     // Update tutor commission status (admin only)
     updateCommissionStatus: adminProcedure
-      .input(z.object({ referralId: z.number(), status: z.string(), amount: z.string().optional() }))
+      .input(
+        z.object({
+          referralId: z.number(),
+          status: z.enum(["pending", "earned", "paid"]),
+          // Omit to keep the flat per-student rate. Only pass this to override.
+          amount: z.string().optional(),
+        })
+      )
       .mutation(async ({ ctx, input }) => {
-        await db.updateReferralCommission(input.referralId, input.amount || "0", input.status);
+        await db.updateReferralCommission(input.referralId, input.amount, input.status);
         await db.createAuditLog({
           actorUserId: ctx.user.id,
           action: "referral.commission_change",

@@ -38,6 +38,12 @@ import {
   cohortMessages,
   InsertCohortMessage,
 } from "../drizzle/schema";
+import {
+  COMMISSION_PER_STUDENT_BDT,
+  canTransitionCommission,
+  generateReferralCode,
+  normalizeReferralCode,
+} from "../shared/commission";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -318,6 +324,113 @@ export async function createReferral(data: InsertReferral) {
   return result;
 }
 
+/**
+ * Credit a tutor for referring a student, given the code the student entered.
+ *
+ * This is the single entry point that turns a typed referral code into money
+ * owed. It is idempotent: a student already attributed to a tutor keeps that
+ * attribution (enforced by the referrals_student_unique index), so re-running
+ * signup or retrying a failed request cannot double-credit anyone.
+ *
+ * Returns the referral row plus whether this call created it.
+ */
+export async function createReferralFromCode(input: { studentId: number; rawCode: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const code = normalizeReferralCode(input.rawCode);
+  if (!code) return { ok: false as const, reason: "invalid_format" as const };
+
+  const tutor = await getTutorByReferralCode(code);
+  if (!tutor) return { ok: false as const, reason: "unknown_code" as const };
+
+  // A student cannot refer themselves into their own commission.
+  const student = await getStudentById(input.studentId);
+  if (student && student.userId === tutor.userId) {
+    return { ok: false as const, reason: "self_referral" as const };
+  }
+
+  const existing = await db
+    .select()
+    .from(referrals)
+    .where(eq(referrals.studentId, input.studentId))
+    .limit(1);
+  if (existing.length > 0) {
+    return { ok: true as const, created: false, referral: existing[0] };
+  }
+
+  const inserted = await db
+    .insert(referrals)
+    .values({
+      tutorId: tutor.id,
+      studentId: input.studentId,
+      referralCode: code,
+      commissionAmount: String(COMMISSION_PER_STUDENT_BDT),
+      commissionStatus: "pending",
+    })
+    // Concurrent signups for the same student: let the unique index win rather
+    // than surfacing a Postgres error to the user.
+    .onConflictDoNothing()
+    .returning();
+
+  if (inserted.length === 0) {
+    const raced = await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.studentId, input.studentId))
+      .limit(1);
+    return { ok: true as const, created: false, referral: raced[0] };
+  }
+
+  await recomputeTutorTotals(tutor.id);
+  return { ok: true as const, created: true, referral: inserted[0] };
+}
+
+/**
+ * Allocate a referral code that is actually free.
+ *
+ * Uniqueness lives in the database, so generation retries on collision instead
+ * of trusting a single random draw.
+ */
+export async function allocateReferralCode(maxAttempts = 8): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const code = generateReferralCode();
+    const taken = await db.select({ id: tutors.id }).from(tutors).where(eq(tutors.referralCode, code)).limit(1);
+    if (taken.length === 0) return code;
+  }
+  throw new Error("Could not allocate a unique referral code. Please try again.");
+}
+
+/**
+ * Recompute the denormalized counters on `tutors` from the referrals ledger.
+ *
+ * These columns previously drifted forever because nothing ever wrote them —
+ * dashboards showed a stale "0" beside correctly computed values. The ledger is
+ * the source of truth; this only caches it.
+ */
+export async function recomputeTutorTotals(tutorId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({
+      referred: sql<number>`COUNT(*)`,
+      earned: sql<string>`COALESCE(SUM(CASE WHEN ${referrals.commissionStatus} IN ('earned','paid') THEN ${referrals.commissionAmount} ELSE 0 END), 0)`,
+    })
+    .from(referrals)
+    .where(eq(referrals.tutorId, tutorId));
+
+  await db
+    .update(tutors)
+    .set({
+      totalReferred: Number(rows[0]?.referred ?? 0),
+      totalEarned: String(rows[0]?.earned ?? "0"),
+      updatedAt: new Date(),
+    })
+    .where(eq(tutors.id, tutorId));
+}
+
 export async function getReferralsByTutor(tutorId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -374,13 +487,41 @@ export async function getAllMentors() {
   return await db.select().from(mentors).where(eq(mentors.verificationStatus, "verified"));
 }
 
-export async function updateReferralCommission(referralId: number, amount: string, status: string) {
+/**
+ * Move a referral's commission through its lifecycle.
+ *
+ * `amount` is optional and defaults to the flat per-student rate — callers no
+ * longer hand-type money. The transition is validated server-side so a bad or
+ * replayed request cannot skip `earned` or un-pay a settled commission.
+ */
+export async function updateReferralCommission(referralId: number, amount: string | undefined, status: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(referrals).set({
-    commissionAmount: amount,
-    commissionStatus: status as any,
-  }).where(eq(referrals.id, referralId));
+
+  const current = await db.select().from(referrals).where(eq(referrals.id, referralId)).limit(1);
+  if (current.length === 0) throw new Error("Referral not found");
+  const from = current[0].commissionStatus ?? "pending";
+
+  if (from !== status && !canTransitionCommission(from, status)) {
+    throw new Error(`Cannot change commission from "${from}" to "${status}".`);
+  }
+
+  const parsed = amount === undefined || amount === "" ? undefined : Number(amount);
+  if (parsed !== undefined && (!Number.isFinite(parsed) || parsed < 0)) {
+    throw new Error("Commission amount must be a non-negative number.");
+  }
+
+  await db
+    .update(referrals)
+    .set({
+      commissionAmount: String(parsed ?? current[0].commissionAmount ?? COMMISSION_PER_STUDENT_BDT),
+      commissionStatus: status as any,
+      updatedAt: new Date(),
+    })
+    .where(eq(referrals.id, referralId));
+
+  // Keep the cached tutor totals honest after any money-affecting change.
+  await recomputeTutorTotals(current[0].tutorId);
 }
 
 // ============================================================================
