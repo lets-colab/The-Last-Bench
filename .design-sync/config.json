@@ -1,0 +1,7 @@
+{
+  "shape": "package",
+  "readmeHeader": ".design-sync/conventions.md",
+  "$note": "No projectId yet — no completed sync. DesignSync could not be authorized in the session that created this file, so no target project was ever settled. The next run is correctly treated as a first-time import (see .design-sync/NOTES.md before building).",
+  "tokensGlob": "design-system/tokens.json",
+  "previewsGlob": "design-system/previews/*.html"
+}
