@@ -158,3 +158,48 @@ Campus coordinates: the design supplies all 15 (UM/UTM/APU match this repo's
 `CAMPUS_COORDS` exactly), but its README flags UiTM, HELP, UoC, Lincoln, MSU and
 Limkokwing as vicinity approximations. Import the 9 accurate ones only. The
 design carries no `svHeading`, which this repo's `CAMPUS_COORDS` needs.
+
+## SYNC COMPLETED — 2026-08-19
+
+`/design-consent` granted design-agent access and DesignSync authorized. The
+foundation sync ran end to end.
+
+- **Target:** project `e48d1fb3-af2d-4eaf-8457-fcbdcd9d040c` ("Design System"),
+  reused because `list_files` confirmed it was completely empty. The other
+  same-named project (`6da688ff-…`) holds 14 user-uploaded PNGs and was left
+  untouched.
+- **Uploaded (7 files):** `styles.css`, `tokens/tokens.css`, `README.md`,
+  and three cards under `components/{Colors/Palette,Brand/Logo,Type/Typography}`
+  plus `logo.svg`.
+- **Reconciliation:** remote listing matched the bundle exactly; no orphans to
+  delete.
+
+### Off-script build (deliberate)
+
+`package-build.mjs` was never run — it requires a component library with a
+compiled `dist/` and would exit `[NO_DIST]` / `[ZERO_MATCH]` here. Per the base
+skill's escape hatch, the layout was produced by hand. Verification was NOT
+skipped: all three cards were rendered from inside the bundle in headless
+Chromium and confirmed to resolve `--lb-color-brand-green` through the
+`styles.css` @import closure, load their images, and throw no page errors.
+
+### `_ds_sync.json` intentionally omitted
+
+The anchor envelope (`bundleSha12`, `scriptsSha`, `renderHashes`…) can only be
+computed by the converter, which did not run. Omitting it is the honest choice:
+the next sync simply has no anchor and re-verifies everything. Do not
+hand-fabricate one.
+
+### Bug found and fixed during the build
+
+`logo.html` referenced `../logo.svg`, which resolved in
+`design-system/previews/` but pointed at nothing once moved to
+`components/Brand/Logo/`. Fixed to `./logo.svg` with the asset co-located. Watch
+for this whenever a card moves depth.
+
+### Still outstanding
+
+- Typography card's webfonts remain **unverified** (Fontshare + Google Fonts
+  egress-blocked in the build sandbox). User accepted this knowingly.
+- Self-hosting the woff2 files under `fonts/` is the correct fix and removes the
+  runtime CDN dependency. Needs the font binaries, which are not in the repo.

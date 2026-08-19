@@ -1,7 +1,9 @@
 {
   "shape": "package",
   "readmeHeader": ".design-sync/conventions.md",
-  "$note": "No projectId yet — no completed sync. DesignSync could not be authorized in the session that created this file, so no target project was ever settled. The next run is correctly treated as a first-time import (see .design-sync/NOTES.md before building).",
   "tokensGlob": "design-system/tokens.json",
-  "previewsGlob": "design-system/previews/*.html"
+  "previewsGlob": "design-system/previews/*.html",
+  "projectId": "e48d1fb3-af2d-4eaf-8457-fcbdcd9d040c",
+  "projectName": "Design System",
+  "$scope": "Foundation-only: tokens + brand preview cards. This repo has no component library (main=expo-router/entry, no library dist/), so there is no _ds_bundle.js to build. See .design-sync/NOTES.md."
 }
