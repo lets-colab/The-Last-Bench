@@ -104,3 +104,57 @@ first-time import and re-verifies everything.
 **To unblock:** in Claude Design, open the project and use
 **"Send to Claude Code Web"**. That both seeds the files into the workspace and
 satisfies the authorization.
+
+## Update — real design files received (zip handoff)
+
+The user supplied `LASTBENCH_3D.zip` directly, which is the fallback the
+DesignSync error message itself names. It contained `Malaysia Experience
+v2.dc.html`, `Last Bench Dashboard.dc.html`, `image-slot.js` (the file this
+repo's `landing/` was missing), `support.js`, `assets/logo-icon.png`, and a
+detailed handoff README. So the IMPORT direction is unblocked; only UPLOAD to
+claude.ai/design still needs authorization.
+
+### The typeface question is settled by evidence
+
+Both shipping designs use **General Sans (display) + Sora (body)** and load
+them for real (Fontshare + Google Fonts). Therefore:
+
+- `design-system/tokens.json` (General Sans + Sora) is **correct**.
+- `app/_layout.tsx` loading Anton + Space Grotesk is the **outlier**.
+- `PRODUCT.md`'s "Display: Anton (site) / General Sans (app)" is contradicted
+  by its own site design, which uses General Sans.
+
+Do not "fix" tokens.json to match the app. Fix the app, or amend PRODUCT.md.
+
+### New gap: no Bengali font
+
+The designs load **Hind Siliguri** for the EN/বাংলা language toggle. This repo
+ships no Bengali font, so Bengali renders in fallback.
+
+### typography.html — partial fix applied, NOT verified
+
+Added the exact font stylesheet links the shipping designs use, plus a Bengali
+specimen row. **Could not verify it renders**: `api.fontshare.com` and
+`fonts.googleapis.com` are both egress-blocked in the authoring sandbox, so
+`document.fonts` registered 0 faces and the render still showed fallback.
+Verify in a normal browser before trusting it.
+
+**The better fix, still outstanding:** self-host the font files under `fonts/`
+and reach them from `styles.css`'s `@import` closure — rendered designs receive
+only that closure, so a CDN link proves nothing for designs and adds a runtime
+dependency. Self-hosting was not possible here because the font binaries are
+not in the repo (`assets/branding/` has none) and downloading them is
+egress-blocked.
+
+### Verified: the designs invent no facts
+
+All 15 universities' figures in `Malaysia Experience v2.dc.html` match
+`server/data/malaysia-universities.json` exactly on USD total, BDT lakh, IELTS,
+EMGS category, and processing weeks (compare against `totalPerYear`, NOT
+`tuitionPerYear`). Every "guarantee" string in both files is a disclaimer, and
+the dashboard's AI prompt explicitly forbids stating fees or visa rates as fact.
+
+Campus coordinates: the design supplies all 15 (UM/UTM/APU match this repo's
+`CAMPUS_COORDS` exactly), but its README flags UiTM, HELP, UoC, Lincoln, MSU and
+Limkokwing as vicinity approximations. Import the 9 accurate ones only. The
+design carries no `svHeading`, which this repo's `CAMPUS_COORDS` needs.
