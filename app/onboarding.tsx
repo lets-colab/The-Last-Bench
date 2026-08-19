@@ -1,9 +1,10 @@
-import { ScrollView, Text, View, TouchableOpacity, TextInput, Animated } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, TextInput, Animated, Alert } from "react-native";
 import { useState, useRef, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { trpc } from "@/lib/trpc";
 
 interface OnboardingStep {
   id: number;
@@ -30,9 +31,17 @@ export default function OnboardingScreen() {
     gpa: "",
     fieldOfInterest: "",
     destinationPreference: "",
+    referralCode: "",
   });
 
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Live-validate the referral code so a typo surfaces before the account
+  // exists, not after. Read-only: returns the centre name, nothing more.
+  const codeCheck = trpc.referral.checkCode.useQuery(
+    { referralCode: formData.referralCode.trim() },
+    { enabled: formData.referralCode.trim().length >= 5 }
+  );
 
   const steps: OnboardingStep[] = [
     {
@@ -102,9 +111,40 @@ export default function OnboardingScreen() {
     }
   };
 
+  // The profile was previously discarded — handleComplete only navigated, so
+  // nothing the student entered (including a referral code) was ever saved.
+  const createProfile = trpc.student.createProfile.useMutation({
+    onSuccess: (result) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const ref = (result as { referral?: { attributed: boolean; reason?: string } })?.referral;
+      if (formData.referralCode.trim() && ref && !ref.attributed) {
+        // Signup succeeded; only the attribution failed. Say so plainly rather
+        // than silently dropping the tutor's credit.
+        Alert.alert(
+          "Referral code not applied",
+          ref.reason === "invalid_format"
+            ? "Your account is ready, but that code isn't in the LB-XXXXX format. You can add it later from your profile."
+            : ref.reason === "self_referral"
+              ? "Your account is ready, but you can't use your own referral code."
+              : "Your account is ready, but we couldn't find that referral code. You can add it later from your profile.",
+          [{ text: "Continue", onPress: () => router.replace("/(tabs)") }]
+        );
+        return;
+      }
+      router.replace("/(tabs)");
+    },
+    onError: (err) => Alert.alert("Could not save your profile", err.message),
+  });
+
   const handleComplete = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace("/(tabs)");
+    const code = formData.referralCode.trim();
+    createProfile.mutate({
+      class: formData.class || undefined,
+      gpa: formData.gpa || undefined,
+      fieldOfInterest: formData.fieldOfInterest || undefined,
+      destinationPreference: formData.destinationPreference || undefined,
+      referralCode: code || undefined,
+    });
   };
 
   const progressPercent = ((currentStep + 1) / steps.length) * 100;
@@ -185,12 +225,42 @@ export default function OnboardingScreen() {
                 <View className="gap-2">
                   <Text className="text-sm font-semibold text-foreground">GPA (Optional)</Text>
                   <TextInput
-                    placeholder="e.g., 3.8/4.0"
+                    placeholder="e.g., 4.5 (out of 5.00)"
                     placeholderTextColor={colors.muted}
                     value={formData.gpa}
                     onChangeText={(text) => setFormData({ ...formData, gpa: text })}
                     className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
                   />
+                </View>
+
+                <View className="gap-2">
+                  <Text className="text-sm font-semibold text-foreground">
+                    Referral code (Optional)
+                  </Text>
+                  <TextInput
+                    placeholder="LB-XXXXX"
+                    placeholderTextColor={colors.muted}
+                    value={formData.referralCode}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, referralCode: text.toUpperCase() })
+                    }
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
+                  />
+                  {codeCheck.data?.valid ? (
+                    <Text className="text-xs text-primary font-semibold">
+                      ✓ Referred by {codeCheck.data.centerName}
+                    </Text>
+                  ) : formData.referralCode.trim().length >= 5 && codeCheck.data ? (
+                    <Text className="text-xs text-muted">
+                      We don&apos;t recognise that code yet — you can still continue.
+                    </Text>
+                  ) : (
+                    <Text className="text-xs text-muted">
+                      If a coaching centre referred you, enter their code.
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>

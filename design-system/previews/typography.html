@@ -4,6 +4,14 @@
 <head>
 <meta charset="utf-8">
 <title>Last Bench — Typography</title>
+<!-- Real font sources, matching the shipping designs (Malaysia Experience v2 /
+     Last Bench Dashboard). Without these the card silently rendered in
+     system-ui fallback and misrepresented the brand's typefaces.
+     Hind Siliguri covers the Bengali (বাংলা) language toggle. -->
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f%5B%5D=general-sans@400,500,600,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=Hind+Siliguri:wght@400;500;600;700&display=swap">
 <style>
   body { margin: 0; font-family: "Sora", system-ui, sans-serif; background: #FAFAF8; color: #111111; padding: 28px; }
   .display { font-family: "General Sans", "Archivo", system-ui, sans-serif; font-weight: 700; font-size: 44px; line-height: 1.02; letter-spacing: -0.5px; text-transform: uppercase; margin: 0 0 6px; }
@@ -11,6 +19,7 @@
   .rule { width: 44px; height: 3px; background: #00C853; margin: 14px 0; }
   .body { font-size: 15px; line-height: 1.55; max-width: 420px; margin: 0; }
   .body b { color: #00C853; font-weight: 600; }
+  .bangla { font-family: "Hind Siliguri", system-ui, sans-serif; font-size: 17px; line-height: 1.6; color: #6B6F76; margin: 18px 0 0; }
   .spec { margin-top: 22px; display: flex; gap: 32px; color: #6B6F76; font-size: 12px; }
   .spec b { display: block; color: #111111; font-size: 14px; margin-bottom: 2px; }
 </style>
@@ -19,6 +28,7 @@
   <h1 class="display">From<br>Last Bench.<br><span class="accent">To the<br>World.</span></h1>
   <div class="rule"></div>
   <p class="body">We don't just help students study abroad. <b>We build futures that last.</b></p>
+  <p class="bangla">শেষ বেঞ্চ থেকে। বিশ্বের দিকে।</p>
   <div class="spec">
     <div><b>General Sans</b>Display · Bold / Medium / Regular<br>All-caps headlines, tight leading,<br>one phrase turns Brand Green</div>
     <div><b>Sora</b>Body · Medium / Regular<br>Body copy, UI labels, captions</div>

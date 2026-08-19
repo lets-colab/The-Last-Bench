@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { index, integer, numeric, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 /**
  * Enum types. Postgres enums are named types in the schema, so each gets a
@@ -134,7 +134,9 @@ export const tutors = pgTable("tutors", {
   expertiseAreas: text("expertiseAreas"), // JSON array or comma-separated
   referralCode: varchar("referralCode", { length: 50 }).notNull().unique(),
   totalReferred: integer("totalReferred").default(0),
-  totalEarned: varchar("totalEarned", { length: 50 }).default("0"), // Total commission earned
+  // Denormalized lifetime total. Kept in sync by recomputeTutorTotals() in
+  // server/db.ts — never trust it without that call having run.
+  totalEarned: numeric("totalEarned", { precision: 15, scale: 2 }).default("0"),
   status: tutorStatusEnum("status").default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
@@ -146,19 +148,31 @@ export type InsertTutor = typeof tutors.$inferInsert;
 /**
  * Referrals - tracks which tutor referred which student
  */
-export const referrals = pgTable("referrals", {
-  id: serial("id").primaryKey(),
-  tutorId: integer("tutorId").notNull(),
-  studentId: integer("studentId").notNull(),
-  referralCode: varchar("referralCode", { length: 50 }).notNull(),
-  commissionPercentage: varchar("commissionPercentage", { length: 10 }).default("5"), // e.g., "5%"
-  commissionAmount: varchar("commissionAmount", { length: 50 }), // e.g., "$500"
-  commissionStatus: commissionStatusEnum("commissionStatus").default("pending"),
-  payoutMethod: varchar("payoutMethod", { length: 50 }), // e.g., "bKash", "Nagad"
-  payoutDetails: text("payoutDetails"), // JSON with phone number, account details, etc.
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: serial("id").primaryKey(),
+    tutorId: integer("tutorId").notNull(),
+    studentId: integer("studentId").notNull(),
+    referralCode: varchar("referralCode", { length: 50 }).notNull(),
+    /** @deprecated Commission is a flat per-student amount, not a percentage. Not read by app code. */
+    commissionPercentage: varchar("commissionPercentage", { length: 10 }).default("5"),
+    // Commission owed for this student, in BDT. Defaults to the flat rate in
+    // shared/commission.ts (COMMISSION_PER_STUDENT_BDT).
+    commissionAmount: numeric("commissionAmount", { precision: 15, scale: 2 }).default("35000"),
+    commissionStatus: commissionStatusEnum("commissionStatus").default("pending"),
+    payoutMethod: varchar("payoutMethod", { length: 50 }), // e.g., "bKash", "Nagad"
+    payoutDetails: text("payoutDetails"), // JSON with phone number, account details, etc.
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    // One referrer per student. Without this, two tutors can be credited — and
+    // paid — for the same enrolment.
+    studentUnique: uniqueIndex("referrals_student_unique").on(table.studentId),
+    tutorIdx: index("referrals_tutor_idx").on(table.tutorId),
+  })
+);
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
@@ -358,7 +372,7 @@ export type InsertErrorFix = typeof errorFixes.$inferInsert;
 export const payouts = pgTable("payouts", {
   id: serial("id").primaryKey(),
   tutorId: integer("tutorId").notNull(),
-  amount: varchar("amount", { length: 50 }).notNull(), // in BDT, stored as string like the other money fields
+  amount: numeric("amount", { precision: 15, scale: 2 }).notNull(), // BDT
   method: payoutMethodEnum("method").notNull(),
   accountNumber: varchar("accountNumber", { length: 30 }).notNull(), // mobile wallet number
   status: payoutStatusEnum("status").default("requested").notNull(),

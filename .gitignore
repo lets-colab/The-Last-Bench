@@ -24,3 +24,6 @@ entities.json
 
 # graphify knowledge-graph output (rebuild with /graphify .)
 graphify-out/
+
+# design-sync build output (regenerate with /design-sync)
+ds-bundle/
