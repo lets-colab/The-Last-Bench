@@ -958,3 +958,40 @@ export async function getTutorById(tutorId: number) {
   const rows = await db.select().from(tutors).where(eq(tutors.id, tutorId)).limit(1);
   return rows[0];
 }
+
+// ============================================================================
+// AUTHORIZATION HELPERS
+// ============================================================================
+
+/**
+ * Can this user see (and attach to) this application?
+ *
+ * `documents.applicationId` used to be trusted straight from the client, so any
+ * authenticated user could read another student's documents by incrementing an
+ * integer, and could attach files to anyone's application. Every document path
+ * must go through this.
+ *
+ * Allowed: the owning student, the mentor assigned to the application, and any
+ * admin. Everyone else is denied — including other students and unassigned
+ * mentors.
+ */
+export async function canAccessApplication(
+  user: { id: number; role?: string | null },
+  applicationId: number
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const rows = await db
+    .select({ studentId: applications.studentId, mentorAssigned: applications.mentorAssigned })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+  if (rows.length === 0) return false;
+
+  if (user.role === "admin") return true;
+  if (rows[0].mentorAssigned !== null && rows[0].mentorAssigned === user.id) return true;
+
+  const student = await getStudent(user.id);
+  return !!student && student.id === rows[0].studentId;
+}

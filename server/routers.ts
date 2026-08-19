@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "../shared/const.js";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { canTransitionPayout, validatePayoutRequest } from "../shared/payout";
@@ -142,7 +143,13 @@ export const appRouter = router({
     // Get single application
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        // Same unchecked-id exposure as the document routes had: this is what
+        // application-detail.tsx calls, so without the check any authenticated
+        // user could read any student's application by guessing an id.
+        if (!(await db.canAccessApplication(ctx.user, input.id))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "You don't have access to this application." });
+        }
         return await db.getApplication(input.id);
       }),
 
@@ -199,7 +206,13 @@ export const appRouter = router({
     // Get documents for an application
     getByApplication: protectedProcedure
       .input(z.object({ applicationId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        // applicationId comes straight from the client. Without this check any
+        // authenticated user could read any student's documents by incrementing
+        // an integer.
+        if (!(await db.canAccessApplication(ctx.user, input.applicationId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "You don't have access to this application." });
+        }
         return await db.getDocumentsByApplication(input.applicationId);
       }),
 
@@ -214,6 +227,11 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        // Same exposure on the write side: unchecked, anyone could attach a
+        // document to anyone else's application.
+        if (!(await db.canAccessApplication(ctx.user, input.applicationId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "You don't have access to this application." });
+        }
         const result = await db.createDocument({
           applicationId: input.applicationId,
           documentType: input.documentType,
