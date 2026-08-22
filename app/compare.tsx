@@ -11,15 +11,6 @@ type University = {
   location: string;
   type: string;
   programs: string[];
-  gpaRequirement: { min: string; typical: string; outOf: string };
-  sscHscGrade: string;
-  estimatedCostBDT: { tuitionPerYear: number; livingPerYear: number; totalPerYear: number };
-  visaSuccessRateBD: string;
-  averageProcessingWeeks: string;
-  ieltsRequired: string;
-  intakeMonths: string[];
-  ranking: string;
-  scholarshipAvailable: boolean;
 };
 
 const MAX_COMPARE = 3;
@@ -43,7 +34,8 @@ function CompareRow({ label, values }: { label: string; values: (string | number
 
 export default function CompareScreen() {
   const router = useRouter();
-  const { data: universities, isLoading } = trpc.university.getAll.useQuery();
+  const universitiesQuery = trpc.university.getAll.useQuery();
+  const universities = universitiesQuery.data;
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggle = async (shortName: string) => {
@@ -57,12 +49,30 @@ export default function CompareScreen() {
     );
   };
 
-  if (isLoading) {
+  if (universitiesQuery.isLoading) {
     return (
       <ScreenContainer>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator />
         </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (universitiesQuery.isError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-4xl">↻</Text>
+        <Text className="text-xl font-bold text-foreground">Comparison unavailable</Text>
+        <Text className="text-sm text-muted text-center">
+          We could not load the university directory. Check your connection and try again.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void universitiesQuery.refetch()}
+          className="bg-primary rounded-lg px-5 py-3"
+        >
+          <Text className="text-background font-bold">Retry</Text>
+        </TouchableOpacity>
       </ScreenContainer>
     );
   }
@@ -99,11 +109,19 @@ export default function CompareScreen() {
           })}
         </ScrollView>
 
-        {picked.length < 2 ? (
+        {all.length === 0 ? (
+          <View className="px-6 pt-10 items-center gap-2">
+            <Text className="text-4xl">🏫</Text>
+            <Text className="text-base font-semibold text-foreground">No universities available</Text>
+            <Text className="text-sm text-muted text-center">
+              The comparison directory has no published entries yet.
+            </Text>
+          </View>
+        ) : picked.length < 2 ? (
           <View className="px-6 pt-10 items-center gap-2">
             <Text className="text-4xl">⚖️</Text>
             <Text className="text-sm text-muted text-center">
-              Select at least two universities above to compare costs, requirements, and visa success rates.
+              Select at least two universities to compare their locations and broad study areas.
             </Text>
           </View>
         ) : (
@@ -119,27 +137,17 @@ export default function CompareScreen() {
                 ))}
               </View>
               <CompareRow label="Type" values={picked.map((u) => u.type)} />
-              <CompareRow label="Ranking" values={picked.map((u) => u.ranking)} />
+              <CompareRow label="Location" values={picked.map((u) => u.location)} />
               <CompareRow
-                label="Total cost / year"
-                values={picked.map((u) => `৳${(u.estimatedCostBDT.totalPerYear / 100000).toFixed(1)} lakh`)}
+                label="Study areas"
+                values={picked.map(
+                  (u) => u.programs.slice(0, 5).join(", ") + (u.programs.length > 5 ? "…" : ""),
+                )}
               />
-              <CompareRow
-                label="Tuition / year"
-                values={picked.map((u) => `৳${(u.estimatedCostBDT.tuitionPerYear / 100000).toFixed(1)} lakh`)}
-              />
-              <CompareRow label="Min GPA (of 5.0)" values={picked.map((u) => `${u.gpaRequirement.min} (typical ${u.gpaRequirement.typical})`)} />
-              <CompareRow label="SSC/HSC" values={picked.map((u) => u.sscHscGrade)} />
-              <CompareRow label="IELTS" values={picked.map((u) => u.ieltsRequired)} />
-              <CompareRow label="Visa success (BD)" values={picked.map((u) => u.visaSuccessRateBD)} />
-              <CompareRow label="Processing" values={picked.map((u) => `${u.averageProcessingWeeks} weeks`)} />
-              <CompareRow label="Intakes" values={picked.map((u) => u.intakeMonths.join(", "))} />
-              <CompareRow label="Scholarships" values={picked.map((u) => (u.scholarshipAvailable ? "Available" : "—"))} />
-              <CompareRow label="Programs" values={picked.map((u) => u.programs.slice(0, 4).join(", ") + (u.programs.length > 4 ? "…" : ""))} />
             </View>
             <Text className="text-[10px] text-muted pt-3 leading-relaxed">
-              Figures come from Last Bench&apos;s verified database — the same one the AI advisor cites. Costs are estimates; confirm with a
-              mentor before applying.
+              This is a discovery view, not an eligibility or outcome prediction. Check current programmes,
+              fees, entry requirements, and deadlines on each university&apos;s official website.
             </Text>
           </View>
         )}

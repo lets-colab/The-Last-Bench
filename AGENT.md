@@ -29,7 +29,7 @@ visa stats, escalate to human mentors for high-stakes decisions, GPA scale is 5.
 
 ---
 
-## 2. Architecture (verified as of 2026-07-23)
+## 2. Architecture and release contract (updated 2026-07-27)
 
 ```
 Repo: lets-colab/The-Last-Bench   (canonical; letsco-lab/The-Last-Bench is a stale fork)
@@ -40,12 +40,13 @@ server/       Express + tRPC v11 — 55 procedures across 15 routers
   db.ts       All DB access — drizzle-orm/postgres-js against Supabase Postgres
   routers.ts  auth, student, application, document, tutor, referral, mentor, message,
               cohort, university, skill, notification, admin, aiGuidance, selfHealing
-  self-healing.ts  Error fingerprinting → auto-retry/reconnect/fallback → LLM diagnosis
-                   stored in errorLogs/errorFixes; learns which fix strategies work
+  self-healing.ts  Redacted fingerprinting → safe transient retry → advisory diagnosis
+                   stored in errorLogs/errorFixes; generated fixes require approval
 drizzle/      schema.ts (16 pg tables) + generated SQL migrations
 landing/      Static cinematic marketing site (no build step) — "Malaysia Experience"
 scripts/build-site.mjs  Assembles dist/: landing/ at /, Expo web export at /app
-dist/         COMMITTED build output — Netlify deploys this. Rebuild + commit together.
+server-dist/  Generated API bundle — Render builds this; never publish it as web content
+dist/         Generated web artifact — Netlify builds it with production public values
 ```
 
 **One merged site (as of the 2026-07-23 site/app merge — do not re-split these):**
@@ -57,15 +58,27 @@ like `/app/profile` working). The landing page's "Sign up"/"Student login" links
 point at `/app` (relative — works on any domain/preview URL). There is no more
 separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
 
-**Deploy topology (all verified live):**
+**Only supported production topology:**
 
 | Surface | Host | Source | Trigger |
 |---|---|---|---|
-| Whole site (landing at `/`, app at `/app`) | Netlify, site `exitbd` → exitbd.netlify.app | committed `dist/` (built by `scripts/build-site.mjs`) | push to `main` |
-| API server | Render (`render.yaml`, `last-bench-api`, Singapore) | `pnpm build` → `dist/index.js` | Render git integration |
+| Whole site (landing at `/`, app at `/app`) | Netlify, site `exitbd` → exitbd.netlify.app | `pnpm build:web:production` → generated `dist/` | push to `main` |
+| API server | Render (`render.yaml`, `last-bench-api`, Singapore) | `pnpm build` → `server-dist/index.js`; `pnpm start` | Render git integration |
 | Database | Supabase Postgres 17, project `tocxdyqlrvzthpexnmxe` (ap-southeast-1) | — | — |
 
-- Vercel: `vercel.json` exists but **no Vercel project is linked — it is dead config**.
+- Netlify is the only web deployment and Render is the only API deployment. Vercel
+  configuration has been removed and GitHub Pages must remain disabled.
+- A push, passing CI, or successful static deploy does **not** prove the product is live.
+  The release is complete only after both the Render health endpoint and the rendered
+  Netlify app pass the checks in section 3.
+- `EXPO_PUBLIC_API_BASE_URL` is baked into the browser bundle. Configure every
+  `EXPO_PUBLIC_*` value in Netlify; the production build refuses missing, insecure,
+  or placeholder values. Production must not fall back to sending `/api/*` to the
+  static Netlify site.
+- Production web auth must use the same-site API origin
+  `https://api.lastbenchbd.com`, attached as a Render custom domain. Do not release
+  the canonical `www` site against an `onrender.com` API origin: third-party-cookie
+  blocking can otherwise break login and returning sessions.
 - File storage: metadata in Postgres (`documents` table), bytes in S3 via the "Forge"
   presign broker (`server/storage.ts`); downloads proxied at `/manus-storage/*`.
 - Auth today: Manus OAuth (`oauth.manus.space`) + JWT cookie. Social login (Google/FB)
@@ -74,6 +87,13 @@ separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
   the OAuth callback redirects to `${FRONTEND_URL}/app` after login. Without it,
   this fell back to `http://localhost:8081` for every real user in production —
   found and fixed 2026-07-23; don't reintroduce the un-set fallback as the primary path.
+- Render also requires `CORS_ALLOWED_ORIGINS`, `TRUST_PROXY_HOPS=1`, and
+  `AI_GUIDANCE_MODEL`. Keep allowed origins narrow (canonical domain plus the active
+  Netlify fallback/preview origin). The model ID must be supported by the configured
+  Forge gateway.
+- `BUILT_IN_FORGE_API_URL` is not an Anthropic base URL. This code also uses
+  Forge-specific storage, notification, image, transcription, and related endpoints;
+  use the project Forge-compatible gateway.
 - Supabase free tier **auto-pauses after ~1 week idle**. Symptom: all DB calls fail.
   Fix: restore from the Supabase dashboard (or MCP `restore_project`), takes ~2 min.
 - RLS is ENABLED on all 16 tables with **no policies** (default-deny for anon/authenticated
@@ -89,6 +109,7 @@ action left that requires the owner — no registrar access exists in this sessi
 
 ```
 CNAME  www  exitbd.netlify.app        (also add the domain in Netlify site settings)
+# Add api.lastbenchbd.com using the exact DNS target shown by Render's custom-domain screen.
 ```
 
 ---
@@ -98,10 +119,34 @@ CNAME  www  exitbd.netlify.app        (also add the domain in Netlify site setti
 ```bash
 pnpm install                 # once
 pnpm check                   # tsc --noEmit — must be clean
-pnpm test                    # vitest — must pass (13 tests as of writing)
-pnpm build                   # server bundle (esbuild → dist/index.js)
-pnpm build:web               # Expo web export → dist/ (COMMIT the dist changes)
+pnpm test                    # vitest — all tests must pass
+pnpm audit --prod --audit-level critical
+pnpm build                   # server bundle (esbuild → server-dist/index.js)
+pnpm build:web               # local/offline Expo web export → ignored dist/
+pnpm build:web:production    # Netlify path; requires real EXPO_PUBLIC_* values
 ```
+
+CI exercises the production build contract with non-sensitive validation values.
+Netlify rebuilds the ignored artifact with its own production public configuration;
+never deploy a locally generated `dist/` as a substitute for that build.
+Netlify deploy previews use committed `.invalid` values so UI review remains
+available before production credentials exist; the preview app must therefore show
+its explicit service-unavailable state instead of pretending its backend is live.
+
+**Post-deploy release gate:**
+
+```bash
+API_ORIGIN=https://replace-with-render-service.onrender.com
+WEB_ORIGIN=https://www.lastbenchbd.com
+
+curl --fail --silent --show-error "$API_ORIGIN/api/health"
+curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/"
+curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/app/"
+```
+
+Then test the rendered `/app/` in a fresh browser: no permanent loader, no console
+errors, successful login/logout, and one real authenticated API query. A `200` response
+whose content type is HTML does not count as a successful API response.
 
 **Standards observed on this project — keep them:**
 
@@ -113,8 +158,10 @@ pnpm build:web               # Expo web export → dist/ (COMMIT the dist change
 - Conventional commits (`fix:`, `feat:`, `build:`, `docs:`).
 - New features need the full chain: schema (if data) → `server/db.ts` helper →
   tRPC procedure in `routers.ts` → UI screen wired via `trpc.<router>.<proc>.useQuery/useMutation`.
-- DB changes: edit `drizzle/schema.ts`, run `pnpm db:push` with `DATABASE_URL` set
-  (or apply via Supabase migration), commit the generated SQL.
+- DB changes: edit `drizzle/schema.ts`, generate and review SQL, then apply the reviewed
+  migration deliberately through the Supabase migration/SQL workflow. **Production
+  server startup and Render deploy commands must never create or alter tables.** Do
+  not point `pnpm db:push` at production and do not add automatic DDL back to startup.
 
 ---
 
@@ -128,7 +175,7 @@ logs; cohorts + cohort discussions; messages tab with a real conversation list
 ("AI Guides" tab — Sayem/Fahim/Erfan, real co-founders, see below) with persistent
 per-guide chat history (`aiChatMessages.guide`) and shared per-student memory
 (`aiMemories`), grounded on a verified Malaysia university dataset; admin dashboard
-(students/applications/tutors/payouts/analytics); notifications; self-healing error
+(students/applications/tutors/payouts/analytics); notifications; privacy-bounded error
 engine; home dashboard wired to real data; bench-icon loading indicator
 (`components/bench-loader.tsx`) on every full-screen/section loading state and on
 initial JS bundle load (`scripts/build-site.mjs` injects it into the exported HTML shell).
@@ -152,12 +199,11 @@ before it's fully production-ready:
 - **Founder photos** — the design uses circular photo slots per founder; production needs
   real photos of Sayem, Fahim, and Erfan (ask the owner).
 - **Universities** discovery screen — BUILT (`app/(tabs)/universities.tsx`, in the tab bar
-  in place of the now-hidden `discover`). Real deterministic match score per university
-  (`shared/university-match.ts`, unit-tested) against the student's real GPA/field — NOT the
-  design's illustrative fixed percentages. Free campus 360° via `components/campus-view*.tsx`:
-  web embeds a live Google Street View (`output=svembed`, no API key) for the 5 campuses with
-  verified coords, satellite map for the rest; native opens Google Maps. "Ask Fahim why"
-  deep-links to the AI Guides tab with the fahim guide + a prefilled question.
+  in place of the now-hidden `discover`). It is deliberately a stable directory, not
+  an admissions predictor: time-sensitive fees, rankings, requirements, visa odds, and
+  derived match percentages stay out until a verified source and review date are
+  available. Campus views help students understand the setting; every application
+  decision still requires current programme and entry-detail verification.
 - Still not built from the design: the **Documents** tracker view (the `documents` backend
   exists; needs the tracker UI + a file picker — see gap #1). Real, scoped, not done yet.
 - **This project's migration journal is stale**: `drizzle/meta/_journal.json` only has 2
@@ -188,11 +234,11 @@ before it's fully production-ready:
    `discover.tsx`, `community.tsx`, `ai-guidance.tsx`). `discover.tsx`'s "AI Advisor"
    segment was patched to default to Sayem's guide so it compiles, but the real fix is
    to remove the duplicate chat UI there and point it at the AI Guides tab.
-6. **`.env.example` Forge URL guidance is wrong** — `BUILT_IN_FORGE_API_URL` example
-   says `api.anthropic.com`, but `storage.ts` calls `/v1/storage/presign/*` on that
-   host, which is a Manus/Forge endpoint, not Anthropic. Verify what's actually set
-   in Render before touching storage.
-7. 2 Dependabot alerts on main (1 high, 1 moderate) — uninvestigated.
+6. **Production infrastructure still needs a live release-gate pass** — confirm the
+   actual Render origin, configure the public build variables in Netlify, deploy, and
+   run section 3. Do not describe the API as live from `render.yaml` alone.
+7. Keep every Dependabot alert visible and triaged. CI blocks critical production
+   dependency findings; high/moderate findings still require review and planned fixes.
 
 ---
 

@@ -22,11 +22,16 @@ export default function CohortDetailScreen() {
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState("");
 
-  const { data: cohort, isLoading } = trpc.cohort.getById.useQuery({ cohortId }, { enabled: Number.isFinite(cohortId) });
-  const { data: messages, isLoading: loadingMessages } = trpc.cohort.getMessages.useQuery(
+  const cohortQuery = trpc.cohort.getById.useQuery(
+    { cohortId },
+    { enabled: Number.isFinite(cohortId) },
+  );
+  const cohort = cohortQuery.data;
+  const messagesQuery = trpc.cohort.getMessages.useQuery(
     { cohortId },
     { enabled: !!cohort?.isMember, refetchInterval: 15000 }
   );
+  const messages = messagesQuery.data;
 
   const join = trpc.cohort.join.useMutation({
     onSuccess: () => utils.cohort.getById.invalidate({ cohortId }),
@@ -42,11 +47,45 @@ export default function CohortDetailScreen() {
     onError: (e) => Alert.alert("Could not post", e.message),
   });
 
-  if (isLoading || !cohort) {
+  if (!Number.isFinite(cohortId)) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-xl font-bold text-foreground">Invalid cohort link</Text>
+        <TouchableOpacity onPress={() => router.back()} className="bg-primary rounded-lg px-5 py-3">
+          <Text className="text-background font-bold">Go back</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
+
+  if (cohortQuery.isLoading) {
     return (
       <ScreenContainer>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator />
+        </View>
+      </ScreenContainer>
+    );
+  }
+
+  if (cohortQuery.isError || !cohort) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-4xl">↻</Text>
+        <Text className="text-xl font-bold text-foreground">Cohort unavailable</Text>
+        <Text className="text-sm text-muted text-center">
+          We could not load this cohort. It may no longer exist, or the service may be unavailable.
+        </Text>
+        <View className="flex-row gap-3">
+          <TouchableOpacity
+            onPress={() => void cohortQuery.refetch()}
+            className="bg-primary rounded-lg px-5 py-3"
+          >
+            <Text className="text-background font-bold">Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} className="border border-border rounded-lg px-5 py-3">
+            <Text className="text-foreground font-bold">Go back</Text>
+          </TouchableOpacity>
         </View>
       </ScreenContainer>
     );
@@ -90,9 +129,22 @@ export default function CohortDetailScreen() {
         ) : (
           <>
             <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-              {loadingMessages ? (
+              {messagesQuery.isLoading ? (
                 <View className="items-center py-8">
                   <ActivityIndicator />
+                </View>
+              ) : messagesQuery.isError ? (
+                <View className="bg-surface border border-border rounded-xl p-6 items-center gap-3 mt-2">
+                  <Text className="text-sm font-semibold text-foreground">Discussion unavailable</Text>
+                  <Text className="text-sm text-muted text-center">
+                    We could not load the latest messages. Check your connection and try again.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => void messagesQuery.refetch()}
+                    className="bg-primary rounded-lg px-5 py-3"
+                  >
+                    <Text className="text-background font-bold">Retry</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (messages ?? []).length === 0 ? (
                 <View className="bg-surface border border-border rounded-xl p-6 items-center mt-2">

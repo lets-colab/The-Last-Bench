@@ -9,8 +9,8 @@ const t = initTRPC.context<TrpcContext>().create({
 
 export const router = t.router;
 
-// Self-healing guard: every procedure error is fingerprinted, logged, and
-// diagnosed in the background so recurring failures get auto-fix strategies.
+// Reliability guard: unexpected procedure errors are fingerprinted and stored
+// in redacted form. Optional diagnosis is advisory and explicitly opt-in.
 const selfHealingGuard = t.middleware(async (opts) => {
   const result = await opts.next();
   // UNAUTHORIZED/FORBIDDEN are expected auth outcomes, not system failures.

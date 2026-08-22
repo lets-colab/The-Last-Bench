@@ -1,8 +1,9 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
+import { BenchLoader } from "@/components/bench-loader";
 
 function timeAgo(date: string | Date): string {
   const now = Date.now();
@@ -28,7 +29,13 @@ function notifIcon(type: string): string {
 export default function NotificationsScreen() {
   const router = useRouter();
 
-  const { data: notifications, isLoading, refetch, isRefetching } = trpc.notification.getForUser.useQuery();
+  const {
+    data: notifications,
+    isLoading,
+    isError,
+    refetch,
+    isRefetching,
+  } = trpc.notification.getForUser.useQuery();
   const utils = trpc.useUtils();
 
   const markAsRead = trpc.notification.markAsRead.useMutation({
@@ -69,14 +76,28 @@ export default function NotificationsScreen() {
         <View className="px-6 pb-12 gap-2">
           {isLoading ? (
             <View className="items-center py-12">
-              <ActivityIndicator />
+              <BenchLoader />
+            </View>
+          ) : isError ? (
+            <View className="bg-surface border border-border rounded-2xl p-8 items-center gap-3">
+              <Text className="text-4xl">↻</Text>
+              <Text className="text-base font-bold text-foreground">Notifications unavailable</Text>
+              <Text className="text-sm text-muted text-center leading-relaxed">
+                We could not load your updates. Check your connection and try again.
+              </Text>
+              <TouchableOpacity
+                onPress={() => void refetch()}
+                className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+              >
+                <Text className="text-background font-bold">Retry</Text>
+              </TouchableOpacity>
             </View>
           ) : (notifications ?? []).length === 0 ? (
             <View className="bg-surface border border-border rounded-2xl p-8 items-center gap-3">
               <Text className="text-4xl">🔔</Text>
               <Text className="text-base font-bold text-foreground">All quiet</Text>
               <Text className="text-sm text-muted text-center leading-relaxed">
-                We'll notify you when your application status changes or you receive a message
+                We&apos;ll notify you when your application status changes or you receive a message
               </Text>
             </View>
           ) : (

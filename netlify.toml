@@ -2,7 +2,26 @@
 # the student app (Expo web, base URL /app) lives at /app.
 
 [build]
+  command = "pnpm build:web:production"
   publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9.12.0"
+  # This repository is an Expo/static site, never a Next.js runtime.
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+# Pull-request previews must remain reviewable before production OAuth/API
+# identifiers exist. These .invalid values intentionally put the app into its
+# honest service-unavailable state. Production still requires real values from
+# the Netlify environment and fails closed when they are missing.
+[context.deploy-preview.environment]
+  EXPO_PUBLIC_API_BASE_URL = "https://api.example.invalid"
+  EXPO_PUBLIC_OAUTH_PORTAL_URL = "https://portal.example.invalid"
+  EXPO_PUBLIC_OAUTH_SERVER_URL = "https://oauth.example.invalid"
+  EXPO_PUBLIC_APP_ID = "netlify-preview-app"
+  EXPO_PUBLIC_OWNER_OPEN_ID = "netlify-preview-owner"
+  EXPO_PUBLIC_OWNER_NAME = "Last Bench Preview"
 
 # SPA fallback for the app's client-side routes (/app/profile, /app/admin, …).
 # Order matters: this must match before the landing catch-all below.

@@ -1,14 +1,24 @@
-import { ScrollView, Text, View, TouchableOpacity, RefreshControl, Animated, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  Text,
+  View,
+  TouchableOpacity,
+  RefreshControl,
+  Animated,
+  Platform,
+} from "react-native";
 import { useState, useRef } from "react";
+import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
 import { BenchLoader } from "@/components/bench-loader";
+import { APP_ID, OAUTH_PORTAL_URL, startOAuthLogin } from "@/constants/oauth";
 
-// Ordered pipeline stages — mirrors app/(tabs)/applications.tsx so "journey
-// progress" here matches the detail screen's own progress ring exactly.
+// Ordered pipeline stages — mirrors app/(tabs)/applications.tsx. Position in
+// this list is shown as a stage, never as a claim of percent completion.
 const STATUS_ORDER = [
   "draft",
   "documents_received",
@@ -42,8 +52,9 @@ function statusRank(status: string): number {
  * principle in design.md. New/empty states are shown honestly.
  */
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
   const colors = useColors();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -57,40 +68,47 @@ export default function HomeScreen() {
 
   const applications = applicationsQuery.data || [];
   const notifications = notificationsQuery.data || [];
-  const isLoading = applicationsQuery.isLoading || notificationsQuery.isLoading;
+  const isLoading =
+    applicationsQuery.isLoading || notificationsQuery.isLoading || studentQuery.isLoading;
+  const dashboardError =
+    applicationsQuery.error || notificationsQuery.error || studentQuery.error;
+  const canStartSignIn = Boolean(APP_ID && OAUTH_PORTAL_URL);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Promise.all([applicationsQuery.refetch(), notificationsQuery.refetch()]);
+    await refreshAuth();
+    if (user) {
+      await Promise.all([applicationsQuery.refetch(), notificationsQuery.refetch()]);
+    }
     setRefreshing(false);
   };
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.97,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   };
 
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   };
 
   const firstName = user?.name?.split(" ")[0] || "Student";
   const timeOfDay = new Date().getHours() < 12 ? "morning" : "afternoon";
 
-  // Journey progress = the single most-advanced application's stage.
+  // Journey stage = the single most-advanced application's pipeline position.
   const leadApplication = applications.reduce<(typeof applications)[number] | null>((best, app) => {
     if (!best || statusRank(app.applicationStatus) > statusRank(best.applicationStatus)) return app;
     return best;
   }, null);
-  const journeyPercent = leadApplication
-    ? Math.round(((statusRank(leadApplication.applicationStatus) + 1) / STATUS_ORDER.length) * 100)
-    : 0;
+  const journeyStage = leadApplication ? statusRank(leadApplication.applicationStatus) + 1 : 0;
+  const journeyBarWidth: `${number}%` =
+    `${Math.round((journeyStage / STATUS_ORDER.length) * 100)}%`;
 
   const submittedCount = applications.filter((a) => statusRank(a.applicationStatus) >= statusRank("submitted_to_university")).length;
   const pendingVisaCount = applications.filter((a) => a.applicationStatus === "visa_application_filed").length;
@@ -119,13 +137,95 @@ export default function HomeScreen() {
             {firstName}
           </Text>
           <Text className="text-base text-muted leading-relaxed">
-            Let's make your study-abroad dream a reality
+            Let&apos;s turn your study-abroad goal into a clear plan
           </Text>
         </View>
 
-        {isLoading ? (
+        {authLoading ? (
           <View className="py-12 items-center">
             <BenchLoader />
+          </View>
+        ) : authError ? (
+          <View className="px-6 pb-6">
+            <View className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-2xl p-6 gap-3 items-start">
+              <Text className="text-3xl">↻</Text>
+              <Text className="text-lg font-bold text-foreground">Student services are unavailable</Text>
+              <Text className="text-sm text-muted leading-relaxed">
+                Your workspace could not connect to Last Bench services. Please try again in a
+                moment.
+              </Text>
+              <TouchableOpacity
+                onPress={() => void refreshAuth()}
+                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
+              >
+                <Text className="text-background font-bold text-sm">Retry connection</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : !user ? (
+          <View className="px-6 pb-6">
+            <View className="bg-surface border border-border rounded-2xl p-6 gap-3 items-start">
+              <Text className="text-3xl">👋</Text>
+              <Text className="text-lg font-bold text-foreground">Your student workspace</Text>
+              <Text className="text-sm text-muted leading-relaxed">
+                Sign in to see applications, messages, documents, and guidance tied to your account.
+              </Text>
+              {canStartSignIn ? (
+                <TouchableOpacity
+                  onPress={() => void startOAuthLogin()}
+                  className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
+                >
+                  <Text className="text-background font-bold text-sm">Sign in securely</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text className="text-xs text-amber-700 dark:text-amber-300">
+                  Sign-in is not connected on this deployment yet.
+                </Text>
+              )}
+            </View>
+          </View>
+        ) : dashboardError ? (
+          <View className="px-6 pb-6">
+            <View className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-2xl p-6 gap-3 items-start">
+              <Text className="text-3xl">↻</Text>
+              <Text className="text-lg font-bold text-foreground">Dashboard unavailable</Text>
+              <Text className="text-sm text-muted leading-relaxed">
+                We could not load your current student records. Check your connection and try again.
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  void Promise.all([
+                    applicationsQuery.refetch(),
+                    notificationsQuery.refetch(),
+                    studentQuery.refetch(),
+                  ])
+                }
+                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
+              >
+                <Text className="text-background font-bold text-sm">Retry</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : isLoading ? (
+          <View className="py-12 items-center">
+            <BenchLoader />
+          </View>
+        ) : !studentQuery.data ? (
+          <View className="px-6 pb-6">
+            <View className="bg-surface border border-border rounded-2xl p-6 gap-3 items-start">
+              <Text className="text-3xl">🧭</Text>
+              <Text className="text-lg font-bold text-foreground">Create your starting profile</Text>
+              <Text className="text-sm text-muted leading-relaxed">
+                Add your current study stage, field, and destination preference before using
+                personalized guidance.
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/onboarding")}
+                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
+              >
+                <Text className="text-background font-bold text-sm">Set up profile</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : applications.length === 0 ? (
           /* Empty state for brand-new students — no fabricated progress */
@@ -134,10 +234,13 @@ export default function HomeScreen() {
               <Text className="text-3xl">🎓</Text>
               <Text className="text-lg font-bold text-foreground">Start your first application</Text>
               <Text className="text-sm text-muted leading-relaxed">
-                You haven't started an application yet. Chat with the AI advisor or browse universities to
+                You haven&apos;t started an application yet. Chat with an AI guide or browse universities to
                 shortlist your first one.
               </Text>
-              <TouchableOpacity className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80">
+              <TouchableOpacity
+                onPress={() => router.push("/ai-guidance")}
+                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
+              >
                 <Text className="text-background font-bold text-sm">Get Guidance</Text>
               </TouchableOpacity>
             </View>
@@ -148,6 +251,7 @@ export default function HomeScreen() {
             <View className="px-6 pb-6">
               <TouchableOpacity
                 activeOpacity={0.8}
+                onPress={() => router.push("/applications")}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
                 className="bg-gradient-to-br from-green-800 to-green-600 rounded-2xl p-6 gap-4"
@@ -160,10 +264,12 @@ export default function HomeScreen() {
                   <Text className="text-white text-sm opacity-75">applications submitted</Text>
                 </View>
                 <View className="h-2 bg-white/30 rounded-full overflow-hidden">
-                  <View style={{ width: `${journeyPercent}%` }} className="h-full bg-white rounded-full" />
+                  <View style={{ width: journeyBarWidth }} className="h-full bg-white rounded-full" />
                 </View>
                 <View className="flex-row items-center justify-between pt-2">
-                  <Text className="text-white text-xs font-semibold opacity-90">{journeyPercent}% Complete</Text>
+                  <Text className="text-white text-xs font-semibold opacity-90">
+                    Furthest application: stage {journeyStage} of {STATUS_ORDER.length}
+                  </Text>
                   <Text className="text-white text-lg">→</Text>
                 </View>
               </TouchableOpacity>
@@ -212,11 +318,16 @@ export default function HomeScreen() {
                 {needsTranscript && (
                   <TouchableOpacity
                     activeOpacity={0.7}
+                    onPress={() =>
+                      leadApplication && router.push(`/application-detail?id=${leadApplication.id}`)
+                    }
                     className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
                   >
                     <View className="flex-1 gap-1">
-                      <Text className="text-sm font-semibold text-foreground">Upload Transcript</Text>
-                      <Text className="text-xs text-muted">Needed before applications can be reviewed</Text>
+                      <Text className="text-sm font-semibold text-foreground">Review document needs</Text>
+                      <Text className="text-xs text-muted">
+                        Confirm the current checklist with your mentor
+                      </Text>
                     </View>
                     <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
                       <Text className="text-primary font-bold">→</Text>
@@ -227,6 +338,7 @@ export default function HomeScreen() {
                 {draftApplication && (
                   <TouchableOpacity
                     activeOpacity={0.7}
+                    onPress={() => router.push(`/application-detail?id=${draftApplication.id}`)}
                     className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
                   >
                     <View className="flex-1 gap-1">
@@ -258,7 +370,10 @@ export default function HomeScreen() {
                   <Text className="text-xs text-muted leading-relaxed">{recommendation.whyGoodFit}</Text>
                 </View>
               </View>
-              <TouchableOpacity className="bg-primary rounded-lg py-2 px-3 active:opacity-80">
+              <TouchableOpacity
+                onPress={() => router.push("/universities")}
+                className="bg-primary rounded-lg py-2 px-3 active:opacity-80"
+              >
                 <Text className="text-white text-xs font-bold text-center">Explore Universities</Text>
               </TouchableOpacity>
             </View>
@@ -266,25 +381,27 @@ export default function HomeScreen() {
         )}
 
         {/* Recent Activity — real notifications, honestly empty when there are none */}
-        <View className="px-6 pb-12 gap-3">
-          <Text className="text-lg font-bold text-foreground">Recent Activity</Text>
+        {user && (
+          <View className="px-6 pb-12 gap-3">
+            <Text className="text-lg font-bold text-foreground">Recent Activity</Text>
 
-          {recentActivity.length === 0 ? (
-            <Text className="text-sm text-muted">No activity yet — updates will appear here.</Text>
-          ) : (
-            <View className="gap-2">
-              {recentActivity.map((n) => (
-                <View key={n.id} className="flex-row items-center gap-3">
-                  <View className={`w-2 h-2 rounded-full ${n.isRead ? "bg-border" : "bg-primary"}`} />
-                  <Text className="text-sm text-foreground flex-1">{n.title}</Text>
-                  <Text className="text-xs text-muted">
-                    {new Date(n.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
+            {recentActivity.length === 0 ? (
+              <Text className="text-sm text-muted">No activity yet — updates will appear here.</Text>
+            ) : (
+              <View className="gap-2">
+                {recentActivity.map((n) => (
+                  <View key={n.id} className="flex-row items-center gap-3">
+                    <View className={`w-2 h-2 rounded-full ${n.isRead ? "bg-border" : "bg-primary"}`} />
+                    <Text className="text-sm text-foreground flex-1">{n.title}</Text>
+                    <Text className="text-xs text-muted">
+                      {new Date(n.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );

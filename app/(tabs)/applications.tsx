@@ -1,11 +1,25 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
-import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
 import { BenchLoader } from "@/components/bench-loader";
+
+const STATUS_ORDER = [
+  "draft",
+  "documents_received",
+  "profile_analyzed",
+  "shortlisted",
+  "application_drafted",
+  "submitted_to_university",
+  "under_review",
+  "offer_received",
+  "visa_application_filed",
+  "visa_decision",
+  "pre_departure",
+];
 
 /**
  * Applications Screen - Premium Status Tracking
@@ -17,13 +31,38 @@ import { BenchLoader } from "@/components/bench-loader";
  * - Smooth micro-interactions
  */
 export default function ApplicationsScreen() {
-  const { user } = useAuth();
-  const colors = useColors();
+  const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
+  const router = useRouter();
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
   const applicationsQuery = trpc.application.getByStudent.useQuery(undefined, {
     enabled: !!user,
   });
+
+  if (authLoading) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center">
+        <BenchLoader />
+      </ScreenContainer>
+    );
+  }
+
+  if (authError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-xl font-bold text-foreground text-center">Student services are unavailable</Text>
+        <Text className="text-sm text-muted text-center">
+          Your workspace could not connect to Last Bench services. Please try again in a moment.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void refreshAuth()}
+          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Retry connection</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
 
   if (!user) {
     return (
@@ -63,24 +102,6 @@ export default function ApplicationsScreen() {
   const handleStatusFilter = (status: string | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedStatus(selectedStatus === status ? null : status);
-  };
-
-  const getProgressPercentage = (status: string): number => {
-    const statusOrder = [
-      "draft",
-      "documents_received",
-      "profile_analyzed",
-      "shortlisted",
-      "application_drafted",
-      "submitted_to_university",
-      "under_review",
-      "offer_received",
-      "visa_application_filed",
-      "visa_decision",
-      "pre_departure",
-    ];
-    const index = statusOrder.indexOf(status);
-    return index >= 0 ? ((index + 1) / statusOrder.length) * 100 : 0;
   };
 
   return (
@@ -148,16 +169,37 @@ export default function ApplicationsScreen() {
           <View className="flex-1 justify-center items-center">
             <BenchLoader />
           </View>
+        ) : applicationsQuery.isError ? (
+          <View className="flex-1 justify-center items-center px-6 pb-12 gap-4">
+            <Text className="text-4xl">↻</Text>
+            <Text className="text-xl font-bold text-foreground">Applications unavailable</Text>
+            <Text className="text-sm text-muted text-center leading-relaxed">
+              We could not load your applications. Check your connection and try again.
+            </Text>
+            <TouchableOpacity
+              onPress={() => void applicationsQuery.refetch()}
+              className="bg-primary rounded-lg px-6 py-3 active:opacity-80"
+            >
+              <Text className="text-background font-bold">Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : filteredApplications.length > 0 ? (
           <View className="px-6 pb-12 gap-3">
             {filteredApplications.map((app) => {
               const config = getStatusConfig(app.applicationStatus);
-              const progress = getProgressPercentage(app.applicationStatus);
+              const stageIndex = STATUS_ORDER.indexOf(app.applicationStatus);
+              const stagePosition = stageIndex >= 0 ? stageIndex + 1 : null;
+              const pipelineWidth: `${number}%` = stagePosition
+                ? `${Math.round((stagePosition / STATUS_ORDER.length) * 100)}%`
+                : "0%";
 
               return (
                 <TouchableOpacity
                   key={app.id}
                   activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${app.universityName} application`}
+                  onPress={() => router.push(`/application-detail?id=${app.id}`)}
                   className="bg-surface border border-border rounded-2xl p-5 active:opacity-80"
                 >
                   {/* Header with Status Badge */}
@@ -179,16 +221,18 @@ export default function ApplicationsScreen() {
                     </View>
                   </View>
 
-                  {/* Progress Ring */}
+                  {/* Pipeline position — not a claim about percent complete. */}
                   <View className="gap-2 mb-4">
                     <View className="flex-row items-center justify-between">
                       <Text className="text-xs font-semibold text-muted">{config.label}</Text>
-                      <Text className="text-xs font-bold text-foreground">{Math.round(progress)}%</Text>
+                      <Text className="text-xs font-bold text-foreground">
+                        {stagePosition ? `Stage ${stagePosition} of ${STATUS_ORDER.length}` : "Closed"}
+                      </Text>
                     </View>
                     <View className="h-2 bg-border rounded-full overflow-hidden">
                       <View
                         style={{
-                          width: `${progress}%`,
+                          width: pipelineWidth,
                           backgroundColor: config.color,
                         }}
                         className="h-full rounded-full"
@@ -196,39 +240,11 @@ export default function ApplicationsScreen() {
                     </View>
                   </View>
 
-                  {/* Stats Grid */}
-                  <View className="gap-3 mb-4 pb-4 border-t border-border pt-4">
-                    <View className="flex-row gap-3">
-                      {app.acceptanceRate && (
-                        <View className="flex-1 gap-1">
-                          <Text className="text-xs text-muted font-medium">Acceptance</Text>
-                          <Text className="text-sm font-bold text-foreground">{app.acceptanceRate}</Text>
-                        </View>
-                      )}
-                      {app.visaSuccessRate && (
-                        <View className="flex-1 gap-1">
-                          <Text className="text-xs text-muted font-medium">Visa Success</Text>
-                          <Text className="text-sm font-bold text-foreground">{app.visaSuccessRate}</Text>
-                        </View>
-                      )}
-                      {app.estimatedCost && (
-                        <View className="flex-1 gap-1">
-                          <Text className="text-xs text-muted font-medium">Est. Cost</Text>
-                          <Text className="text-sm font-bold text-foreground">{app.estimatedCost}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Contextual Action Button */}
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    className="bg-primary rounded-lg py-3 active:opacity-80"
-                  >
+                  <View className="bg-primary rounded-lg py-3">
                     <Text className="text-background font-bold text-center text-sm">
-                      {app.applicationStatus === "draft" ? "Continue Application" : "View Details"}
+                      {app.applicationStatus === "draft" ? "Review Draft" : "View Timeline"}
                     </Text>
-                  </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -243,8 +259,11 @@ export default function ApplicationsScreen() {
                 : "Start your first application to begin your journey to your dream university"}
             </Text>
             {!selectedStatus && (
-              <TouchableOpacity className="bg-primary rounded-lg px-8 py-3 mt-4 active:opacity-80">
-                <Text className="text-background font-bold">Create Application</Text>
+              <TouchableOpacity
+                onPress={() => router.push("/universities")}
+                className="bg-primary rounded-lg px-8 py-3 mt-4 active:opacity-80"
+              >
+                <Text className="text-background font-bold">Explore Universities</Text>
               </TouchableOpacity>
             )}
           </View>

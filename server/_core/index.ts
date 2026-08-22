@@ -7,18 +7,23 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { logError, getHealthSnapshot } from "../self-healing";
-import { ensureSchema } from "../db";
+import { logError } from "../self-healing";
+import { createCorsMiddleware } from "./cors";
+import { assertProductionConfiguration } from "./env";
 
-// The server never dies from an unhandled error: every crash-class failure
-// is captured, logged to the knowledge base, and diagnosed in the background.
+function exitAfterFatalError(source: string, error: unknown) {
+  console.error(`[api] fatal ${source}; shutting down for a clean restart`);
+  void logError(`process:${source}`, error)
+    .catch(() => {})
+    .finally(() => process.exit(1));
+  setTimeout(() => process.exit(1), 1000);
+}
+
 process.on("uncaughtException", (error) => {
-  console.error("[self-healing] uncaught exception:", error);
-  void logError("process:uncaughtException", error).catch(() => {});
+  exitAfterFatalError("uncaughtException", error);
 });
 process.on("unhandledRejection", (reason) => {
-  console.error("[self-healing] unhandled rejection:", reason);
-  void logError("process:unhandledRejection", reason).catch(() => {});
+  exitAfterFatalError("unhandledRejection", reason);
 });
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -41,38 +46,33 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  assertProductionConfiguration();
+
   const app = express();
   const server = createServer(app);
 
-  // Enable CORS for all routes - reflect the request origin to support credentials
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin) {
-      res.header("Access-Control-Allow-Origin", origin);
-    }
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-    );
-    res.header("Access-Control-Allow-Credentials", "true");
+  // Render forwards through one proxy hop by default. Make this explicit so
+  // rate limiting uses the real client IP without trusting arbitrary headers.
+  const proxyHops =
+    process.env.TRUST_PROXY_HOPS !== undefined
+      ? Number.parseInt(process.env.TRUST_PROXY_HOPS, 10)
+      : process.env.NODE_ENV === "production"
+        ? 1
+        : 0;
+  app.set("trust proxy", Number.isFinite(proxyHops) && proxyHops > 0 ? proxyHops : false);
 
-    // Handle preflight requests
-    if (req.method === "OPTIONS") {
-      res.sendStatus(200);
-      return;
-    }
-    next();
-  });
+  app.use(createCorsMiddleware());
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Files use the presigned storage flow; API JSON should stay small enough
+  // that one request cannot consume excessive memory.
+  app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ limit: "1mb", extended: true }));
 
   registerStorageProxy(app);
   registerOAuthRoutes(app);
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, timestamp: Date.now(), selfHealing: getHealthSnapshot() });
+    res.json({ ok: true, timestamp: Date.now() });
   });
 
   app.use(
@@ -91,12 +91,16 @@ async function startServer() {
     }
   });
 
-  // Guarantee the schema is current before we serve a single request, so a
-  // fresh deploy can't hit a missing column (e.g. aiChatMessages.guide).
-  await ensureSchema();
-
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const preferredPort = Number.parseInt(process.env.PORT || "3000", 10);
+  if (!Number.isInteger(preferredPort) || preferredPort < 1 || preferredPort > 65535) {
+    throw new Error("PORT must be an integer between 1 and 65535");
+  }
+  // Managed hosts route traffic to the exact assigned PORT. Silently moving
+  // to another port would create a misleading "started" log and a dead API.
+  const port =
+    process.env.NODE_ENV === "production"
+      ? preferredPort
+      : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
@@ -107,4 +111,10 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((error) => {
+  console.error(
+    "[api] failed to start:",
+    error instanceof Error ? error.message : "Unknown startup error",
+  );
+  process.exitCode = 1;
+});

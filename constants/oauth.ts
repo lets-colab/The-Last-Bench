@@ -43,9 +43,15 @@ export function getApiBaseUrl(): string {
     if (apiHostname !== hostname) {
       return `${protocol}//${apiHostname}`;
     }
+
+    // Local Expo web runs on 8081 while the API runs on 3000.
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return `${protocol}//${hostname}:3000`;
+    }
   }
 
-  // Fallback to empty (will use relative URL)
+  // No implicit production fallback: a missing API URL is a configuration
+  // error, not an instruction to send API requests to the static site.
   return "";
 }
 

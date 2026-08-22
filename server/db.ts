@@ -20,7 +20,6 @@ import {
   messages,
   InsertCohort,
   cohorts,
-  InsertCohortMember,
   cohortMembers,
   InsertSkill,
   skills,
@@ -30,7 +29,6 @@ import {
   InsertAiChatMessage,
   AiGuide,
   aiMemories,
-  InsertAiMemory,
   payouts,
   InsertPayout,
   auditLogs,
@@ -63,38 +61,6 @@ export function resetDb() {
   void _client?.end({ timeout: 1 }).catch(() => {});
   _db = null;
   _client = null;
-}
-
-// Idempotent, boot-time schema guarantees. This project's Drizzle migration
-// journal is out of sync with the live DB (several tables were applied directly
-// via Supabase SQL), so instead of `drizzle-kit migrate` we make the server
-// self-heal its own schema on startup — matching the app's self-healing ethos.
-// Every statement here MUST be safe to run repeatedly. Call from startServer()
-// and AWAIT it before the server begins serving, so no request hits a missing
-// column. See drizzle/0002_ai_guide_personas.sql for the canonical DDL.
-export async function ensureSchema() {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[schema] no database — skipping ensureSchema");
-    return;
-  }
-  try {
-    // CREATE TYPE has no IF NOT EXISTS; swallow duplicate_object on re-run.
-    await db.execute(sql`
-      DO $$ BEGIN
-        CREATE TYPE ai_guide AS ENUM ('sayem', 'fahim', 'erfan');
-      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-    `);
-    await db.execute(sql`
-      ALTER TABLE "aiChatMessages"
-      ADD COLUMN IF NOT EXISTS "guide" ai_guide DEFAULT 'sayem' NOT NULL;
-    `);
-    console.log("[schema] ensured aiChatMessages.guide column");
-  } catch (error) {
-    // Non-fatal: the server still boots. If the column genuinely can't be
-    // added, aiGuidance.chat's self-healing wrapper will surface it per-request.
-    console.warn("[schema] ensureSchema failed (non-fatal):", error);
-  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -243,14 +209,21 @@ export async function getApplication(applicationId: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateApplicationStatus(applicationId: number, status: string, updatedBy: number) {
+export async function updateApplicationStatus(
+  applicationId: number,
+  status: string,
+  updatedBy: number,
+  notes?: string,
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(applications).set({
+  const changes: Partial<InsertApplication> = {
     applicationStatus: status as any,
     lastUpdatedBy: updatedBy,
     lastUpdatedAt: new Date(),
-  }).where(eq(applications.id, applicationId));
+  };
+  if (notes !== undefined) changes.notes = notes;
+  await db.update(applications).set(changes).where(eq(applications.id, applicationId));
 }
 
 // ============================================================================
@@ -471,10 +444,28 @@ export async function getConversationsForUser(userId: number): Promise<Conversat
   });
 }
 
-export async function markMessageAsRead(messageId: number) {
+export async function markMessageAsRead(messageId: number, recipientId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(messages).set({ isRead: 1 }).where(eq(messages.id, messageId));
+  await db
+    .update(messages)
+    .set({ isRead: 1 })
+    .where(and(eq(messages.id, messageId), eq(messages.recipientId, recipientId)));
+}
+
+export async function markThreadAsRead(recipientId: number, senderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(messages)
+    .set({ isRead: 1 })
+    .where(
+      and(
+        eq(messages.recipientId, recipientId),
+        eq(messages.senderId, senderId),
+        eq(messages.isRead, 0),
+      ),
+    );
 }
 
 // ============================================================================
@@ -541,10 +532,13 @@ export async function getNotificationsByUser(userId: number) {
   return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
 }
 
-export async function markNotificationAsRead(notificationId: number) {
+export async function markNotificationAsRead(notificationId: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(notifications).set({ isRead: 1 }).where(eq(notifications.id, notificationId));
+  await db
+    .update(notifications)
+    .set({ isRead: 1 })
+    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
 }
 
 // ── AI Memory (MemPalace-style) ──────────────────────────────────────────────

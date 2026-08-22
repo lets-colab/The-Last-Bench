@@ -1,11 +1,10 @@
-import { ScrollView, Text, View, TouchableOpacity, Switch, Alert } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Alert } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
-import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { BenchLoader } from "@/components/bench-loader";
 
 /**
  * Profile Screen - Premium User Hub
@@ -17,18 +16,55 @@ import * as Haptics from "expo-haptics";
  * - Smooth interactions
  */
 export default function ProfileScreen() {
-  const { user } = useAuth();
-  const colors = useColors();
+  const {
+    user,
+    loading: authLoading,
+    error: authError,
+    refresh: refreshAuth,
+    logout,
+  } = useAuth();
   const router = useRouter();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const { mutate: logout } = trpc.auth.logout.useMutation();
 
   const studentQuery = trpc.student.getProfile.useQuery(undefined, {
     enabled: !!user,
   });
   const { data: notifications } = trpc.notification.getForUser.useQuery(undefined, { enabled: !!user });
+  const { data: applications } = trpc.application.getByStudent.useQuery(undefined, { enabled: !!user });
+  const { data: conversations } = trpc.message.getConversations.useQuery(undefined, { enabled: !!user });
   const unreadCount = (notifications ?? []).filter((n: any) => !n.isRead).length;
+  const unreadMessages = (conversations ?? []).reduce(
+    (total: number, conversation: { unreadCount: number }) => total + conversation.unreadCount,
+    0,
+  );
+  const mentorsAssigned = new Set(
+    (applications ?? []).map((application) => application.mentorAssigned).filter(Boolean),
+  ).size;
   const isAdmin = (user as any)?.role === "admin";
+
+  if (authLoading) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center">
+        <BenchLoader />
+      </ScreenContainer>
+    );
+  }
+
+  if (authError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-xl font-bold text-foreground text-center">Student services are unavailable</Text>
+        <Text className="text-sm text-muted text-center">
+          Your workspace could not connect to Last Bench services. Please try again in a moment.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void refreshAuth()}
+          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Retry connection</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
 
   if (!user) {
     return (
@@ -40,6 +76,31 @@ export default function ProfileScreen() {
 
   const student = studentQuery.data;
 
+  if (studentQuery.isLoading) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center">
+        <BenchLoader />
+      </ScreenContainer>
+    );
+  }
+
+  if (studentQuery.isError) {
+    return (
+      <ScreenContainer className="p-6 justify-center items-center gap-4">
+        <Text className="text-xl font-bold text-foreground text-center">Profile unavailable</Text>
+        <Text className="text-sm text-muted text-center">
+          We could not load your study profile. Check your connection and try again.
+        </Text>
+        <TouchableOpacity
+          onPress={() => void studentQuery.refetch()}
+          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+        >
+          <Text className="text-background font-bold">Retry</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
+
   const handleLogout = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", onPress: () => {} },
@@ -47,16 +108,11 @@ export default function ProfileScreen() {
         text: "Sign Out",
         onPress: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          logout();
+          void logout();
         },
         style: "destructive",
       },
     ]);
-  };
-
-  const handleToggle = (toggle: () => void) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    toggle();
   };
 
   return (
@@ -79,15 +135,15 @@ export default function ProfileScreen() {
           <View className="flex-row gap-3">
             <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
               <Text className="text-xs text-white/80">Applications</Text>
-              <Text className="text-xl font-bold text-white">5</Text>
+              <Text className="text-xl font-bold text-white">{applications?.length ?? 0}</Text>
             </View>
             <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
               <Text className="text-xs text-white/80">Mentors</Text>
-              <Text className="text-xl font-bold text-white">2</Text>
+              <Text className="text-xl font-bold text-white">{mentorsAssigned}</Text>
             </View>
             <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
-              <Text className="text-xs text-white/80">Messages</Text>
-              <Text className="text-xl font-bold text-white">3</Text>
+              <Text className="text-xs text-white/80">Unread</Text>
+              <Text className="text-xl font-bold text-white">{unreadMessages}</Text>
             </View>
           </View>
         </View>
@@ -97,10 +153,15 @@ export default function ProfileScreen() {
           {/* Messages Section */}
           <View className="gap-3">
             <Text className="text-lg font-bold text-foreground">Messages</Text>
-            <TouchableOpacity className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80">
+            <TouchableOpacity
+              onPress={() => router.push("/messages")}
+              className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+            >
               <View className="flex-1 gap-1">
                 <Text className="text-base font-semibold text-foreground">💬 All Messages</Text>
-                <Text className="text-sm text-muted">3 unread from mentors</Text>
+                <Text className="text-sm text-muted">
+                  {unreadMessages > 0 ? `${unreadMessages} unread` : "No unread messages"}
+                </Text>
               </View>
               <View className="w-8 h-8 rounded-full bg-primary items-center justify-center">
                 <Text className="text-white font-bold text-sm">→</Text>
@@ -139,7 +200,10 @@ export default function ProfileScreen() {
                   </View>
                 )}
 
-                <TouchableOpacity className="bg-primary rounded-lg py-3 mt-2 active:opacity-80">
+                <TouchableOpacity
+                  onPress={() => router.push("/onboarding")}
+                  className="bg-primary rounded-lg py-3 mt-2 active:opacity-80"
+                >
                   <Text className="text-white font-bold text-center">Edit Profile</Text>
                 </TouchableOpacity>
               </View>
@@ -150,7 +214,10 @@ export default function ProfileScreen() {
               <Text className="text-sm text-amber-800 dark:text-amber-200">
                 Add your academic info and study preferences to get personalized guidance.
               </Text>
-              <TouchableOpacity className="bg-amber-500 rounded-lg py-2.5 mt-2 active:opacity-80">
+              <TouchableOpacity
+                onPress={() => router.push("/onboarding")}
+                className="bg-amber-500 rounded-lg py-2.5 mt-2 active:opacity-80"
+              >
                 <Text className="text-white font-bold text-center text-sm">Create Profile</Text>
               </TouchableOpacity>
             </View>
@@ -200,52 +267,6 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          {/* Preferences */}
-          <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Preferences</Text>
-
-            <View className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between">
-              <View className="gap-1">
-                <Text className="text-base font-semibold text-foreground">🔔 Notifications</Text>
-                <Text className="text-sm text-muted">Receive updates and messages</Text>
-              </View>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={() => handleToggle(() => setNotificationsEnabled(!notificationsEnabled))}
-                trackColor={{ false: colors.border, true: colors.primary }}
-              />
-            </View>
-          </View>
-
-          {/* Support & Legal */}
-          <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Support & Legal</Text>
-
-            <TouchableOpacity className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80">
-              <View className="gap-1">
-                <Text className="text-base font-semibold text-foreground">❓ Help & Support</Text>
-                <Text className="text-sm text-muted">Get help with your account</Text>
-              </View>
-              <Text className="text-lg text-muted">→</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80">
-              <View className="gap-1">
-                <Text className="text-base font-semibold text-foreground">🔒 Privacy Policy</Text>
-                <Text className="text-sm text-muted">How we protect your data</Text>
-              </View>
-              <Text className="text-lg text-muted">→</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80">
-              <View className="gap-1">
-                <Text className="text-base font-semibold text-foreground">📋 Terms of Service</Text>
-                <Text className="text-sm text-muted">Our terms and conditions</Text>
-              </View>
-              <Text className="text-lg text-muted">→</Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Sign Out */}
           <TouchableOpacity
             onPress={handleLogout}
@@ -257,7 +278,7 @@ export default function ProfileScreen() {
           {/* Footer */}
           <View className="items-center gap-1 pt-4 border-t border-border">
             <Text className="text-xs text-muted">last bench v1.0.0</Text>
-            <Text className="text-xs text-muted">For Those Who Last, To Create a Benchmark</Text>
+            <Text className="text-xs text-muted">Beyond marks. Beyond limits.</Text>
           </View>
         </View>
       </ScrollView>

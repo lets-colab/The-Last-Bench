@@ -20,11 +20,11 @@ import { ENV } from "./env";
 
 export type GenerateImageOptions = {
   prompt: string;
-  originalImages?: Array<{
+  originalImages?: {
     url?: string;
     b64Json?: string;
     mimeType?: string;
-  }>;
+  }[];
 };
 
 export type GenerateImageResponse = {

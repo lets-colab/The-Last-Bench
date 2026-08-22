@@ -13,20 +13,20 @@ type GuideKey = "sayem" | "fahim" | "erfan";
 const GUIDES: Record<GuideKey, { name: string; tag: string; duty: string; placeholder: string }> = {
   sayem: {
     name: "Sayem Ahmed",
-    tag: "THE MAIN AI · CEO",
-    duty: "Runs your whole journey. Tracks every file, every update.",
+    tag: "JOURNEY GUIDE AI",
+    duty: "Helps you understand the journey and prepare the right questions.",
     placeholder: "Ask about your journey, your tracker, anything…",
   },
   fahim: {
     name: "Fahim Shahbaz",
     tag: "CAREER GUIDE AI",
-    duty: "Matches you to the right university and career path.",
-    placeholder: "Ask which university fits you and why…",
+    duty: "Helps you research study areas, universities, and career directions.",
+    placeholder: "Ask what to research and compare…",
   },
   erfan: {
     name: "Erfan Uddin",
-    tag: "COMMUNITY AI",
-    duty: "Connects you to the room — knowledge, innovation, people.",
+    tag: "COMMUNITY GUIDE AI",
+    duty: "Helps you think through community, skills, and who to learn from.",
     placeholder: "Ask who to meet, what to join, where to start…",
   },
 };
@@ -50,6 +50,7 @@ export default function AIGuidesScreen() {
   const params = useLocalSearchParams<{ guide?: string; q?: string }>();
   const [activeGuide, setActiveGuide] = useState<GuideKey>("sayem");
   const [draft, setDraft] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -83,9 +84,15 @@ export default function AIGuidesScreen() {
   const handleSend = async () => {
     const text = draft.trim();
     if (!text || chatMutation.isPending) return;
+    setSendError(null);
     setDraft("");
-    await chatMutation.mutateAsync({ message: text, guide: activeGuide });
-    void historyQuery.refetch();
+    try {
+      await chatMutation.mutateAsync({ message: text, guide: activeGuide });
+      await historyQuery.refetch();
+    } catch {
+      setDraft(text);
+      setSendError("The guide could not respond. Check your connection and try again.");
+    }
   };
 
   return (
@@ -95,7 +102,8 @@ export default function AIGuidesScreen() {
           THREE GUIDES, ONE BENCH.
         </Text>
         <Text style={{ color: CINE.dim }} className="text-sm">
-          Sayem, Fahim and Erfan each trained an AI on everything they know. Pick one and ask.
+          Three AI perspectives shaped around the founders&apos; focus areas. Verify important
+          decisions with official sources or a human mentor.
         </Text>
       </View>
 
@@ -142,11 +150,29 @@ export default function AIGuidesScreen() {
           <View className="flex-1 items-center justify-center">
             <BenchLoader />
           </View>
+        ) : historyQuery.isError ? (
+          <View className="flex-1 items-center justify-center px-6 gap-3">
+            <Text style={{ color: CINE.text }} className="text-base font-bold text-center">
+              Guidance is unavailable
+            </Text>
+            <Text style={{ color: CINE.dim }} className="text-sm text-center">
+              We could not load this conversation. Check your connection and try again.
+            </Text>
+            <TouchableOpacity
+              onPress={() => void historyQuery.refetch()}
+              className="rounded-full px-5 py-3"
+              style={{ backgroundColor: CINE.green }}
+            >
+              <Text style={{ color: "#04140b" }} className="font-bold text-sm">
+                Retry
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={{ padding: 16, gap: 12 }}>
             {messages.length === 0 && (
               <Text style={{ color: CINE.dim }} className="text-sm text-center py-8">
-                Say hello to {guide.name.split(" ")[0]}'s AI.
+                Start with a question. The answer may be incomplete, so verify important details.
               </Text>
             )}
             {messages.map((m) => {
@@ -193,6 +219,13 @@ export default function AIGuidesScreen() {
         )}
 
         {/* Input */}
+        {sendError && (
+          <View className="px-4 pt-3">
+            <Text style={{ color: "#FFB74D" }} className="text-xs">
+              {sendError}
+            </Text>
+          </View>
+        )}
         <View
           className="flex-row items-center gap-2 px-4 py-3"
           style={{ borderTopWidth: 1, borderTopColor: CINE.border }}
