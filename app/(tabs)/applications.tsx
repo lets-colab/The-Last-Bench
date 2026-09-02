@@ -196,7 +196,11 @@ export default function ApplicationsScreen() {
                     </View>
                   </View>
 
-                  {/* Stats Grid */}
+                  {/* Stats Grid — rendered only when the record actually supplies a
+                      figure. Last Bench does not estimate acceptance or visa numbers,
+                      so an absent value means the row is omitted entirely rather than
+                      shown as a dash or a guess. */}
+                  {(app.acceptanceRate || app.visaSuccessRate || app.estimatedCost) && (
                   <View className="gap-3 mb-4 pb-4 border-t border-border pt-4">
                     <View className="flex-row gap-3">
                       {app.acceptanceRate && (
@@ -219,6 +223,7 @@ export default function ApplicationsScreen() {
                       )}
                     </View>
                   </View>
+                  )}
 
                   {/* Contextual Action Button */}
                   <TouchableOpacity
@@ -232,6 +237,13 @@ export default function ApplicationsScreen() {
                 </TouchableOpacity>
               );
             })}
+            {/* Why some cards show fewer figures than others. */}
+            <View className="bg-surface border border-border rounded-xl p-4 mt-1">
+              <Text className="text-xs text-muted leading-relaxed">
+                Acceptance and visa figures appear here only when a university supplies verified numbers. Last Bench
+                does not estimate them.
+              </Text>
+            </View>
           </View>
         ) : (
           <View className="flex-1 justify-center items-center px-6 pb-12 gap-4">

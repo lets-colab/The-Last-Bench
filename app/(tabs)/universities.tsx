@@ -1,8 +1,9 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Modal, Pressable } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useAuth } from "@/hooks/use-auth";
+import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { BenchLoader } from "@/components/bench-loader";
 import { CampusView } from "@/components/campus-view";
@@ -31,19 +32,26 @@ interface Uni {
   ieltsRequired?: string | number;
 }
 
-const CINE = {
-  bg: "#04140B",
-  panel: "rgba(5,16,10,.7)",
-  border: "rgba(0,200,83,.22)",
-  green: "#00C853",
-  brightGreen: "#00E676",
-  amber: "#FFB300",
-  dim: "rgba(234,244,236,.6)",
-};
+/**
+ * The design shows a qualitative fit band rather than a raw percentage. The
+ * band is derived from the same deterministic score (40–99) computed by
+ * scoreUniversityMatch() — a label is honest about precision in a way a
+ * two-digit number is not, especially before a student has filled in a GPA.
+ */
+function fitBand(score: number): { label: string; strong: boolean } {
+  if (score >= 85) return { label: "STRONG FIT", strong: true };
+  if (score >= 70) return { label: "GOOD FIT", strong: false };
+  return { label: "WORTH EXPLORING", strong: false };
+}
+
+const TYPE_FILTERS = ["all", "public", "private"] as const;
+type TypeFilter = (typeof TYPE_FILTERS)[number];
 
 export default function UniversitiesScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const colors = useColors();
+  const [filter, setFilter] = useState<TypeFilter>("all");
   const [openCampus, setOpenCampus] = useState<string | null>(null);
 
   const universitiesQuery = trpc.university.getAll.useQuery();
@@ -51,8 +59,8 @@ export default function UniversitiesScreen() {
 
   if (!user) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center" style={{ backgroundColor: CINE.bg }}>
-        <Text className="text-xl font-bold text-white">Please sign in to continue</Text>
+      <ScreenContainer className="p-6 justify-center items-center">
+        <Text className="text-xl font-bold text-foreground">Please sign in to continue</Text>
       </ScreenContainer>
     );
   }
@@ -63,7 +71,10 @@ export default function UniversitiesScreen() {
   // Real, deterministic match score per university, best fit first.
   const ranked = universities
     .map((u) => ({ uni: u, match: scoreUniversityMatch({ gpa: student?.gpa, fieldOfInterest: student?.fieldOfInterest }, u) }))
-    .sort((a, b) => b.match.score - a.match.score);
+    .sort((a, b) => b.match.score - a.match.score)
+    .filter(({ uni }) => filter === "all" || (uni.type || "").toLowerCase() === filter);
+
+  const open = ranked.find(({ uni }) => uni.shortName === openCampus);
 
   const askFahim = (uni: Uni) => {
     router.push({
@@ -73,117 +84,266 @@ export default function UniversitiesScreen() {
   };
 
   return (
-    <ScreenContainer className="p-0" style={{ backgroundColor: CINE.bg }}>
+    <ScreenContainer className="p-0">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-8 pb-4 gap-1">
-          <Text style={{ color: CINE.brightGreen, letterSpacing: 3 }} className="text-[10px] font-bold">
-            DISCOVER — {universities.length} CAMPUSES
+        <View style={{ paddingHorizontal: 22, paddingTop: 24, paddingBottom: 18 }}>
+          <Text
+            style={{ fontSize: 32, fontWeight: "700", letterSpacing: -0.6, lineHeight: 35, color: colors.foreground }}
+          >
+            Universities
           </Text>
-          <Text style={{ fontFamily: "Anton_400Regular", letterSpacing: 1 }} className="text-3xl text-white">
-            CHOOSE YOUR CITY.
-          </Text>
-          <Text style={{ color: CINE.dim }} className="text-sm leading-relaxed">
-            Scored against your grades and field. Walk any campus in 360° before you decide.
+          <Text style={{ fontSize: 14, lineHeight: 21, color: colors.muted, marginTop: 7 }}>
+            {universities.length} campuses, ranked against your profile
           </Text>
         </View>
+
+        {/* Type filter — mirrors the design's pill row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 22, paddingBottom: 16 }}
+        >
+          {TYPE_FILTERS.map((f) => {
+            const active = filter === f;
+            return (
+              <TouchableOpacity
+                key={f}
+                onPress={() => setFilter(f)}
+                style={{
+                  minHeight: 44,
+                  paddingHorizontal: 18,
+                  justifyContent: "center",
+                  borderRadius: 999,
+                  backgroundColor: active ? colors.primary : "transparent",
+                  borderWidth: 1,
+                  borderColor: active ? colors.primary : colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: active ? colors.background : colors.muted,
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {f}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {universitiesQuery.isLoading ? (
           <BenchLoader />
         ) : (
-          <View className="px-4 gap-4">
+          <View style={{ paddingHorizontal: 22, paddingBottom: 26, gap: 12 }}>
             {ranked.map(({ uni, match }) => {
-              const coords = CAMPUS_COORDS[uni.shortName];
-              const tuition = uni.estimatedCostUSD?.tuitionPerYear;
-              const matchColor = match.score >= 90 ? CINE.brightGreen : CINE.amber;
-              const isOpen = openCampus === uni.shortName;
+              const fit = fitBand(match.score);
               return (
-                <View
+                <TouchableOpacity
                   key={uni.shortName}
-                  className="rounded-2xl p-5 gap-3"
-                  style={{ backgroundColor: CINE.panel, borderWidth: 1, borderColor: isOpen ? CINE.brightGreen : CINE.border }}
+                  activeOpacity={0.85}
+                  onPress={() => setOpenCampus(uni.shortName)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${uni.name}, ${uni.location}. ${fit.label}. View campus.`}
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 16,
+                    padding: 17,
+                    gap: 9,
+                  }}
                 >
-                  <View className="flex-row justify-between items-start gap-2">
-                    <Text
-                      style={{ fontFamily: "Anton_400Regular", color: "#04140b", backgroundColor: CINE.brightGreen }}
-                      className="text-base rounded-lg px-2.5 py-1.5"
-                    >
-                      {uni.shortName}
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground }}>{uni.shortName}</Text>
+                    <Text style={{ fontSize: 11.5, fontWeight: "600", letterSpacing: 1.1, color: colors.muted }}>
+                      {(uni.type || "").toUpperCase()}
                     </Text>
-                    <View className="items-end">
-                      <Text style={{ fontFamily: "Anton_400Regular", color: matchColor }} className="text-2xl leading-none">
-                        {match.score}%
-                      </Text>
-                      <Text style={{ color: "rgba(234,244,236,.45)", letterSpacing: 2 }} className="text-[8px] font-bold">
-                        FAHIM'S MATCH
-                      </Text>
-                    </View>
                   </View>
 
                   <View>
-                    <Text className="text-base font-bold text-white leading-tight">{uni.name}</Text>
-                    <Text style={{ color: CINE.dim, letterSpacing: 1 }} className="text-[11px] mt-1">
-                      {uni.location} · {uni.type?.toUpperCase()}
+                    <Text style={{ fontSize: 13.5, fontWeight: "600", color: colors.foreground, lineHeight: 18 }}>
+                      {uni.name}
                     </Text>
+                    <Text style={{ fontSize: 12.5, color: colors.muted, marginTop: 3 }}>{uni.location}</Text>
                   </View>
 
-                  <View className="flex-row gap-4 flex-wrap">
-                    {tuition != null && (
-                      <Text style={{ color: "rgba(234,244,236,.7)" }} className="text-[11px]">
-                        <Text className="text-white font-bold">${tuition.toLocaleString()}</Text>/yr
-                      </Text>
-                    )}
-                    {uni.visaSuccessRateBD != null && (
-                      <Text style={{ color: "rgba(234,244,236,.7)" }} className="text-[11px]">
-                        VISA <Text className="text-white font-bold">{uni.visaSuccessRateBD}%</Text>
-                      </Text>
-                    )}
-                    {uni.ieltsRequired != null && (
-                      <Text style={{ color: "rgba(234,244,236,.7)" }} className="text-[11px]">
-                        IELTS <Text className="text-white font-bold">{String(uni.ieltsRequired)}</Text>
-                      </Text>
-                    )}
-                  </View>
+                  {!!uni.programs?.length && (
+                    <Text style={{ fontSize: 12.5, lineHeight: 19, color: colors.muted }}>
+                      {uni.programs.slice(0, 4).join(" · ")}
+                    </Text>
+                  )}
 
-                  {/* Top reason from the real match computation */}
+                  {/* The one real, explainable line from the match computation. */}
                   {match.reasons[0] && (
-                    <Text style={{ color: CINE.dim }} className="text-[11px] leading-relaxed">
-                      {match.reasons[0]}
+                    <Text style={{ fontSize: 12, lineHeight: 18, color: colors.muted }}>{match.reasons[0]}</Text>
+                  )}
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                      paddingTop: 11,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11.5,
+                        fontWeight: "600",
+                        letterSpacing: 0.9,
+                        color: fit.strong ? colors.foreground : colors.muted,
+                      }}
+                    >
+                      {fit.label}
                     </Text>
-                  )}
-
-                  <View className="flex-row gap-2 flex-wrap">
-                    <TouchableOpacity
-                      onPress={() => setOpenCampus(isOpen ? null : uni.shortName)}
-                      className="flex-1 rounded-full py-2.5 items-center"
-                      style={{ minWidth: 110, backgroundColor: "rgba(0,200,83,.12)", borderWidth: 1, borderColor: "rgba(0,200,83,.4)" }}
-                    >
-                      <Text style={{ color: CINE.brightGreen }} className="text-[11.5px] font-bold">
-                        {coords ? "Campus 360°" : "Campus map"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => askFahim(uni)}
-                      className="flex-1 rounded-full py-2.5 items-center"
-                      style={{ minWidth: 110, borderWidth: 1, borderColor: "rgba(255,255,255,.25)" }}
-                    >
-                      <Text className="text-white text-[11.5px] font-bold">Ask Fahim why</Text>
-                    </TouchableOpacity>
+                    <Text style={{ fontSize: 11.5, fontWeight: "700", color: colors.foreground }}>
+                      {CAMPUS_COORDS[uni.shortName] ? "VIEW 360 →" : "VIEW MAP →"}
+                    </Text>
                   </View>
-
-                  {isOpen && (
-                    <CampusView
-                      streetView={coords}
-                      query={`${uni.name}, ${uni.location}`}
-                      title={uni.name}
-                      onClose={() => setOpenCampus(null)}
-                    />
-                  )}
-                </View>
+                </TouchableOpacity>
               );
             })}
+
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 14,
+                padding: 15,
+              }}
+            >
+              <Text style={{ fontSize: 12, lineHeight: 19, color: colors.muted }}>
+                Programme lists come from Last Bench&apos;s own research. Confirm current intakes, fees and entry
+                requirements with each university directly.
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Campus sheet — the design promotes this from an inline expand to a bottom sheet */}
+      <Modal visible={!!open} transparent animationType="slide" onRequestClose={() => setOpenCampus(null)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(17,17,17,.55)", justifyContent: "flex-end" }}
+          onPress={() => setOpenCampus(null)}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              maxHeight: "88%",
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 22,
+              paddingTop: 18,
+              paddingBottom: 32,
+            }}
+          >
+            <View
+              style={{
+                width: 42,
+                height: 4,
+                borderRadius: 999,
+                backgroundColor: colors.border,
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
+            />
+            {open && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={{ fontSize: 11.5, fontWeight: "700", letterSpacing: 1.6, color: colors.muted, marginBottom: 8 }}>
+                  {CAMPUS_COORDS[open.uni.shortName] ? "CAMPUS 360" : "CAMPUS MAP"}
+                </Text>
+                <Text style={{ fontSize: 21, fontWeight: "700", color: colors.foreground, lineHeight: 26 }}>
+                  {open.uni.name}
+                </Text>
+                <Text style={{ fontSize: 12.5, color: colors.muted, marginTop: 5 }}>
+                  {open.uni.location} · {open.uni.type}
+                </Text>
+
+                <View style={{ marginTop: 15 }}>
+                  <CampusView
+                    streetView={CAMPUS_COORDS[open.uni.shortName]}
+                    query={`${open.uni.name}, ${open.uni.location}`}
+                    title={open.uni.name}
+                    onClose={() => setOpenCampus(null)}
+                  />
+                </View>
+
+                {!CAMPUS_COORDS[open.uni.shortName] && (
+                  <Text style={{ fontSize: 12, lineHeight: 19, color: colors.muted, marginTop: 11 }}>
+                    No verified Street View position for this campus yet, so this is a satellite map of the area rather
+                    than a walkable 360° view.
+                  </Text>
+                )}
+
+                {!!open.uni.programs?.length && (
+                  <View
+                    style={{
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 14,
+                      padding: 15,
+                      marginTop: 15,
+                    }}
+                  >
+                    <Text style={{ fontSize: 11.5, fontWeight: "600", letterSpacing: 1.1, color: colors.muted, marginBottom: 7 }}>
+                      PROGRAMMES
+                    </Text>
+                    <Text style={{ fontSize: 13.5, lineHeight: 21, color: colors.foreground }}>
+                      {open.uni.programs.join(" · ")}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 15, flexWrap: "wrap" }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setOpenCampus(null);
+                      askFahim(open.uni);
+                    }}
+                    style={{
+                      flex: 1,
+                      minWidth: 130,
+                      minHeight: 48,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 10,
+                      backgroundColor: colors.primary,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12.5, fontWeight: "700", color: colors.background }}>Ask Fahim why</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setOpenCampus(null)}
+                    style={{
+                      flex: 1,
+                      minWidth: 130,
+                      minHeight: 48,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 10,
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12.5, fontWeight: "700", color: colors.foreground }}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScreenContainer>
   );
 }

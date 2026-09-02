@@ -10,7 +10,10 @@ export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
-  const tabBarHeight = 56 + bottomPadding;
+  // 24px icon + 4px gap + a 14px label line needs ~46px of content box; below
+  // that the label element gets squeezed to a few pixels and `overflow: hidden`
+  // clips it. The design specifies a 68px bar, which this matches on web.
+  const tabBarHeight = 66 + bottomPadding;
 
   return (
     <Tabs
@@ -31,6 +34,9 @@ export default function TabLayout() {
           fontSize: 11,
           fontWeight: "600",
           marginTop: 4,
+          // Without an explicit line height the label box collapses and the
+          // text is clipped by its own overflow:hidden.
+          lineHeight: 14,
         },
       }}
     >

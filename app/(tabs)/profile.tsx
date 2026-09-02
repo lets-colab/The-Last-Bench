@@ -30,6 +30,22 @@ export default function ProfileScreen() {
   const unreadCount = (notifications ?? []).filter((n: any) => !n.isRead).length;
   const isAdmin = (user as any)?.role === "admin";
 
+  // Real counts. These three tiles previously rendered the literals 5 / 2 / 3,
+  // which is exactly the fabricated-data failure design.md forbids.
+  const { data: applications } = trpc.application.getByStudent.useQuery(undefined, { enabled: !!user });
+  const { data: conversations } = trpc.message.getConversations.useQuery(undefined, { enabled: !!user });
+
+  const applicationCount = applications?.length ?? 0;
+  // A "mentor" is a real person assigned to one of this student's applications.
+  const mentorCount = new Set(
+    (applications ?? []).map((a: any) => a.mentorAssigned).filter((id: unknown): id is number => typeof id === "number")
+  ).size;
+  const conversationCount = conversations?.length ?? 0;
+  const unreadMessages = (conversations ?? []).reduce(
+    (sum: number, c: any) => sum + (c.unreadCount ?? 0),
+    0
+  );
+
   if (!user) {
     return (
       <ScreenContainer className="p-6 justify-center items-center">
@@ -79,15 +95,15 @@ export default function ProfileScreen() {
           <View className="flex-row gap-3">
             <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
               <Text className="text-xs text-white/80">Applications</Text>
-              <Text className="text-xl font-bold text-white">5</Text>
+              <Text className="text-xl font-bold text-white">{applicationCount}</Text>
             </View>
             <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
               <Text className="text-xs text-white/80">Mentors</Text>
-              <Text className="text-xl font-bold text-white">2</Text>
+              <Text className="text-xl font-bold text-white">{mentorCount}</Text>
             </View>
             <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
               <Text className="text-xs text-white/80">Messages</Text>
-              <Text className="text-xl font-bold text-white">3</Text>
+              <Text className="text-xl font-bold text-white">{conversationCount}</Text>
             </View>
           </View>
         </View>
@@ -100,7 +116,13 @@ export default function ProfileScreen() {
             <TouchableOpacity className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80">
               <View className="flex-1 gap-1">
                 <Text className="text-base font-semibold text-foreground">💬 All Messages</Text>
-                <Text className="text-sm text-muted">3 unread from mentors</Text>
+                <Text className="text-sm text-muted">
+                  {conversationCount === 0
+                    ? "No conversations yet"
+                    : unreadMessages > 0
+                      ? `${unreadMessages} unread`
+                      : "All caught up"}
+                </Text>
               </View>
               <View className="w-8 h-8 rounded-full bg-primary items-center justify-center">
                 <Text className="text-white font-bold text-sm">→</Text>
