@@ -2,24 +2,47 @@
   const form = document.querySelector('[data-signup-form]');
   if (!form) return;
   const success = document.querySelector('[data-success]');
+  const errorBox = document.querySelector('[data-error]');
   const submit = form.querySelector('button[type="submit"]');
-  form.addEventListener('submit', (event) => {
+
+  const encode = (formData) => new URLSearchParams(formData).toString();
+
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
-    const data = Object.fromEntries(new FormData(form).entries());
-    data.program = form.dataset.program || 'class-a';
-    data.savedAt = new Date().toISOString();
+    const originalLabel = submit ? submit.textContent : '';
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = 'SAVING…';
+    }
+    if (success) success.classList.remove('show');
+    if (errorBox) errorBox.classList.remove('show');
+
     try {
-      const existing = JSON.parse(localStorage.getItem('classa-signups') || '[]');
-      existing.push(data);
-      localStorage.setItem('classa-signups', JSON.stringify(existing));
-    } catch (_) {}
-    form.reset();
-    if (submit) submit.disabled = true;
-    if (success) {
-      success.classList.add('show');
-      success.setAttribute('tabindex', '-1');
-      success.focus();
+      const data = new FormData(form);
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: encode(data),
+      });
+      if (!response.ok) throw new Error('Registration request failed');
+      form.reset();
+      if (success) {
+        success.classList.add('show');
+        success.setAttribute('tabindex', '-1');
+        success.focus();
+      }
+    } catch (_) {
+      if (errorBox) {
+        errorBox.classList.add('show');
+        errorBox.setAttribute('tabindex', '-1');
+        errorBox.focus();
+      }
+    } finally {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = originalLabel;
+      }
     }
   });
 })();
