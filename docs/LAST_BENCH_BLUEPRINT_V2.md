@@ -291,6 +291,10 @@ All primary actions need a minimum 44px target. Essential text must remain reada
 7. The Replit signup artifact remains unidentified.
 8. `[CLASS(Λ)]` dates, intake, detailed lesson plans, and operating capacity require
    founder approval and production work; the current published course price is ৳5,000.
+9. GitHub currently triggers previews for both `lastbenchbdd` and legacy `exitbd`, plus
+   a Cloudflare Workers build. DNS confirms `www.lastbenchbd.com` uses
+   `lastbenchbdd.netlify.app`; retire duplicate integrations only after checking their
+   forms, domains, and required history.
 
 ## 12. Release Contract
 

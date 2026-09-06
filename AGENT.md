@@ -64,7 +64,7 @@ separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
 
 | Surface                                    | Host                                                                  | Source                                              | Trigger                |
 | ------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------- | ---------------------- |
-| Whole site (landing at `/`, app at `/app`) | Netlify, site `exitbd` → exitbd.netlify.app                           | `pnpm build:web:production` → generated `dist/`     | push to `main`         |
+| Whole site (landing at `/`, app at `/app`) | Netlify, site `lastbenchbdd` → lastbenchbdd.netlify.app               | `pnpm build:web:production` → generated `dist/`     | push to `main`         |
 | API server                                 | Render (`render.yaml`, `last-bench-api`, Singapore)                   | `pnpm build` → `server-dist/index.js`; `pnpm start` | Render git integration |
 | Database                                   | Supabase Postgres 17, project `tocxdyqlrvzthpexnmxe` (ap-southeast-1) | —                                                   | —                      |
 
@@ -101,16 +101,17 @@ separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
 - RLS is ENABLED on all 16 tables with **no policies** (default-deny for anon/authenticated
   REST access). This is intentional: the server connects as the table owner and bypasses
   RLS. If you add Supabase client-side access, you must write policies.
-- Domain: point `www.lastbenchbd.com` (CNAME → `exitbd.netlify.app`) and add it as a
-  custom domain on the Netlify site — that's the single front door now (no more `app.`
-  subdomain plan; the app lives at `www.lastbenchbd.com/app`).
+- Domain: `www.lastbenchbd.com` currently resolves through `lastbenchbdd.netlify.app`.
+  Keep that Netlify site as the canonical web deployment and remove duplicate deploy
+  integrations only after confirming they do not own another required domain or form.
+  That is the single front door; the app lives at `www.lastbenchbd.com/app`, not a
+  separate `app.` subdomain.
 
 **Domain (user owns lastbenchbd.com):** one host now — `www.lastbenchbd.com` → Netlify
-`exitbd` (landing at `/`, app at `/app`). DNS record needed at the registrar (only
-action left that requires the owner — no registrar access exists in this session):
+`lastbenchbdd` (landing at `/`, app at `/app`). The current DNS contract is:
 
 ```
-CNAME  www  exitbd.netlify.app        (also add the domain in Netlify site settings)
+CNAME  www  lastbenchbdd.netlify.app
 # Add api.lastbenchbd.com using the exact DNS target shown by Render's custom-domain screen.
 ```
 
