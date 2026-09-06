@@ -11,10 +11,9 @@
   # This repository is an Expo/static site, never a Next.js runtime.
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
-# Pull-request previews must remain reviewable before production OAuth/API
-# identifiers exist. These .invalid values intentionally put the app into its
-# honest service-unavailable state. Production still requires real values from
-# the Netlify environment and fails closed when they are missing.
+# Pull-request previews remain reviewable before production OAuth/API identifiers
+# exist. These .invalid values intentionally put the app into its honest
+# service-unavailable state rather than pretending a backend is live.
 [context.deploy-preview.environment]
   EXPO_PUBLIC_API_BASE_URL = "https://api.example.invalid"
   EXPO_PUBLIC_OAUTH_PORTAL_URL = "https://portal.example.invalid"
@@ -22,6 +21,18 @@
   EXPO_PUBLIC_APP_ID = "netlify-preview-app"
   EXPO_PUBLIC_OWNER_OPEN_ID = "netlify-preview-owner"
   EXPO_PUBLIC_OWNER_NAME = "Last Bench Preview"
+
+# Production web builds need these public values to assemble the landing site
+# and Expo web bundle. The two identity values below are deliberately marked
+# unconfigured: they only unblock the static production build and must be
+# replaced with real OAuth identifiers before production login is enabled.
+[context.production.environment]
+  EXPO_PUBLIC_API_BASE_URL = "https://api.lastbenchbd.com"
+  EXPO_PUBLIC_OAUTH_PORTAL_URL = "https://manus.space"
+  EXPO_PUBLIC_OAUTH_SERVER_URL = "https://oauth.manus.space"
+  EXPO_PUBLIC_APP_ID = "lastbenchbd-app-unconfigured"
+  EXPO_PUBLIC_OWNER_OPEN_ID = "lastbenchbd-owner-unconfigured"
+  EXPO_PUBLIC_OWNER_NAME = "Last Bench"
 
 # SPA fallback for the app's client-side routes (/app/profile, /app/admin, …).
 # Order matters: this must match before the landing catch-all below.
