@@ -23,6 +23,21 @@
   EXPO_PUBLIC_OWNER_OPEN_ID = "netlify-preview-owner"
   EXPO_PUBLIC_OWNER_NAME = "Last Bench Preview"
 
+# Production values (api.lastbenchbd.com, manus.space, oauth.manus.space) are
+# the real endpoints documented in AGENT.md. EXPO_PUBLIC_APP_ID and
+# EXPO_PUBLIC_OWNER_OPEN_ID are placeholders: no real Manus OAuth app ID or
+# owner open ID exists yet, so login will not work until those are swapped for
+# real credentials. The Render API is also not yet attached at
+# api.lastbenchbd.com, so this build unblocks the site deploy but auth stays
+# non-functional until both are wired up.
+[context.production.environment]
+  EXPO_PUBLIC_API_BASE_URL = "https://api.lastbenchbd.com"
+  EXPO_PUBLIC_OAUTH_PORTAL_URL = "https://manus.space"
+  EXPO_PUBLIC_OAUTH_SERVER_URL = "https://oauth.manus.space"
+  EXPO_PUBLIC_APP_ID = "lastbenchbd-app-placeholder"
+  EXPO_PUBLIC_OWNER_OPEN_ID = "lastbenchbd-owner-placeholder"
+  EXPO_PUBLIC_OWNER_NAME = "Last Bench"
+
 # SPA fallback for the app's client-side routes (/app/profile, /app/admin, …).
 # Order matters: this must match before the landing catch-all below.
 [[redirects]]
