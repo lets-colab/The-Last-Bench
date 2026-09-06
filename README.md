@@ -223,32 +223,29 @@ For post-deploy verification, follow the release procedure documented in [`AGENT
 ## Repository map
 
 ```text
-.github/                 CI and repository automation
-app/                     Expo Router product UI
-assets/                  App and canonical branding assets
-components/              Shared interface components
-constants/               Shared constants
-content/                 Product/content resources
-design-system/           Design system
-drizzle/                 Database migrations/schema
-going?                    —
-hooks/                    React hooks
-landing/                  Marketing site
-lib/                      Client/shared libraries
-scripts/                  Build and validation utilities
-server/                   API/backend
-shared/                   Shared business logic
-tests/                    Automated tests
-AGENT.md                  Engineering/agent operating manual
-AGENTS.md                 Additional agent instructions
-PRODUCT.md                Product and brand definition
-design.md                 Product design system and interaction rules
+.github/                   CI and repository automation
+app/                       Expo Router product UI
+assets/                    App and canonical branding assets
+components/                Shared interface components
+constants/                 Shared constants
+content/                   Product/content resources
+design-system/             Design system
+drizzle/                   Database migrations/schema
+hooks/                     React hooks
+landing/                   Marketing site
+lib/                       Client/shared libraries
+scripts/                   Build and validation utilities
+server/                    API/backend
+shared/                    Shared business logic
+tests/                     Automated tests
+AGENT.md                    Engineering/agent operating manual
+AGENTS.md                   Additional agent instructions
+PRODUCT.md                  Product and brand definition
+design.md                   Product design system and interaction rules
 DESIGN_AUDIT_AND_REBUILD.md Design audit/rebuild record
-MESSAGING_FEATURES.md     Messaging implementation documentation
-todo.md                   Working backlog
+MESSAGING_FEATURES.md       Messaging implementation documentation
+todo.md                     Working backlog
 ```
-
-> Note: the `going?` line above should not correspond to a repository folder. If you see it in a generated copy of this README, remove it. The canonical directory list is the repository itself.
 
 ---
 
