@@ -1,12 +1,32 @@
-# The Last Bench Mobile App — Design Document
+# The Last Bench Product — Design Contract
 
 ## Brand & Vision
 
 **The Last Bench** is a platform for Bangladeshi secondary-school students seeking clarity, guidance, and community as they navigate study-abroad pathways. The app combines real-time application tracking, AI-powered guidance, and a creator/skills community, all powered by a network of trusted tutors and coaching centers.
 
-**Brand Tagline:** *For Those Who Last, To Create a Benchmark.*
+**Brand Tagline:** *Creating a Lasting Benchmark.*
 
 **Core Positioning:** We are not a consultancy. We are a transparent, always-on platform that makes the study-abroad journey feel less like a black box and more like a supported, visible process.
+
+## Surface Architecture & Source Precedence
+
+One domain contains four connected surfaces with different jobs:
+
+| Surface | Route | Visual role | Product role |
+|---|---|---|---|
+| Cinematic student journey | `/` | Dark emotion moving from monsoon/night to daylight | Explain the Malaysia journey and convert to mentor guidance or account entry |
+| Student product | `/app/` | Calm, legible light/dark mobile UI | Show real profile, application, university, guide, and settings data |
+| `[CLASS(Λ)]` | `/class-lambda/` | Last Bench system with a build-first editorial rhythm | Register interest in the planned talent pathway |
+| co.lab | `/colab/` | Dark confidence with restrained green progress cues | Explain and begin human-scoped brand/business work |
+
+The official brand kit and `design-system/tokens.json` control identity. The live
+Claude Design files — Malaysia Experience v2, Last Bench Dashboard, and Last Bench
+Mobile App — are visual references for hierarchy, motion, and mobile density. Their
+prototype names, progress values, deadlines, recommendations, and chat messages are
+illustrative and must never replace real product data.
+
+The implementation wins whenever a design reference conflicts with truthful data,
+accessibility, mobile performance, privacy, or an existing working backend flow.
 
 ---
 
@@ -43,10 +63,10 @@
 
 | Screen | Purpose | Key Elements |
 |--------|---------|--------------|
-| **Application Status Overview** | Shows the student's current application stage at a glance. | Stage indicator (e.g., "Profile Analyzed" with progress bar), next milestone, days elapsed, quick action button |
+| **Application Status Overview** | Shows the student's current application stage at a glance. | Current stage from the student's record, last verified update, next known action, and quick action button; otherwise an honest empty state |
 | **Application Tracking Pipeline** | Visual representation of the student's journey through the application process. | Stages: Documents Received → Profile Analyzed → University Shortlist → Application Drafted → Submitted to University → Under Review → Offer Received → Visa Application Filed → Visa Decision → Pre-Departure |
 | **Key Metrics** | Quick stats relevant to the student's progress. | Universities shortlisted, applications submitted, offers received, visa status |
-| **Recent Activity Feed** | Chronological log of updates, mentor messages, and community highlights. | "Status updated to [stage]", "Mentor [name] sent you a message", "Peer [name] got an offer!", timestamps |
+| **Recent Activity Feed** | Chronological log of updates visible to this student. | "Status updated to [stage]", "Mentor [name] sent you a message", or a newly published community resource, with timestamps and privacy boundaries |
 
 **UX Pattern:** Tap on any stage to see details (documents needed, timeline, mentor notes).
 
@@ -57,8 +77,8 @@
 | Screen | Purpose | Key Elements |
 |--------|---------|--------------|
 | **Guidance Chat Interface** | Conversational AI that helps students explore options and make decisions. | Chat bubbles, input field at bottom, typing indicator, suggested prompts ("Tell me about [university]", "What are my options with a 3.2 GPA?") |
-| **Recommendation Card** | AI suggests universities/programs based on student profile. | University name, program, acceptance rate, cost range, visa success rate, "Learn More" button, "Add to Shortlist" button |
-| **Comparison View** | Side-by-side comparison of universities or programs. | 2-3 columns, key metrics (cost, acceptance rate, visa success, living cost), "Choose" button |
+| **Recommendation Card** | AI helps a student explore universities/programmes based on profile context. | University, programme, match rationale, concerns to verify, source/review context, "Explore" button, and "Discuss with a mentor" action |
+| **Comparison View** | Side-by-side exploration of universities or programmes. | 2-3 columns using only currently sourced fields; unknown or stale values are labeled instead of estimated, and the action is "Verify this option" rather than "Choose" |
 
 **AI Behavior:** The AI acts as an information engine. It explains reasoning ("This matches your GPA range and budget"), flags concerns ("Field switching may require additional documentation"), and escalates to human mentors for high-stakes decisions.
 
@@ -150,7 +170,7 @@
 3. Enters name, class, interests, destination → Transcript Upload screen
 4. Uploads transcript → (Optional) Referral Code screen
 5. Enters referral code (if applicable) → Dashboard
-6. Sees "Profile Analyzed" stage → Taps to see next steps
+6. Sees the current stage from their real record, or an empty-state setup prompt → Taps to see next steps
 7. Sees AI Guidance prompt → Taps "Get Guidance"
 8. Chats with AI about universities → AI recommends 3 options
 9. Student taps "Add to Shortlist" → Application Management
@@ -172,7 +192,7 @@
 6. Tutor sees student in "Referred Students List"
 7. As student progresses, tutor sees status updates
 8. When student gets visa approval → Commission marked as "Earned"
-9. Tutor taps "Request Payout" → Payout processed via bKash/Nagad
+9. Tutor taps "Request Payout" → Operator reviews the request and records the approved payout through the configured method
 ```
 
 ---
@@ -197,15 +217,15 @@
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| **Primary** | `#0a7ea4` (Teal) | `#0a7ea4` | Buttons, links, highlights, progress bars |
-| **Background** | `#ffffff` | `#151718` | Screen background |
-| **Surface** | `#f5f5f5` | `#1e2022` | Cards, elevated surfaces |
-| **Foreground** | `#11181C` | `#ECEDEE` | Primary text |
-| **Muted** | `#687076` | `#9BA1A6` | Secondary text, hints |
-| **Border** | `#E5E7EB` | `#334155` | Dividers, borders |
-| **Success** | `#22C55E` | `#4ADE80` | Checkmarks, success states |
-| **Warning** | `#F59E0B` | `#FBBF24` | Alerts, cautions |
-| **Error** | `#EF4444` | `#F87171` | Errors, rejections |
+| **Primary** | `#00C853` | `#00E676` | Primary actions, progress, active navigation |
+| **Background** | `#FAFAF8` | `#07100B` | Warm light page ground and cinematic/product dark ground |
+| **Surface** | `#E6F2E9` | `#0F2A1E` | Cards, elevated surfaces, grouped controls |
+| **Foreground** | `#111111` | `#FAFAF8` | Primary text |
+| **Muted** | `#6B6F76` | `#A1A1AA` | Secondary text, hints |
+| **Border** | `rgba(17,17,17,.12)` | `rgba(250,250,248,.15)` | Dividers and boundaries |
+| **Success** | `#00C853` | `#00E676` | Confirmed completion; always paired with text or icon |
+| **Warning** | `#B76800` | `#FFB300` | Cautions and items needing attention |
+| **Error** | `#C62828` | `#FF6B6B` | Errors and blocked states |
 
 ---
 
@@ -213,12 +233,13 @@
 
 | Element | Font Size | Font Weight | Line Height | Usage |
 |---------|-----------|-------------|-------------|-------|
-| **Heading 1** | 32px | Bold (700) | 1.2 | Screen titles |
-| **Heading 2** | 24px | Semibold (600) | 1.3 | Section titles |
-| **Heading 3** | 18px | Semibold (600) | 1.4 | Subsection titles |
-| **Body** | 16px | Regular (400) | 1.5 | Main text |
-| **Caption** | 14px | Regular (400) | 1.4 | Secondary text, hints |
-| **Small** | 12px | Regular (400) | 1.3 | Timestamps, labels |
+| **Marketing display** | Responsive 42-126px Anton | Regular (400) | 0.9-1.0 | Cinematic headlines only |
+| **Product heading 1** | 32px General Sans | Bold (700) | 1.2 | App screen titles |
+| **Product heading 2** | 24px General Sans | Semibold (600) | 1.3 | App section titles |
+| **Product heading 3** | 18px General Sans | Semibold (600) | 1.4 | App subsections |
+| **Body** | 16px Sora | Regular (400) | 1.5 | Main product text and form inputs |
+| **Caption** | 14px Sora | Regular (400) | 1.4 | Secondary text and hints |
+| **Small** | 12px Sora | Medium (500) | 1.3 | Timestamps and labels; never shrink below readable mobile size for essential information |
 
 ---
 
@@ -258,12 +279,11 @@ The app is designed for **portrait orientation (9:16)** on mobile devices. Key b
 
 ---
 
-## Next Steps for Implementation
+## Current Release Priorities
 
-1. **Phase 1:** Build authentication, student onboarding, and dashboard.
-2. **Phase 2:** Implement AI guidance chat and application tracking.
-3. **Phase 3:** Add tutor/coach dashboard and referral system.
-4. **Phase 4:** Build admin panel and notification system.
-5. **Phase 5:** Implement community/skills section.
-6. **Phase 6:** Polish, testing, and delivery.
-
+1. Verify production auth and API health on the canonical domain; a successful static deploy is not proof that the product is live.
+2. Apply and verify the pending AI-guide schema migration before exposing the guide flow in production.
+3. Build the document-picker UI on top of the existing document backend.
+4. Connect the public lead flow to an approved CRM/data path while preserving consent and attribution.
+5. Replace any illustrative founder photography only after all three founders approve the assets and biographies.
+6. Keep 320px, 390px, and 430px mobile QA, keyboard navigation, reduced motion, and real empty/error states in every release gate.

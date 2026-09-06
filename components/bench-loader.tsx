@@ -39,8 +39,8 @@ export function BenchLoader({ size = 64 }: { size?: number }) {
     <View className="items-center justify-center py-6" accessibilityRole="progressbar" accessibilityLabel="Loading">
       <Animated.View style={{ transform: [{ translateY }, { rotate }] }}>
         <Image
-          source={require("@/assets/images/icon.png")}
-          style={{ width: size, height: size, borderRadius: size * 0.22 }}
+          source={require("@/landing/assets/logo-icon.png")}
+          style={{ width: size, height: size * 0.48 }}
           resizeMode="contain"
         />
       </Animated.View>

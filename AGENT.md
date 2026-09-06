@@ -32,7 +32,7 @@ visa stats, escalate to human mentors for high-stakes decisions, GPA scale is 5.
 ## 2. Architecture and release contract (updated 2026-07-27)
 
 ```
-Repo: lets-colab/The-Last-Bench   (canonical; letsco-lab/The-Last-Bench is a stale fork)
+Repo: lets-colab/LastBenchBd      (canonical; lets-colab/The-Last-Bench is the legacy repo name)
 
 app/          Expo Router (React Native Web) — student/tutor/admin UI, tabs + stack
 server/       Express + tRPC v11 — 55 procedures across 15 routers
@@ -43,7 +43,7 @@ server/       Express + tRPC v11 — 55 procedures across 15 routers
   self-healing.ts  Redacted fingerprinting → safe transient retry → advisory diagnosis
                    stored in errorLogs/errorFixes; generated fixes require approval
 drizzle/      schema.ts (16 pg tables) + generated SQL migrations
-landing/      Static cinematic marketing site (no build step) — "Malaysia Experience"
+landing/      Static cinematic marketing site + /class-lambda/ and /colab/ ecosystem routes
 scripts/build-site.mjs  Assembles dist/: landing/ at /, Expo web export at /app
 server-dist/  Generated API bundle — Render builds this; never publish it as web content
 dist/         Generated web artifact — Netlify builds it with production public values
@@ -53,7 +53,8 @@ dist/         Generated web artifact — Netlify builds it with production publi
 `pnpm build:web` runs `scripts/build-site.mjs`, which exports the Expo app with
 `EXPO_BASE_URL=/app` into `dist/app/` and copies `landing/` into `dist/` unchanged.
 Netlify serves it all from one site (`netlify.toml`): `/` is the marketing landing
-page, `/app/*` is the student app (SPA-fallback redirect keeps client-side routes
+page, `/app/*` is the student app, `/class-lambda/` is the talent pathway, and
+`/colab/` is the connected venture pathway (SPA-fallback redirect keeps client-side routes
 like `/app/profile` working). The landing page's "Sign up"/"Student login" links
 point at `/app` (relative — works on any domain/preview URL). There is no more
 separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
@@ -142,6 +143,8 @@ WEB_ORIGIN=https://www.lastbenchbd.com
 curl --fail --silent --show-error "$API_ORIGIN/api/health"
 curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/"
 curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/app/"
+curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/class-lambda/"
+curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/colab/"
 ```
 
 Then test the rendered `/app/` in a fresh browser: no permanent loader, no console

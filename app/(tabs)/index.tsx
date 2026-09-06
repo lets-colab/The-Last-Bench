@@ -1,24 +1,24 @@
 import {
+  Image,
+  Platform,
+  RefreshControl,
   ScrollView,
   Text,
-  View,
   TouchableOpacity,
-  RefreshControl,
-  Animated,
-  Platform,
+  View,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+
 import { ScreenContainer } from "@/components/screen-container";
+import { BenchLoader } from "@/components/bench-loader";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { APP_ID, OAUTH_PORTAL_URL, startOAuthLogin } from "@/constants/oauth";
 import { useAuth } from "@/hooks/use-auth";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
-import * as Haptics from "expo-haptics";
-import { BenchLoader } from "@/components/bench-loader";
-import { APP_ID, OAUTH_PORTAL_URL, startOAuthLogin } from "@/constants/oauth";
 
-// Ordered pipeline stages — mirrors app/(tabs)/applications.tsx. Position in
-// this list is shown as a stage, never as a claim of percent completion.
 const STATUS_ORDER = [
   "draft",
   "documents_received",
@@ -33,30 +33,83 @@ const STATUS_ORDER = [
   "pre_departure",
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  documents_received: "Documents received",
+  profile_analyzed: "Profile analysed",
+  shortlisted: "Shortlisted",
+  application_drafted: "Application drafted",
+  submitted_to_university: "Submitted to university",
+  under_review: "Under review",
+  offer_received: "Offer received",
+  visa_application_filed: "Visa application filed",
+  visa_decision: "Visa decision",
+  pre_departure: "Pre-departure",
+  rejected: "Closed",
+};
+
 function statusRank(status: string): number {
-  const i = STATUS_ORDER.indexOf(status);
-  return i >= 0 ? i : 0;
+  const index = STATUS_ORDER.indexOf(status);
+  return index >= 0 ? index : 0;
 }
 
-/**
- * Home Screen - Elegant Dashboard
- *
- * Design Principles:
- * - Simplicity: One primary action per section
- * - Hierarchy: Clear visual distinction between content
- * - Delight: Smooth animations and thoughtful details
- * - Focus: Personalized insights and next steps
- *
- * Every number on this screen comes from the student's real data — no
- * placeholder content, per the platform's "Trust Through Transparency"
- * principle in design.md. New/empty states are shown honestly.
- */
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status.replaceAll("_", " ");
+}
+
+type DashboardStateCardProps = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  icon: IconSymbolName;
+  actionLabel?: string;
+  onAction?: () => void;
+  helper?: string;
+};
+
+function DashboardStateCard({
+  eyebrow,
+  title,
+  body,
+  icon,
+  actionLabel,
+  onAction,
+  helper,
+}: DashboardStateCardProps) {
+  const colors = useColors();
+
+  return (
+    <View className="mx-5 rounded-2xl border border-border bg-surface p-5 gap-4">
+      <View className="h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+        <IconSymbol name={icon} size={23} color={colors.primary} />
+      </View>
+      <View className="gap-2">
+        <Text className="text-xs font-bold uppercase tracking-widest text-primary">{eyebrow}</Text>
+        <Text className="text-2xl font-bold leading-8 text-foreground">{title}</Text>
+        <Text className="text-base leading-6 text-muted">{body}</Text>
+      </View>
+      {actionLabel && onAction ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          activeOpacity={0.82}
+          onPress={onAction}
+          className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3"
+        >
+          <Text className="text-base font-bold text-background">{actionLabel}</Text>
+          <IconSymbol name="arrow.right" size={19} color={colors.background} />
+        </TouchableOpacity>
+      ) : null}
+      {helper ? <Text className="text-sm leading-5 text-muted">{helper}</Text> : null}
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
   const colors = useColors();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const applicationsQuery = trpc.application.getByStudent.useQuery(undefined, { enabled: !!user });
   const notificationsQuery = trpc.notification.getForUser.useQuery(undefined, { enabled: !!user });
@@ -66,8 +119,8 @@ export default function HomeScreen() {
     retry: false,
   });
 
-  const applications = applicationsQuery.data || [];
-  const notifications = notificationsQuery.data || [];
+  const applications = applicationsQuery.data ?? [];
+  const notifications = notificationsQuery.data ?? [];
   const isLoading =
     applicationsQuery.isLoading || notificationsQuery.isLoading || studentQuery.isLoading;
   const dashboardError =
@@ -76,332 +129,326 @@ export default function HomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== "web") {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     await refreshAuth();
     if (user) {
-      await Promise.all([applicationsQuery.refetch(), notificationsQuery.refetch()]);
+      await Promise.all([
+        applicationsQuery.refetch(),
+        notificationsQuery.refetch(),
+        studentQuery.refetch(),
+      ]);
     }
     setRefreshing(false);
   };
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.97,
-      useNativeDriver: Platform.OS !== "web",
-    }).start();
-  };
+  const firstName = user?.name?.trim().split(/\s+/)[0] || "Student";
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  const headerTitle = user ? `Good ${timeOfDay}, ${firstName}` : "Student workspace";
+  const headerBody = user
+    ? "Know what changed. Know what comes next."
+    : "Applications, guidance, and people—with every next step visible.";
 
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: Platform.OS !== "web",
-    }).start();
-  };
-
-  const firstName = user?.name?.split(" ")[0] || "Student";
-  const timeOfDay = new Date().getHours() < 12 ? "morning" : "afternoon";
-
-  // Journey stage = the single most-advanced application's pipeline position.
-  const leadApplication = applications.reduce<(typeof applications)[number] | null>((best, app) => {
-    if (!best || statusRank(app.applicationStatus) > statusRank(best.applicationStatus)) return app;
+  const leadApplication = applications.reduce<(typeof applications)[number] | null>((best, item) => {
+    if (!best || statusRank(item.applicationStatus) > statusRank(best.applicationStatus)) return item;
     return best;
   }, null);
   const journeyStage = leadApplication ? statusRank(leadApplication.applicationStatus) + 1 : 0;
-  const journeyBarWidth: `${number}%` =
-    `${Math.round((journeyStage / STATUS_ORDER.length) * 100)}%`;
-
-  const submittedCount = applications.filter((a) => statusRank(a.applicationStatus) >= statusRank("submitted_to_university")).length;
-  const pendingVisaCount = applications.filter((a) => a.applicationStatus === "visa_application_filed").length;
-  const offersCount = applications.filter((a) => statusRank(a.applicationStatus) >= statusRank("offer_received")).length;
-  const mentorsAssigned = new Set(applications.map((a) => a.mentorAssigned).filter((id): id is number => !!id)).size;
-
-  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const journeyBarWidth: `${number}%` = `${Math.round(
+    (journeyStage / STATUS_ORDER.length) * 100,
+  )}%`;
+  const submittedCount = applications.filter(
+    (item) =>
+      statusRank(item.applicationStatus) >= statusRank("submitted_to_university") &&
+      item.applicationStatus !== "rejected",
+  ).length;
+  const offersCount = applications.filter(
+    (item) => statusRank(item.applicationStatus) >= statusRank("offer_received"),
+  ).length;
+  const unreadNotifications = notifications.filter((item) => !item.isRead);
   const recentActivity = notifications.slice(0, 3);
-
-  const draftApplication = applications.find((a) => a.applicationStatus === "draft");
+  const draftApplication = applications.find((item) => item.applicationStatus === "draft");
   const needsTranscript = !studentQuery.data?.transcriptUrl;
-
   const recommendation = recommendationsQuery.data?.recommendations?.[0];
 
   return (
     <ScreenContainer className="p-0">
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 28 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
-        {/* Header with Greeting */}
-        <View className="px-6 pt-8 pb-6 gap-2">
-          <Text className="text-sm font-semibold text-muted">Good {timeOfDay}</Text>
-          <Text className="text-4xl font-bold text-foreground">
-            {firstName}
-          </Text>
-          <Text className="text-base text-muted leading-relaxed">
-            Let&apos;s turn your study-abroad goal into a clear plan
-          </Text>
+        <View className="px-5 pt-5 pb-6">
+          <View className="flex-row items-start justify-between gap-4">
+            <View className="flex-1 gap-2">
+              <Text className="text-xs font-bold uppercase tracking-widest text-primary">
+                The Last Bench
+              </Text>
+              <Text className="text-3xl font-bold leading-10 text-foreground">{headerTitle}</Text>
+              <Text className="text-base leading-6 text-muted">{headerBody}</Text>
+            </View>
+            <View className="h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface">
+              <Image
+                source={require("@/landing/assets/logo-icon.png")}
+                accessibilityLabel="Last Bench"
+                resizeMode="contain"
+                style={{ width: 34, height: 24 }}
+              />
+            </View>
+          </View>
         </View>
 
         {authLoading ? (
-          <View className="py-12 items-center">
+          <View className="py-14 items-center">
             <BenchLoader />
           </View>
         ) : authError ? (
-          <View className="px-6 pb-6">
-            <View className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-2xl p-6 gap-3 items-start">
-              <Text className="text-3xl">↻</Text>
-              <Text className="text-lg font-bold text-foreground">Student services are unavailable</Text>
-              <Text className="text-sm text-muted leading-relaxed">
-                Your workspace could not connect to Last Bench services. Please try again in a
-                moment.
-              </Text>
-              <TouchableOpacity
-                onPress={() => void refreshAuth()}
-                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
-              >
-                <Text className="text-background font-bold text-sm">Retry connection</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <DashboardStateCard
+            eyebrow="Connection needed"
+            title="Student services are unavailable"
+            body="We could not reach the private student service. Your records have not been changed."
+            icon="gearshape.fill"
+            actionLabel="Try again"
+            onAction={() => void refreshAuth()}
+          />
         ) : !user ? (
-          <View className="px-6 pb-6">
-            <View className="bg-surface border border-border rounded-2xl p-6 gap-3 items-start">
-              <Text className="text-3xl">👋</Text>
-              <Text className="text-lg font-bold text-foreground">Your student workspace</Text>
-              <Text className="text-sm text-muted leading-relaxed">
-                Sign in to see applications, messages, documents, and guidance tied to your account.
-              </Text>
-              {canStartSignIn ? (
-                <TouchableOpacity
-                  onPress={() => void startOAuthLogin()}
-                  className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
-                >
-                  <Text className="text-background font-bold text-sm">Sign in securely</Text>
-                </TouchableOpacity>
-              ) : (
-                <Text className="text-xs text-amber-700 dark:text-amber-300">
-                  Sign-in is not connected on this deployment yet.
-                </Text>
-              )}
-            </View>
-          </View>
+          <DashboardStateCard
+            eyebrow="Private by design"
+            title="Pick up where you left off"
+            body="Sign in to see your applications, saved universities, documents, and guidance."
+            icon="person.fill"
+            actionLabel={canStartSignIn ? "Sign in securely" : undefined}
+            onAction={canStartSignIn ? () => void startOAuthLogin() : undefined}
+            helper={
+              canStartSignIn
+                ? "Your account data stays separate from the public website."
+                : "Sign-in is not connected on this deployment yet."
+            }
+          />
         ) : dashboardError ? (
-          <View className="px-6 pb-6">
-            <View className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-2xl p-6 gap-3 items-start">
-              <Text className="text-3xl">↻</Text>
-              <Text className="text-lg font-bold text-foreground">Dashboard unavailable</Text>
-              <Text className="text-sm text-muted leading-relaxed">
-                We could not load your current student records. Check your connection and try again.
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  void Promise.all([
-                    applicationsQuery.refetch(),
-                    notificationsQuery.refetch(),
-                    studentQuery.refetch(),
-                  ])
-                }
-                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
-              >
-                <Text className="text-background font-bold text-sm">Retry</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <DashboardStateCard
+            eyebrow="Nothing was changed"
+            title="Your dashboard could not load"
+            body="Check your connection and try once more. If the problem continues, your mentor can help."
+            icon="gearshape.fill"
+            actionLabel="Reload dashboard"
+            onAction={() =>
+              void Promise.all([
+                applicationsQuery.refetch(),
+                notificationsQuery.refetch(),
+                studentQuery.refetch(),
+              ])
+            }
+          />
         ) : isLoading ? (
-          <View className="py-12 items-center">
+          <View className="py-14 items-center">
             <BenchLoader />
           </View>
         ) : !studentQuery.data ? (
-          <View className="px-6 pb-6">
-            <View className="bg-surface border border-border rounded-2xl p-6 gap-3 items-start">
-              <Text className="text-3xl">🧭</Text>
-              <Text className="text-lg font-bold text-foreground">Create your starting profile</Text>
-              <Text className="text-sm text-muted leading-relaxed">
-                Add your current study stage, field, and destination preference before using
-                personalized guidance.
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/onboarding")}
-                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
-              >
-                <Text className="text-background font-bold text-sm">Set up profile</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <DashboardStateCard
+            eyebrow="First step"
+            title="Build your starting profile"
+            body="Add your study stage, destination, and field so every recommendation begins with your real situation."
+            icon="chevron.left.forwardslash.chevron.right"
+            actionLabel="Set up my profile"
+            onAction={() => router.push("/onboarding")}
+            helper="About two minutes. GPA is optional."
+          />
         ) : applications.length === 0 ? (
-          /* Empty state for brand-new students — no fabricated progress */
-          <View className="px-6 pb-6">
-            <View className="bg-surface border border-border rounded-2xl p-6 gap-3 items-start">
-              <Text className="text-3xl">🎓</Text>
-              <Text className="text-lg font-bold text-foreground">Start your first application</Text>
-              <Text className="text-sm text-muted leading-relaxed">
-                You haven&apos;t started an application yet. Chat with an AI guide or browse universities to
-                shortlist your first one.
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/ai-guidance")}
-                className="bg-primary rounded-lg px-5 py-3 mt-1 active:opacity-80"
-              >
-                <Text className="text-background font-bold text-sm">Get Guidance</Text>
-              </TouchableOpacity>
-            </View>
+          <View className="gap-4">
+            <DashboardStateCard
+              eyebrow="Profile ready"
+              title="Choose the first path worth exploring"
+              body="Start with guided research, then verify fees, entry rules, and intake dates with the university or a mentor."
+              icon="graduationcap.fill"
+              actionLabel="Find my first matches"
+              onAction={() => router.push("/ai-guidance")}
+            />
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => router.push("/universities")}
+              className="mx-5 min-h-12 flex-row items-center justify-between rounded-xl border border-border bg-surface px-5 py-3"
+            >
+              <Text className="text-base font-bold text-foreground">Browse universities</Text>
+              <IconSymbol name="arrow.right" size={20} color={colors.muted} />
+            </TouchableOpacity>
           </View>
         ) : (
-          <>
-            {/* Primary Action Card - Journey Progress (real, from the lead application) */}
-            <View className="px-6 pb-6">
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => router.push("/applications")}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                className="bg-gradient-to-br from-green-800 to-green-600 rounded-2xl p-6 gap-4"
-              >
-                <View className="gap-2">
-                  <Text className="text-white text-sm font-semibold opacity-90">Your Application Journey</Text>
-                  <Text className="text-white text-3xl font-bold">
-                    {submittedCount} of {applications.length}
+          <View className="gap-5 px-5">
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Open application journey"
+              activeOpacity={0.84}
+              onPress={() => router.push("/applications")}
+              className="rounded-2xl border border-border bg-surface p-5 gap-5"
+            >
+              <View className="flex-row items-start justify-between gap-4">
+                <View className="flex-1 gap-2">
+                  <Text className="text-xs font-bold uppercase tracking-widest text-primary">
+                    Your journey
                   </Text>
-                  <Text className="text-white text-sm opacity-75">applications submitted</Text>
-                </View>
-                <View className="h-2 bg-white/30 rounded-full overflow-hidden">
-                  <View style={{ width: journeyBarWidth }} className="h-full bg-white rounded-full" />
-                </View>
-                <View className="flex-row items-center justify-between pt-2">
-                  <Text className="text-white text-xs font-semibold opacity-90">
-                    Furthest application: stage {journeyStage} of {STATUS_ORDER.length}
+                  <Text className="text-2xl font-bold leading-8 text-foreground">
+                    {leadApplication ? statusLabel(leadApplication.applicationStatus) : "Starting"}
                   </Text>
-                  <Text className="text-white text-lg">→</Text>
+                  {leadApplication ? (
+                    <Text className="text-sm leading-5 text-muted" numberOfLines={2}>
+                      {leadApplication.universityName} · {leadApplication.programName}
+                    </Text>
+                  ) : null}
                 </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* Quick Stats — every number derived from real applications/notifications */}
-            <View className="px-6 pb-6 gap-3">
-              <View className="flex-row gap-3">
-                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-2xl">📋</Text>
-                  <Text className="text-sm text-muted font-medium">Pending</Text>
-                  <Text className="text-2xl font-bold text-foreground">{pendingVisaCount}</Text>
-                  <Text className="text-xs text-muted">visa decision</Text>
-                </View>
-
-                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-2xl">👥</Text>
-                  <Text className="text-sm text-muted font-medium">Mentors</Text>
-                  <Text className="text-2xl font-bold text-foreground">{mentorsAssigned}</Text>
-                  <Text className="text-xs text-muted">assigned</Text>
+                <View className="rounded-full bg-primary/10 px-3 py-2">
+                  <Text className="text-sm font-bold text-primary">
+                    {journeyStage}/{STATUS_ORDER.length}
+                  </Text>
                 </View>
               </View>
-
-              <View className="flex-row gap-3">
-                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-2xl">💬</Text>
-                  <Text className="text-sm text-muted font-medium">Updates</Text>
-                  <Text className="text-2xl font-bold text-foreground">{unreadNotifications.length}</Text>
-                  <Text className="text-xs text-muted">unread</Text>
+              <View className="gap-2">
+                <View className="h-2 overflow-hidden rounded-full bg-border">
+                  <View
+                    style={{ width: journeyBarWidth, backgroundColor: colors.primary }}
+                    className="h-full rounded-full"
+                  />
                 </View>
-
-                <View className="flex-1 bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-2xl">🎉</Text>
-                  <Text className="text-sm text-muted font-medium">Offers</Text>
-                  <Text className="text-2xl font-bold text-foreground">{offersCount}</Text>
-                  <Text className="text-xs text-muted">received</Text>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-xs font-semibold text-muted">Recorded pipeline stage</Text>
+                  <IconSymbol name="arrow.right" size={18} color={colors.primary} />
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
 
-            {/* Next Steps — derived from real profile/application state, not scripted copy */}
-            {(needsTranscript || draftApplication) && (
-              <View className="px-6 pb-6 gap-3">
-                <Text className="text-lg font-bold text-foreground">Next Steps</Text>
-
-                {needsTranscript && (
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() =>
-                      leadApplication && router.push(`/application-detail?id=${leadApplication.id}`)
-                    }
-                    className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+            <View className="rounded-2xl border border-border bg-surface px-4 py-5">
+              <View className="flex-row">
+                {[
+                  ["Applications", applications.length],
+                  ["Submitted", submittedCount],
+                  ["Offers", offersCount],
+                ].map(([label, value], index) => (
+                  <View
+                    key={String(label)}
+                    className={`flex-1 items-center gap-1 ${index > 0 ? "border-l border-border" : ""}`}
                   >
+                    <Text className="text-2xl font-bold text-foreground">{value}</Text>
+                    <Text className="text-xs font-semibold text-muted">{label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {(draftApplication || (needsTranscript && leadApplication)) ? (
+              <View className="gap-3">
+                <Text className="text-xl font-bold text-foreground">Next move</Text>
+                {draftApplication ? (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/application-detail?id=${draftApplication.id}`)}
+                    className="min-h-14 flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4"
+                  >
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <IconSymbol name="doc.text.fill" size={21} color={colors.primary} />
+                    </View>
                     <View className="flex-1 gap-1">
-                      <Text className="text-sm font-semibold text-foreground">Review document needs</Text>
-                      <Text className="text-xs text-muted">
-                        Confirm the current checklist with your mentor
+                      <Text className="text-base font-bold text-foreground">Continue application</Text>
+                      <Text className="text-sm text-muted" numberOfLines={1}>
+                        {draftApplication.universityName}
                       </Text>
                     </View>
-                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
-                      <Text className="text-primary font-bold">→</Text>
-                    </View>
+                    <IconSymbol name="arrow.right" size={20} color={colors.muted} />
                   </TouchableOpacity>
-                )}
-
-                {draftApplication && (
+                ) : null}
+                {needsTranscript && leadApplication ? (
                   <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => router.push(`/application-detail?id=${draftApplication.id}`)}
-                    className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/application-detail?id=${leadApplication.id}`)}
+                    className="min-h-14 flex-row items-center gap-3 rounded-xl border border-border bg-surface p-4"
                   >
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <IconSymbol name="folder.fill" size={21} color={colors.primary} />
+                    </View>
                     <View className="flex-1 gap-1">
-                      <Text className="text-sm font-semibold text-foreground">Continue Application</Text>
-                      <Text className="text-xs text-muted">{draftApplication.universityName}</Text>
+                      <Text className="text-base font-bold text-foreground">Review document needs</Text>
+                      <Text className="text-sm text-muted">Confirm the checklist with your mentor</Text>
                     </View>
-                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
-                      <Text className="text-primary font-bold">→</Text>
-                    </View>
+                    <IconSymbol name="arrow.right" size={20} color={colors.muted} />
                   </TouchableOpacity>
-                )}
+                ) : null}
               </View>
-            )}
-          </>
-        )}
-
-        {/* Personalized Insights — real AI recommendation, or hidden if unavailable */}
-        {recommendation && (
-          <View className="px-6 pb-6 gap-3">
-            <Text className="text-lg font-bold text-foreground">Personalized for You</Text>
-
-            <View className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4 gap-3">
-              <View className="flex-row items-start gap-3">
-                <Text className="text-2xl">🤖</Text>
-                <View className="flex-1 gap-1">
-                  <Text className="text-sm font-bold text-foreground">
-                    {recommendation.universityName} — {recommendation.programName}
-                  </Text>
-                  <Text className="text-xs text-muted leading-relaxed">{recommendation.whyGoodFit}</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push("/universities")}
-                className="bg-primary rounded-lg py-2 px-3 active:opacity-80"
-              >
-                <Text className="text-white text-xs font-bold text-center">Explore Universities</Text>
-              </TouchableOpacity>
-            </View>
+            ) : null}
           </View>
         )}
 
-        {/* Recent Activity — real notifications, honestly empty when there are none */}
-        {user && (
-          <View className="px-6 pb-12 gap-3">
-            <Text className="text-lg font-bold text-foreground">Recent Activity</Text>
+        {recommendation ? (
+          <View className="px-5 pt-5 gap-3">
+            <Text className="text-xl font-bold text-foreground">One match to review</Text>
+            <View className="rounded-2xl border border-border bg-surface p-5 gap-4">
+              <View className="flex-row items-start gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <IconSymbol name="sparkles" size={21} color={colors.primary} />
+                </View>
+                <View className="flex-1 gap-1">
+                  <Text className="text-base font-bold leading-6 text-foreground">
+                    {recommendation.universityName} · {recommendation.programName}
+                  </Text>
+                  <Text className="text-sm leading-5 text-muted">{recommendation.whyGoodFit}</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => router.push("/universities")}
+                className="min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3"
+              >
+                <Text className="text-base font-bold text-background">Review the university</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
 
+        {user ? (
+          <View className="px-5 pt-5 gap-3">
+            <View className="flex-row items-end justify-between">
+              <Text className="text-xl font-bold text-foreground">Recent activity</Text>
+              {unreadNotifications.length > 0 ? (
+                <Text className="text-xs font-bold text-primary">
+                  {unreadNotifications.length} unread
+                </Text>
+              ) : null}
+            </View>
             {recentActivity.length === 0 ? (
-              <Text className="text-sm text-muted">No activity yet — updates will appear here.</Text>
+              <View className="rounded-xl border border-border bg-surface p-4">
+                <Text className="text-sm leading-5 text-muted">
+                  No updates yet. Recorded changes will appear here.
+                </Text>
+              </View>
             ) : (
-              <View className="gap-2">
-                {recentActivity.map((n) => (
-                  <View key={n.id} className="flex-row items-center gap-3">
-                    <View className={`w-2 h-2 rounded-full ${n.isRead ? "bg-border" : "bg-primary"}`} />
-                    <Text className="text-sm text-foreground flex-1">{n.title}</Text>
+              <View className="overflow-hidden rounded-xl border border-border bg-surface">
+                {recentActivity.map((item, index) => (
+                  <View
+                    key={item.id}
+                    className={`flex-row items-center gap-3 p-4 ${index > 0 ? "border-t border-border" : ""}`}
+                  >
+                    <View
+                      className={`h-2 w-2 rounded-full ${item.isRead ? "bg-border" : "bg-primary"}`}
+                    />
+                    <Text className="flex-1 text-sm font-semibold text-foreground">{item.title}</Text>
                     <Text className="text-xs text-muted">
-                      {new Date(n.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      {new Date(item.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </Text>
                   </View>
                 ))}
               </View>
             )}
           </View>
-        )}
+        ) : null}
       </ScrollView>
     </ScreenContainer>
   );

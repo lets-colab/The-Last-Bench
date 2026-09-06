@@ -1,29 +1,78 @@
-import { ScrollView, Text, View, TouchableOpacity, TextInput, Animated } from "react-native";
-import { useState, useRef, useEffect } from "react";
-import { ScreenContainer } from "@/components/screen-container";
-import { useColors } from "@/hooks/use-colors";
+import {
+  Image,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/hooks/use-auth";
-import { BenchLoader } from "@/components/bench-loader";
 
-interface OnboardingStep {
-  id: number;
+import { ScreenContainer } from "@/components/screen-container";
+import { BenchLoader } from "@/components/bench-loader";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { useAuth } from "@/hooks/use-auth";
+import { useColors } from "@/hooks/use-colors";
+import { trpc } from "@/lib/trpc";
+
+type OnboardingStep = {
+  eyebrow: string;
   title: string;
   description: string;
-  icon: string;
+  icon?: IconSymbolName;
+};
+
+const STEPS: OnboardingStep[] = [
+  {
+    eyebrow: "Welcome",
+    title: "Start with what is true today",
+    description: "A short profile gives your research a useful starting point. Nothing here decides your future.",
+  },
+  {
+    eyebrow: "Your study stage",
+    title: "Where are you now?",
+    description: "Use the words you normally use. GPA is optional.",
+    icon: "person.fill",
+  },
+  {
+    eyebrow: "Destination",
+    title: "Is Malaysia the plan?",
+    description: "Choose Malaysia, or keep the door open while you explore.",
+    icon: "chevron.left.forwardslash.chevron.right",
+  },
+  {
+    eyebrow: "Field",
+    title: "What do you want to study?",
+    description: "Choose the closest starting point. You can change it later.",
+    icon: "graduationcap.fill",
+  },
+  {
+    eyebrow: "Review",
+    title: "Your starting profile",
+    description: "Save this to enter a dashboard shaped around your next practical step.",
+    icon: "checkmark.circle.fill",
+  },
+];
+
+const DESTINATIONS = ["Malaysia", "Still exploring"];
+const FIELDS = [
+  "Computer Science",
+  "Engineering",
+  "Business",
+  "Medicine",
+  "Arts & Sciences",
+  "Other",
+];
+
+function tapHaptic() {
+  if (Platform.OS !== "web") {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
 }
 
-/**
- * Onboarding Flow - Premium First-Time Experience
- * 
- * Features:
- * - Smooth page transitions
- * - Progressive profile setup
- * - Destination selection
- * - Study preferences
- */
 export default function OnboardingScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -37,62 +86,11 @@ export default function OnboardingScreen() {
     destinationPreference: "",
   });
 
-  const slideAnim = useRef(new Animated.Value(0)).current;
   const utils = trpc.useUtils();
   const profileQuery = trpc.student.getProfile.useQuery(undefined, { enabled: !!user });
   const saveProfile = trpc.student.createProfile.useMutation();
-
-  const steps: OnboardingStep[] = [
-    {
-      id: 0,
-      title: "Welcome to Last Bench",
-      description: "Build a clear starting point for your Malaysia research",
-      icon: "🚀",
-    },
-    {
-      id: 1,
-      title: "Tell Us About Yourself",
-      description: "Help us personalize your experience",
-      icon: "👤",
-    },
-    {
-      id: 2,
-      title: "Where Do You Want to Go?",
-      description: "Choose your study destination",
-      icon: "🌍",
-    },
-    {
-      id: 3,
-      title: "What's Your Field?",
-      description: "Select your area of interest",
-      icon: "🎓",
-    },
-    {
-      id: 4,
-      title: "Your Starting Point",
-      description: "You can update these details whenever your plans change",
-      icon: "✨",
-    },
-  ];
-
-  const destinations = ["Malaysia", "Still exploring"];
-  const fields = [
-    "Computer Science",
-    "Engineering",
-    "Business",
-    "Medicine",
-    "Arts & Sciences",
-    "Other",
-  ];
-
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: currentStep,
-      useNativeDriver: false,
-      tension: 50,
-      friction: 8,
-    }).start();
-  }, [currentStep, slideAnim]);
+  const step = STEPS[currentStep];
+  const progressPercent = ((currentStep + 1) / STEPS.length) * 100;
 
   useEffect(() => {
     if (!profileQuery.data) return;
@@ -104,8 +102,34 @@ export default function OnboardingScreen() {
     });
   }, [profileQuery.data]);
 
+  const handleBack = () => {
+    tapHaptic();
+    setSaveError(null);
+    setCurrentStep((value) => Math.max(0, value - 1));
+  };
+
+  const handleComplete = async () => {
+    if (!user || saveProfile.isPending) return;
+    setSaveError(null);
+    try {
+      await saveProfile.mutateAsync({
+        class: formData.class.trim() || undefined,
+        gpa: formData.gpa.trim() || undefined,
+        fieldOfInterest: formData.fieldOfInterest || undefined,
+        destinationPreference: formData.destinationPreference || undefined,
+      });
+      await utils.student.getProfile.invalidate();
+      if (Platform.OS !== "web") {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      router.replace("/(tabs)");
+    } catch {
+      setSaveError("We could not save your profile. Check your connection and try again.");
+    }
+  };
+
   const handleNext = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    tapHaptic();
     setSaveError(null);
 
     if (currentStep === 1 && !formData.class.trim()) {
@@ -121,43 +145,16 @@ export default function OnboardingScreen() {
       return;
     }
 
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      void handleComplete();
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep((value) => value + 1);
+      return;
     }
+    void handleComplete();
   };
-
-  const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleComplete = async () => {
-    if (!user || saveProfile.isPending) return;
-    setSaveError(null);
-    try {
-      await saveProfile.mutateAsync({
-        class: formData.class.trim() || undefined,
-        gpa: formData.gpa.trim() || undefined,
-        fieldOfInterest: formData.fieldOfInterest || undefined,
-        destinationPreference: formData.destinationPreference || undefined,
-      });
-      await utils.student.getProfile.invalidate();
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)/profile");
-    } catch {
-      setSaveError("We could not save your profile. Check your connection and try again.");
-    }
-  };
-
-  const progressPercent = ((currentStep + 1) / steps.length) * 100;
 
   if (authLoading || (user && profileQuery.isLoading)) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center">
+      <ScreenContainer className="items-center justify-center p-6">
         <BenchLoader />
       </ScreenContainer>
     );
@@ -165,259 +162,289 @@ export default function OnboardingScreen() {
 
   if (!user) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center gap-4">
-        <Text className="text-xl font-bold text-foreground text-center">Sign in first</Text>
-        <Text className="text-sm text-muted text-center">
-          Your study profile is private and must be connected to your account.
-        </Text>
+      <ScreenContainer className="items-center justify-center gap-5 p-6">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <IconSymbol name="person.fill" size={24} color={colors.primary} />
+        </View>
+        <View className="gap-2">
+          <Text className="text-center text-2xl font-bold text-foreground">Sign in first</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            Your study profile is private and must be connected to your account.
+          </Text>
+        </View>
         <TouchableOpacity
-          onPress={() => router.back()}
-          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+          accessibilityRole="button"
+          onPress={() => router.replace("/(tabs)")}
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
         >
-          <Text className="text-white font-bold">Go back</Text>
+          <Text className="text-base font-bold text-background">Return home</Text>
+        </TouchableOpacity>
+      </ScreenContainer>
+    );
+  }
+
+  if (profileQuery.isError) {
+    return (
+      <ScreenContainer className="items-center justify-center gap-5 p-6">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <IconSymbol name="gearshape.fill" size={24} color={colors.primary} />
+        </View>
+        <View className="gap-2">
+          <Text className="text-center text-2xl font-bold text-foreground">Profile unavailable</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            We could not load your current profile. Nothing has been changed.
+          </Text>
+        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => void profileQuery.refetch()}
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
+        >
+          <Text className="text-base font-bold text-background">Try again</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer className="p-0 bg-gradient-to-b from-primary/5 to-background">
-      {/* Progress Bar */}
-      <View className="px-6 pt-6 pb-4 gap-2">
-        <View className="h-1 bg-border rounded-full overflow-hidden">
-          <Animated.View
-            style={{
-              width: `${progressPercent}%`,
-              backgroundColor: colors.primary,
-            }}
+    <ScreenContainer className="p-0">
+      <View className="border-b border-border bg-background px-5 pt-3 pb-4 gap-4">
+        <View className="min-h-11 flex-row items-center justify-between">
+          {currentStep > 0 ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Previous step"
+              onPress={handleBack}
+              className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface"
+            >
+              <IconSymbol name="arrow.left" size={21} color={colors.foreground} />
+            </TouchableOpacity>
+          ) : (
+            <View className="h-11 w-11" />
+          )}
+          <Text className="text-xs font-bold uppercase tracking-widest text-muted">
+            Step {currentStep + 1} of {STEPS.length}
+          </Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Leave profile setup"
+            onPress={() => router.replace("/(tabs)")}
+            className="min-h-11 justify-center px-1"
+          >
+            <Text className="text-sm font-bold text-muted">Exit</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="h-1.5 overflow-hidden rounded-full bg-border">
+          <View
+            style={{ width: `${progressPercent}%`, backgroundColor: colors.primary }}
             className="h-full rounded-full"
           />
         </View>
-        <Text className="text-xs text-muted font-semibold">
-          Step {currentStep + 1} of {steps.length}
-        </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <View className="flex-1 px-6 pt-12 pb-12 gap-8 justify-center">
-          {/* Step 0: Welcome */}
-          {currentStep === 0 && (
-            <View className="gap-8 items-center">
-              <View className="gap-4 items-center">
-                <Text className="text-6xl">{steps[0].icon}</Text>
-                <View className="gap-2 items-center">
-                  <Text className="text-3xl font-bold text-foreground text-center">
-                    {steps[0].title}
-                  </Text>
-                  <Text className="text-base text-muted text-center leading-relaxed">
-                    {steps[0].description}
-                  </Text>
-                </View>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 28 }}
+      >
+        <View className="flex-1 px-5 pt-8 gap-7">
+          <View className="gap-4">
+            {currentStep === 0 ? (
+              <View className="h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface">
+                <Image
+                  source={require("@/landing/assets/logo-icon.png")}
+                  accessibilityLabel="Last Bench"
+                  resizeMode="contain"
+                  style={{ width: 46, height: 32 }}
+                />
               </View>
+            ) : step.icon ? (
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <IconSymbol name={step.icon} size={24} color={colors.primary} />
+              </View>
+            ) : null}
+            <View className="gap-2">
+              <Text className="text-xs font-bold uppercase tracking-widest text-primary">
+                {step.eyebrow}
+              </Text>
+              <Text className="text-3xl font-bold leading-10 text-foreground">{step.title}</Text>
+              <Text className="text-base leading-6 text-muted">{step.description}</Text>
+            </View>
+          </View>
 
-              <View className="w-full gap-4 pt-8">
-                <View className="bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-sm font-semibold text-foreground">✓ Guided research</Text>
-                  <Text className="text-xs text-muted">Prepare better questions for universities and mentors</Text>
+          {currentStep === 0 ? (
+            <View className="overflow-hidden rounded-2xl border border-border bg-surface">
+              {[
+                ["sparkles", "Guided research", "Prepare better questions before you apply."],
+                ["person.2.fill", "Human handoff", "Know when a high-stakes detail needs a person."],
+                ["checkmark.circle.fill", "Honest tracking", "See recorded stages without outcome promises."],
+              ].map(([icon, title, body], index) => (
+                <View
+                  key={title}
+                  className={`flex-row items-start gap-3 p-4 ${index > 0 ? "border-t border-border" : ""}`}
+                >
+                  <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                    <IconSymbol name={icon as IconSymbolName} size={19} color={colors.primary} />
+                  </View>
+                  <View className="flex-1 gap-1">
+                    <Text className="text-base font-bold text-foreground">{title}</Text>
+                    <Text className="text-sm leading-5 text-muted">{body}</Text>
+                  </View>
                 </View>
-                <View className="bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-sm font-semibold text-foreground">✓ Human handoff</Text>
-                  <Text className="text-xs text-muted">Know when a high-stakes detail needs a person</Text>
+              ))}
+            </View>
+          ) : null}
+
+          {currentStep === 1 ? (
+            <View className="gap-5">
+              <View className="gap-2">
+                <Text className="text-sm font-bold text-foreground">Class or study stage</Text>
+                <TextInput
+                  accessibilityLabel="Class or study stage"
+                  placeholder="For example, HSC final year"
+                  placeholderTextColor={colors.muted}
+                  value={formData.class}
+                  onChangeText={(text) => setFormData((value) => ({ ...value, class: text }))}
+                  autoCapitalize="sentences"
+                  returnKeyType="next"
+                  className="min-h-14 rounded-xl border border-border bg-surface px-4 py-3 text-base text-foreground"
+                />
+              </View>
+              <View className="gap-2">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm font-bold text-foreground">GPA</Text>
+                  <Text className="text-xs font-semibold text-muted">Optional</Text>
                 </View>
-                <View className="bg-surface border border-border rounded-xl p-4 gap-2">
-                  <Text className="text-sm font-semibold text-foreground">✓ Honest tracking</Text>
-                  <Text className="text-xs text-muted">See recorded stages without invented outcome promises</Text>
-                </View>
+                <TextInput
+                  accessibilityLabel="GPA, optional"
+                  placeholder="For example, 4.50 out of 5.00"
+                  placeholderTextColor={colors.muted}
+                  value={formData.gpa}
+                  onChangeText={(text) => setFormData((value) => ({ ...value, gpa: text }))}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  className="min-h-14 rounded-xl border border-border bg-surface px-4 py-3 text-base text-foreground"
+                />
               </View>
             </View>
-          )}
+          ) : null}
 
-          {/* Step 1: Profile Setup */}
-          {currentStep === 1 && (
-            <View className="gap-6">
-              <View className="gap-2 items-center">
-                <Text className="text-5xl">{steps[1].icon}</Text>
-                <Text className="text-2xl font-bold text-foreground">{steps[1].title}</Text>
-                <Text className="text-sm text-muted text-center">{steps[1].description}</Text>
-              </View>
-
-              <View className="gap-4 pt-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-semibold text-foreground">Class/Year</Text>
-                  <TextInput
-                    placeholder="e.g., HSC final year, university first year"
-                    placeholderTextColor={colors.muted}
-                    value={formData.class}
-                    onChangeText={(text) => setFormData({ ...formData, class: text })}
-                    className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
-                  />
-                </View>
-
-                <View className="gap-2">
-                  <Text className="text-sm font-semibold text-foreground">GPA (Optional)</Text>
-                  <TextInput
-                    placeholder="e.g., 4.50/5.00"
-                    placeholderTextColor={colors.muted}
-                    value={formData.gpa}
-                    onChangeText={(text) => setFormData({ ...formData, gpa: text })}
-                    className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
-                  />
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Step 2: Destination */}
-          {currentStep === 2 && (
-            <View className="gap-6">
-              <View className="gap-2 items-center">
-                <Text className="text-5xl">{steps[2].icon}</Text>
-                <Text className="text-2xl font-bold text-foreground">{steps[2].title}</Text>
-                <Text className="text-sm text-muted text-center">{steps[2].description}</Text>
-              </View>
-
-              <View className="gap-3 pt-4">
-                {destinations.map((dest) => (
+          {currentStep === 2 ? (
+            <View className="gap-3">
+              {DESTINATIONS.map((destination) => {
+                const selected = formData.destinationPreference === destination;
+                return (
                   <TouchableOpacity
-                    key={dest}
+                    key={destination}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setFormData({ ...formData, destinationPreference: dest });
+                      tapHaptic();
+                      setFormData((value) => ({ ...value, destinationPreference: destination }));
                     }}
-                    className={`px-4 py-4 rounded-lg border-2 ${
-                      formData.destinationPreference === dest
-                        ? "bg-primary border-primary"
-                        : "bg-surface border-border"
+                    className={`min-h-14 flex-row items-center justify-between rounded-xl border px-4 py-3 ${
+                      selected ? "border-primary bg-primary/10" : "border-border bg-surface"
                     }`}
                   >
-                    <Text
-                      className={`text-base font-semibold text-center ${
-                        formData.destinationPreference === dest
-                          ? "text-background"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {dest}
-                    </Text>
+                    <Text className="text-base font-bold text-foreground">{destination}</Text>
+                    {selected ? (
+                      <IconSymbol name="checkmark.circle.fill" size={22} color={colors.primary} />
+                    ) : (
+                      <View className="h-5 w-5 rounded-full border border-border" />
+                    )}
                   </TouchableOpacity>
-                ))}
-              </View>
+                );
+              })}
             </View>
-          )}
+          ) : null}
 
-          {/* Step 3: Field of Interest */}
-          {currentStep === 3 && (
-            <View className="gap-6">
-              <View className="gap-2 items-center">
-                <Text className="text-5xl">{steps[3].icon}</Text>
-                <Text className="text-2xl font-bold text-foreground">{steps[3].title}</Text>
-                <Text className="text-sm text-muted text-center">{steps[3].description}</Text>
-              </View>
-
-              <View className="gap-3 pt-4">
-                {fields.map((field) => (
+          {currentStep === 3 ? (
+            <View className="gap-3">
+              {FIELDS.map((field) => {
+                const selected = formData.fieldOfInterest === field;
+                return (
                   <TouchableOpacity
                     key={field}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setFormData({ ...formData, fieldOfInterest: field });
+                      tapHaptic();
+                      setFormData((value) => ({ ...value, fieldOfInterest: field }));
                     }}
-                    className={`px-4 py-4 rounded-lg border-2 ${
-                      formData.fieldOfInterest === field
-                        ? "bg-primary border-primary"
-                        : "bg-surface border-border"
+                    className={`min-h-14 flex-row items-center justify-between rounded-xl border px-4 py-3 ${
+                      selected ? "border-primary bg-primary/10" : "border-border bg-surface"
                     }`}
                   >
-                    <Text
-                      className={`text-base font-semibold text-center ${
-                        formData.fieldOfInterest === field ? "text-background" : "text-foreground"
-                      }`}
-                    >
-                      {field}
-                    </Text>
+                    <Text className="text-base font-bold text-foreground">{field}</Text>
+                    {selected ? (
+                      <IconSymbol name="checkmark.circle.fill" size={22} color={colors.primary} />
+                    ) : (
+                      <View className="h-5 w-5 rounded-full border border-border" />
+                    )}
                   </TouchableOpacity>
-                ))}
-              </View>
+                );
+              })}
             </View>
-          )}
+          ) : null}
 
-          {/* Step 4: Complete */}
-          {currentStep === 4 && (
-            <View className="gap-8 items-center">
-              <View className="gap-4 items-center">
-                <Text className="text-6xl">{steps[4].icon}</Text>
-                <View className="gap-2 items-center">
-                  <Text className="text-3xl font-bold text-foreground text-center">
-                    {steps[4].title}
-                  </Text>
-                  <Text className="text-base text-muted text-center leading-relaxed">
-                    {steps[4].description}
-                  </Text>
+          {currentStep === 4 ? (
+            <View className="overflow-hidden rounded-2xl border border-border bg-surface">
+              {[
+                ["Study stage", formData.class],
+                ["Destination", formData.destinationPreference],
+                ["Field", formData.fieldOfInterest],
+                ...(formData.gpa ? [["GPA", formData.gpa]] : []),
+              ].map(([label, value], index) => (
+                <View
+                  key={label}
+                  className={`gap-1 p-4 ${index > 0 ? "border-t border-border" : ""}`}
+                >
+                  <Text className="text-xs font-bold uppercase tracking-widest text-muted">{label}</Text>
+                  <Text className="text-base font-bold text-foreground">{value}</Text>
                 </View>
-              </View>
-
-              <View className="w-full bg-gradient-to-br from-primary/10 to-blue-500/10 border border-primary/20 rounded-xl p-6 gap-3">
-                <Text className="text-sm font-semibold text-foreground">Your Profile</Text>
-                <View className="gap-2">
-                  <View className="flex-row justify-between">
-                    <Text className="text-xs text-muted">Class</Text>
-                    <Text className="text-xs font-semibold text-foreground">{formData.class}</Text>
-                  </View>
-                  <View className="flex-row justify-between">
-                    <Text className="text-xs text-muted">Destination</Text>
-                    <Text className="text-xs font-semibold text-foreground">
-                      {formData.destinationPreference}
-                    </Text>
-                  </View>
-                  <View className="flex-row justify-between">
-                    <Text className="text-xs text-muted">Field</Text>
-                    <Text className="text-xs font-semibold text-foreground">{formData.fieldOfInterest}</Text>
-                  </View>
-                </View>
-              </View>
+              ))}
             </View>
-          )}
+          ) : null}
+
+          <View className="mt-auto gap-3 pt-3">
+            {saveError ? (
+              <View className="rounded-xl border border-error/30 bg-error/10 p-3">
+                <Text accessibilityRole="alert" className="text-center text-sm leading-5 text-error">
+                  {saveError}
+                </Text>
+              </View>
+            ) : null}
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={handleNext}
+              disabled={saveProfile.isPending}
+              className={`min-h-14 items-center justify-center rounded-xl bg-primary px-5 py-3 ${
+                saveProfile.isPending ? "opacity-60" : ""
+              }`}
+            >
+              <Text className="text-base font-bold text-background">
+                {saveProfile.isPending
+                  ? "Saving…"
+                  : currentStep === STEPS.length - 1
+                    ? "Save and enter dashboard"
+                    : currentStep === 0
+                      ? "Build my profile"
+                      : "Continue"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => router.replace("/(tabs)")}
+              disabled={saveProfile.isPending}
+              className="min-h-11 items-center justify-center px-4"
+            >
+              <Text className="text-sm font-bold text-muted">
+                {profileQuery.data ? "Leave without saving" : "Do this later"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
-
-      {/* Navigation Buttons */}
-      <View className="px-6 pb-8 gap-3 border-t border-border pt-6">
-        {saveError && (
-          <Text className="text-red-600 dark:text-red-400 text-sm text-center">{saveError}</Text>
-        )}
-        <TouchableOpacity
-          onPress={handleNext}
-          disabled={saveProfile.isPending}
-          className={`bg-primary rounded-lg py-4 active:opacity-80 ${
-            saveProfile.isPending ? "opacity-60" : ""
-          }`}
-        >
-          <Text className="text-white font-bold text-center">
-            {saveProfile.isPending
-              ? "Saving…"
-              : currentStep === steps.length - 1
-                ? "Save Profile"
-                : "Next"}
-          </Text>
-        </TouchableOpacity>
-
-        {currentStep > 0 && (
-          <TouchableOpacity
-            onPress={handleBack}
-            className="bg-surface border border-border rounded-lg py-4 active:opacity-80"
-          >
-            <Text className="text-foreground font-bold text-center">Back</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          onPress={() => router.replace("/(tabs)/profile")}
-          disabled={saveProfile.isPending}
-          className="py-2"
-        >
-          <Text className="text-muted text-xs text-center font-semibold">Skip for now</Text>
-        </TouchableOpacity>
-      </View>
     </ScreenContainer>
   );
 }

@@ -1,11 +1,14 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { ScreenContainer } from "@/components/screen-container";
-import { useAuth } from "@/hooks/use-auth";
-import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
+
+import { ScreenContainer } from "@/components/screen-container";
 import { BenchLoader } from "@/components/bench-loader";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { useAuth } from "@/hooks/use-auth";
+import { useColors } from "@/hooks/use-colors";
+import { trpc } from "@/lib/trpc";
 
 const STATUS_ORDER = [
   "draft",
@@ -21,18 +24,35 @@ const STATUS_ORDER = [
   "pre_departure",
 ];
 
-/**
- * Applications Screen - Premium Status Tracking
- * 
- * Design Excellence:
- * - Sophisticated status visualization
- * - Elegant progress rings
- * - Contextual actions
- * - Smooth micro-interactions
- */
+const STATUS_CONFIG: Record<string, { label: string; icon: IconSymbolName }> = {
+  draft: { label: "Draft", icon: "doc.text.fill" },
+  documents_received: { label: "Documents received", icon: "folder.fill" },
+  profile_analyzed: { label: "Profile analysed", icon: "person.fill" },
+  shortlisted: { label: "Shortlisted", icon: "sparkles" },
+  application_drafted: { label: "Application drafted", icon: "doc.text.fill" },
+  submitted_to_university: { label: "Submitted", icon: "paperplane.fill" },
+  under_review: { label: "Under review", icon: "gearshape.fill" },
+  offer_received: { label: "Offer received", icon: "checkmark.circle.fill" },
+  visa_application_filed: { label: "Visa filed", icon: "folder.fill" },
+  visa_decision: { label: "Visa decision", icon: "checkmark.circle.fill" },
+  pre_departure: { label: "Pre-departure", icon: "graduationcap.fill" },
+  rejected: { label: "Closed", icon: "doc.text.fill" },
+};
+
+function getStatusConfig(status: string) {
+  return STATUS_CONFIG[status] ?? { label: status.replaceAll("_", " "), icon: "doc.text.fill" as const };
+}
+
+function hapticSelect() {
+  if (Platform.OS !== "web") {
+    void Haptics.selectionAsync();
+  }
+}
+
 export default function ApplicationsScreen() {
   const { user, loading: authLoading, error: authError, refresh: refreshAuth } = useAuth();
   const router = useRouter();
+  const colors = useColors();
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
   const applicationsQuery = trpc.application.getByStudent.useQuery(undefined, {
@@ -41,7 +61,7 @@ export default function ApplicationsScreen() {
 
   if (authLoading) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center">
+      <ScreenContainer className="items-center justify-center p-6">
         <BenchLoader />
       </ScreenContainer>
     );
@@ -49,16 +69,22 @@ export default function ApplicationsScreen() {
 
   if (authError) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center gap-4">
-        <Text className="text-xl font-bold text-foreground text-center">Student services are unavailable</Text>
-        <Text className="text-sm text-muted text-center">
-          Your workspace could not connect to Last Bench services. Please try again in a moment.
-        </Text>
+      <ScreenContainer className="items-center justify-center gap-5 p-6">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <IconSymbol name="gearshape.fill" size={24} color={colors.primary} />
+        </View>
+        <View className="gap-2">
+          <Text className="text-center text-2xl font-bold text-foreground">Applications unavailable</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            We could not reach the private student service. Your application data has not changed.
+          </Text>
+        </View>
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => void refreshAuth()}
-          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
         >
-          <Text className="text-background font-bold">Retry connection</Text>
+          <Text className="text-base font-bold text-background">Try again</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
@@ -66,128 +92,126 @@ export default function ApplicationsScreen() {
 
   if (!user) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center">
-        <Text className="text-xl font-bold text-foreground">Please sign in to continue</Text>
+      <ScreenContainer className="items-center justify-center gap-4 p-6">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <IconSymbol name="folder.fill" size={24} color={colors.primary} />
+        </View>
+        <Text className="text-center text-2xl font-bold text-foreground">Sign in to view applications</Text>
+        <Text className="text-center text-base leading-6 text-muted">
+          Timelines, documents, and university decisions stay inside your private workspace.
+        </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => router.replace("/(tabs)")}
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
+        >
+          <Text className="text-base font-bold text-background">Return home</Text>
+        </TouchableOpacity>
       </ScreenContainer>
     );
   }
 
-  const applications = applicationsQuery.data || [];
-
-  const statusConfig: Record<string, { label: string; icon: string; color: string; bgLight: string }> = {
-    draft: { label: "Draft", icon: "📝", color: "#6b7280", bgLight: "#f3f4f6" },
-    documents_received: { label: "Documents Received", icon: "📄", color: "#3b82f6", bgLight: "#eff6ff" },
-    profile_analyzed: { label: "Profile Analyzed", icon: "🔍", color: "#8b5cf6", bgLight: "#faf5ff" },
-    shortlisted: { label: "Shortlisted", icon: "⭐", color: "#f59e0b", bgLight: "#fffbeb" },
-    application_drafted: { label: "Application Drafted", icon: "✍️", color: "#06b6d4", bgLight: "#ecfdf5" },
-    submitted_to_university: { label: "Submitted", icon: "✓", color: "#3b82f6", bgLight: "#eff6ff" },
-    under_review: { label: "Under Review", icon: "⏳", color: "#f59e0b", bgLight: "#fffbeb" },
-    offer_received: { label: "Offer Received", icon: "🎉", color: "#10b981", bgLight: "#f0fdf4" },
-    visa_application_filed: { label: "Visa Filed", icon: "📋", color: "#06b6d4", bgLight: "#ecfdf5" },
-    visa_decision: { label: "Visa Decision", icon: "✈️", color: "#10b981", bgLight: "#f0fdf4" },
-    pre_departure: { label: "Pre-Departure", icon: "🚀", color: "#10b981", bgLight: "#f0fdf4" },
-    rejected: { label: "Rejected", icon: "✗", color: "#ef4444", bgLight: "#fef2f2" },
-  };
-
-  const getStatusConfig = (status: string) => {
-    return statusConfig[status] || { label: status, icon: "📌", color: "#6b7280", bgLight: "#f3f4f6" };
-  };
-
+  const applications = applicationsQuery.data ?? [];
+  const statuses = Array.from(new Set(applications.map((application) => application.applicationStatus)));
   const filteredApplications = selectedStatus
-    ? applications.filter((app) => app.applicationStatus === selectedStatus)
+    ? applications.filter((application) => application.applicationStatus === selectedStatus)
     : applications;
 
-  const statuses = Array.from(new Set(applications.map((app) => app.applicationStatus)));
-
-  const handleStatusFilter = (status: string | null) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedStatus(selectedStatus === status ? null : status);
+  const selectStatus = (status: string | null) => {
+    hapticSelect();
+    setSelectedStatus((current) => (current === status ? null : status));
   };
 
   return (
     <ScreenContainer className="p-0">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View className="px-6 pt-8 pb-6 gap-2">
-          <Text className="text-4xl font-bold text-foreground">Applications</Text>
-          <Text className="text-sm text-muted">
-            {applications.length} {applications.length === 1 ? "application" : "applications"} •{" "}
-            {filteredApplications.length} shown
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 36 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="gap-2 px-5 pb-5 pt-6">
+          <Text className="text-xs font-bold uppercase tracking-widest text-primary">Your journey</Text>
+          <Text className="text-3xl font-bold leading-10 text-foreground">Applications</Text>
+          <Text className="text-base leading-6 text-muted">
+            Follow each verified step from draft to departure.
           </Text>
         </View>
 
-        {/* Status Filter - Horizontal Scroll */}
-        {statuses.length > 0 && (
-          <View className="px-6 pb-6">
-            <Text className="text-sm font-semibold text-muted mb-3">Filter by Status</Text>
+        {statuses.length > 0 ? (
+          <View className="gap-3 pb-5">
+            <Text className="px-5 text-sm font-bold text-foreground">Filter by stage</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingRight: 24 }}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
             >
               <TouchableOpacity
-                onPress={() => handleStatusFilter(null)}
-                className={`px-4 py-2 rounded-full ${
-                  selectedStatus === null ? "bg-primary" : "bg-surface border border-border"
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedStatus === null }}
+                accessibilityLabel={`Show all ${applications.length} applications`}
+                onPress={() => selectStatus(null)}
+                className={`min-h-11 justify-center rounded-full border px-4 py-2 ${
+                  selectedStatus === null ? "border-primary bg-primary" : "border-border bg-surface"
                 }`}
               >
-                <Text
-                  className={`text-xs font-bold ${
-                    selectedStatus === null ? "text-background" : "text-foreground"
-                  }`}
-                >
-                  All ({applications.length})
+                <Text className={`text-sm font-bold ${selectedStatus === null ? "text-background" : "text-foreground"}`}>
+                  All · {applications.length}
                 </Text>
               </TouchableOpacity>
               {statuses.map((status) => {
                 const config = getStatusConfig(status);
-                const count = applications.filter((app) => app.applicationStatus === status).length;
+                const count = applications.filter(
+                  (application) => application.applicationStatus === status,
+                ).length;
+                const selected = selectedStatus === status;
                 return (
                   <TouchableOpacity
                     key={status}
-                    onPress={() => handleStatusFilter(status)}
-                    className={`px-4 py-2 rounded-full ${
-                      selectedStatus === status ? "bg-primary" : "bg-surface border border-border"
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${config.label}, ${count} application${count === 1 ? "" : "s"}`}
+                    onPress={() => selectStatus(status)}
+                    className={`min-h-11 justify-center rounded-full border px-4 py-2 ${
+                      selected ? "border-primary bg-primary" : "border-border bg-surface"
                     }`}
                   >
-                    <Text
-                      className={`text-xs font-bold ${
-                        selectedStatus === status ? "text-background" : "text-foreground"
-                      }`}
-                    >
-                      {config.icon} {count}
+                    <Text className={`text-sm font-bold ${selected ? "text-background" : "text-foreground"}`}>
+                      {config.label} · {count}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
           </View>
-        )}
+        ) : null}
 
-        {/* Applications List */}
         {applicationsQuery.isLoading ? (
-          <View className="flex-1 justify-center items-center">
+          <View className="flex-1 items-center justify-center p-6">
             <BenchLoader />
           </View>
         ) : applicationsQuery.isError ? (
-          <View className="flex-1 justify-center items-center px-6 pb-12 gap-4">
-            <Text className="text-4xl">↻</Text>
-            <Text className="text-xl font-bold text-foreground">Applications unavailable</Text>
-            <Text className="text-sm text-muted text-center leading-relaxed">
-              We could not load your applications. Check your connection and try again.
-            </Text>
+          <View className="flex-1 items-center justify-center gap-5 px-6 pb-12">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <IconSymbol name="gearshape.fill" size={24} color={colors.primary} />
+            </View>
+            <View className="gap-2">
+              <Text className="text-center text-2xl font-bold text-foreground">Timeline could not load</Text>
+              <Text className="text-center text-base leading-6 text-muted">
+                Check your connection, then reload your applications.
+              </Text>
+            </View>
             <TouchableOpacity
+              accessibilityRole="button"
               onPress={() => void applicationsQuery.refetch()}
-              className="bg-primary rounded-lg px-6 py-3 active:opacity-80"
+              className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
             >
-              <Text className="text-background font-bold">Retry</Text>
+              <Text className="text-base font-bold text-background">Reload applications</Text>
             </TouchableOpacity>
           </View>
         ) : filteredApplications.length > 0 ? (
-          <View className="px-6 pb-12 gap-3">
-            {filteredApplications.map((app) => {
-              const config = getStatusConfig(app.applicationStatus);
-              const stageIndex = STATUS_ORDER.indexOf(app.applicationStatus);
+          <View className="gap-3 px-5 pb-6">
+            {filteredApplications.map((application) => {
+              const config = getStatusConfig(application.applicationStatus);
+              const stageIndex = STATUS_ORDER.indexOf(application.applicationStatus);
               const stagePosition = stageIndex >= 0 ? stageIndex + 1 : null;
               const pipelineWidth: `${number}%` = stagePosition
                 ? `${Math.round((stagePosition / STATUS_ORDER.length) * 100)}%`
@@ -195,75 +219,83 @@ export default function ApplicationsScreen() {
 
               return (
                 <TouchableOpacity
-                  key={app.id}
-                  activeOpacity={0.8}
+                  key={application.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`Open ${app.universityName} application`}
-                  onPress={() => router.push(`/application-detail?id=${app.id}`)}
-                  className="bg-surface border border-border rounded-2xl p-5 active:opacity-80"
+                  accessibilityLabel={`Open ${application.universityName} application, ${config.label}`}
+                  activeOpacity={0.82}
+                  onPress={() => router.push(`/application-detail?id=${application.id}`)}
+                  className="gap-5 rounded-2xl border border-border bg-surface p-5"
                 >
-                  {/* Header with Status Badge */}
-                  <View className="flex-row items-start justify-between mb-4 gap-3">
-                    <View className="flex-1 gap-1">
-                      <Text className="text-lg font-bold text-foreground">{app.universityName}</Text>
-                      <Text className="text-sm text-muted">{app.programName}</Text>
-                      {app.country && (
-                        <Text className="text-xs text-muted mt-1">📍 {app.country}</Text>
-                      )}
+                  <View className="flex-row items-start gap-3">
+                    <View className="h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+                      <IconSymbol name={config.icon} size={21} color={colors.primary} />
                     </View>
-                    <View
-                      style={{ backgroundColor: config.bgLight, borderColor: config.color, borderWidth: 1.5 }}
-                      className="px-3 py-1.5 rounded-full"
-                    >
-                      <Text style={{ color: config.color }} className="text-xs font-bold">
-                        {config.icon}
+                    <View className="flex-1 gap-1">
+                      <Text className="text-lg font-bold leading-6 text-foreground">
+                        {application.universityName}
                       </Text>
+                      <Text className="text-sm leading-5 text-muted">{application.programName}</Text>
+                      {application.country ? (
+                        <Text className="text-sm text-muted">{application.country}</Text>
+                      ) : null}
                     </View>
                   </View>
 
-                  {/* Pipeline position — not a claim about percent complete. */}
-                  <View className="gap-2 mb-4">
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-xs font-semibold text-muted">{config.label}</Text>
-                      <Text className="text-xs font-bold text-foreground">
+                  <View className="gap-2">
+                    <View className="flex-row items-center justify-between gap-3">
+                      <Text className="flex-1 text-sm font-bold text-foreground">{config.label}</Text>
+                      <Text className="text-xs font-bold uppercase tracking-wider text-muted">
                         {stagePosition ? `Stage ${stagePosition} of ${STATUS_ORDER.length}` : "Closed"}
                       </Text>
                     </View>
-                    <View className="h-2 bg-border rounded-full overflow-hidden">
-                      <View
-                        style={{
-                          width: pipelineWidth,
-                          backgroundColor: config.color,
-                        }}
-                        className="h-full rounded-full"
-                      />
+                    <View className="h-2 overflow-hidden rounded-full bg-border">
+                      <View className="h-full rounded-full bg-primary" style={{ width: pipelineWidth }} />
                     </View>
+                    <Text className="text-xs leading-5 text-muted">
+                      Pipeline position only — your mentor confirms every milestone.
+                    </Text>
                   </View>
 
-                  <View className="bg-primary rounded-lg py-3">
-                    <Text className="text-background font-bold text-center text-sm">
-                      {app.applicationStatus === "draft" ? "Review Draft" : "View Timeline"}
+                  <View className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3">
+                    <Text className="text-base font-bold text-background">
+                      {application.applicationStatus === "draft" ? "Review draft" : "View timeline"}
                     </Text>
+                    <IconSymbol name="arrow.right" size={18} color={colors.background} />
                   </View>
                 </TouchableOpacity>
               );
             })}
           </View>
         ) : (
-          <View className="flex-1 justify-center items-center px-6 pb-12 gap-4">
-            <Text className="text-5xl">📭</Text>
-            <Text className="text-xl font-bold text-foreground">No Applications</Text>
-            <Text className="text-sm text-muted text-center leading-relaxed">
-              {selectedStatus
-                ? "No applications with this status yet"
-                : "Start your first application to begin your journey to your dream university"}
-            </Text>
-            {!selectedStatus && (
+          <View className="flex-1 items-center justify-center gap-5 px-6 pb-12">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <IconSymbol name="folder.fill" size={24} color={colors.primary} />
+            </View>
+            <View className="gap-2">
+              <Text className="text-center text-2xl font-bold text-foreground">
+                {selectedStatus ? "Nothing in this stage" : "No applications yet"}
+              </Text>
+              <Text className="text-center text-base leading-6 text-muted">
+                {selectedStatus
+                  ? "Choose another filter to see the rest of your journey."
+                  : "Explore verified university options when you are ready to begin."}
+              </Text>
+            </View>
+            {selectedStatus ? (
               <TouchableOpacity
-                onPress={() => router.push("/universities")}
-                className="bg-primary rounded-lg px-8 py-3 mt-4 active:opacity-80"
+                accessibilityRole="button"
+                onPress={() => selectStatus(null)}
+                className="min-h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-5 py-3"
               >
-                <Text className="text-background font-bold">Explore Universities</Text>
+                <Text className="text-base font-bold text-foreground">Show all applications</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => router.push("/universities")}
+                className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
+              >
+                <Text className="text-base font-bold text-background">Explore universities</Text>
               </TouchableOpacity>
             )}
           </View>
