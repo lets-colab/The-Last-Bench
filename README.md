@@ -18,16 +18,16 @@
 
 ## At a glance
 
-| | |
-| --- | --- |
-| **Product** | Bangladesh → Malaysia student journey platform |
-| **Experience** | Marketing site at `/` + student application at `/app` |
-| **Frontend** | Expo Router · React Native · React · TypeScript |
-| **API** | Express · tRPC |
-| **Data** | Drizzle ORM · Supabase Postgres |
-| **Web deployment** | Netlify |
-| **API deployment** | Render |
-| **Repository** | `lets-colab/LastBenchBd` |
+|                     |                                                                 |
+| ------------------- | --------------------------------------------------------------- |
+| **Product**         | Bangladesh → Malaysia student journey platform                  |
+| **Experience**      | Marketing site at `/` + student application at `/app`           |
+| **Frontend**        | Expo Router · React Native · React · TypeScript                 |
+| **API**             | Express · tRPC                                                  |
+| **Data**            | Drizzle ORM · Supabase Postgres                                 |
+| **Web deployment**  | Netlify                                                         |
+| **API deployment**  | Render                                                          |
+| **Repository**      | `lets-colab/LastBenchBd`                                        |
 | **Release posture** | Active development; production must pass the release gate below |
 
 > **Product truth is a feature.** Last Bench must never present fabricated admissions data, fake progress, placeholder metrics or AI guesses as real student guidance.
@@ -62,22 +62,27 @@ For deeper product and brand context, read [`PRODUCT.md`](./PRODUCT.md), [`desig
 
 This repository contains one connected platform rather than separate disconnected projects.
 
-| Surface | Role | Location |
-| --- | --- | --- |
-| **Marketing experience** | Story, trust, lead capture and entry into the student journey | `landing/` |
-| **Student app** | Dashboard, applications, universities, messages, community, AI Guides and profile | `app/` |
-| **API** | Authenticated product and business logic | `server/` |
-| **Database** | Product schema and reviewed migrations | `drizzle/` |
-| **Shared logic** | Cross-surface types and business logic | `shared/` |
-| **Design system** | Product visual and interaction standards | `design-system/`, `design.md` |
-| **Tests** | Auth, privacy, matching, CORS, AI and product verification | `tests/` |
+| Surface                  | Role                                                                              | Location                                    |
+| ------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Marketing experience** | Story, trust, lead capture and entry into the student journey                     | `landing/`                                  |
+| **Student app**          | Dashboard, applications, universities, messages, community, AI Guides and profile | `app/`                                      |
+| **[CLASS(Λ)]**           | Build-first programme overview, free masterclass and full-course registration     | `landing/class-lambda/`, `landing/class-a/` |
+| **co.lab**               | Connected brand, product and venture pathway with human-scoped contact            | `landing/colab/`                            |
+| **API**                  | Authenticated product and business logic                                          | `server/`                                   |
+| **Database**             | Product schema and reviewed migrations                                            | `drizzle/`                                  |
+| **Shared logic**         | Cross-surface types and business logic                                            | `shared/`                                   |
+| **Design system**        | Product visual and interaction standards                                          | `design-system/`, `design.md`               |
+| **Tests**                | Auth, privacy, matching, CORS, AI and product verification                        | `tests/`                                    |
 
 The web build is intentionally unified:
 
 ```text
 www.lastbenchbd.com/
-├── /          → marketing experience
-└── /app       → student application
+├── /              → marketing experience
+├── /app           → student application
+├── /class-lambda  → programme overview
+├── /class-a       → current class choices and registration
+└── /colab         → connected venture pathway
 ```
 
 ---
@@ -185,18 +190,18 @@ pnpm ios
 
 ## Commands
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Run API + Expo development processes |
-| `pnpm check` | TypeScript verification |
-| `pnpm lint` | ESLint verification |
-| `pnpm test` | Vitest suite |
-| `pnpm build` | Build production API bundle to `server-dist/` |
-| `pnpm build:web` | Assemble the combined local web artifact in `dist/` |
-| `pnpm build:web:production` | Validate public environment configuration + build production web artifact |
-| `pnpm audit --prod --audit-level critical` | Block critical production dependency findings |
-| `pnpm db:push` | Generate + migrate DB changes — **never point blindly at production** |
-| `pnpm qr` | Generate a project QR code |
+| Command                                    | Purpose                                                                   |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| `pnpm dev`                                 | Run API + Expo development processes                                      |
+| `pnpm check`                               | TypeScript verification                                                   |
+| `pnpm lint`                                | ESLint verification                                                       |
+| `pnpm test`                                | Vitest suite                                                              |
+| `pnpm build`                               | Build production API bundle to `server-dist/`                             |
+| `pnpm build:web`                           | Assemble the combined local web artifact in `dist/`                       |
+| `pnpm build:web:production`                | Validate public environment configuration + build production web artifact |
+| `pnpm audit --prod --audit-level critical` | Block critical production dependency findings                             |
+| `pnpm db:push`                             | Generate + migrate DB changes — **never point blindly at production**     |
+| `pnpm qr`                                  | Generate a project QR code                                                |
 
 ---
 
@@ -226,13 +231,13 @@ The production build intentionally rejects missing, insecure or placeholder publ
 
 ## Production topology
 
-| Layer | Platform | Contract |
-| --- | --- | --- |
-| Marketing + web app | **Netlify** | `/` = landing · `/app` = student app |
-| API | **Render** | Express/tRPC runtime |
-| Database | **Supabase Postgres** | Product data |
-| Canonical web host | `www.lastbenchbd.com` | Netlify custom domain |
-| Canonical API host | `api.lastbenchbd.com` | Render custom domain |
+| Layer               | Platform              | Contract                             |
+| ------------------- | --------------------- | ------------------------------------ |
+| Marketing + web app | **Netlify**           | `/` = landing · `/app` = student app |
+| API                 | **Render**            | Express/tRPC runtime                 |
+| Database            | **Supabase Postgres** | Product data                         |
+| Canonical web host  | `www.lastbenchbd.com` | Netlify custom domain                |
+| Canonical API host  | `api.lastbenchbd.com` | Render custom domain                 |
 
 Netlify is the supported web deployment for this repository. Render is the supported API runtime.
 
@@ -274,13 +279,13 @@ Approved brand assets are source assets:
 
 Current documented palette:
 
-| Token | Value |
-| --- | --- |
+| Token       | Value     |
+| ----------- | --------- |
 | Brand Green | `#00C853` |
-| Charcoal | `#111111` |
-| Warm White | `#FAFAF8` |
-| Sage | `#E6F2E9` |
-| Gray | `#6B6F76` |
+| Charcoal    | `#111111` |
+| Warm White  | `#FAFAF8` |
+| Sage        | `#E6F2E9` |
+| Gray        | `#6B6F76` |
 
 The intended direction is cinematic, sincere and forward-moving — never generic education-agency design and never charity/pity framing.
 
@@ -301,16 +306,16 @@ The intended direction is cinematic, sincere and forward-moving — never generi
 
 ## Documentation map
 
-| Document | Purpose |
-| --- | --- |
-| [`README.md`](./README.md) | Repository front door, architecture and release posture |
-| [`AGENT.md`](./AGENT.md) | Detailed engineering/AI-agent operating manual |
-| [`AGENTS.md`](./AGENTS.md) | Additional agent instructions |
-| [`PRODUCT.md`](./PRODUCT.md) | Product and brand definition |
-| [`design.md`](./design.md) | Product design system and interaction rules |
-| [`DESIGN_AUDIT_AND_REBUILD.md`](./DESIGN_AUDIT_AND_REBUILD.md) | Design audit and rebuild record |
-| [`MESSAGING_FEATURES.md`](./MESSAGING_FEATURES.md) | Messaging implementation documentation |
-| [`todo.md`](./todo.md) | Working backlog; not proof of completion |
+| Document                                                       | Purpose                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------- |
+| [`README.md`](./README.md)                                     | Repository front door, architecture and release posture |
+| [`AGENT.md`](./AGENT.md)                                       | Detailed engineering/AI-agent operating manual          |
+| [`AGENTS.md`](./AGENTS.md)                                     | Additional agent instructions                           |
+| [`PRODUCT.md`](./PRODUCT.md)                                   | Product and brand definition                            |
+| [`design.md`](./design.md)                                     | Product design system and interaction rules             |
+| [`DESIGN_AUDIT_AND_REBUILD.md`](./DESIGN_AUDIT_AND_REBUILD.md) | Design audit and rebuild record                         |
+| [`MESSAGING_FEATURES.md`](./MESSAGING_FEATURES.md)             | Messaging implementation documentation                  |
+| [`todo.md`](./todo.md)                                         | Working backlog; not proof of completion                |
 
 ### Source-of-truth order
 

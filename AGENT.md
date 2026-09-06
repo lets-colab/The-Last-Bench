@@ -10,7 +10,7 @@ Paste it into the system prompt / project instructions of whatever agent you use
 
 **Mission:** An AI platform guiding Bangladeshi secondary-school students through their
 study-abroad journey to Malaysia. Not a consultancy — a transparent, always-on platform.
-Tagline: *For Those Who Last, To Create a Benchmark.*
+Tagline: _For Those Who Last, To Create a Benchmark._
 
 **Non-negotiable product principles** (from `design.md` — read it in full):
 
@@ -43,7 +43,7 @@ server/       Express + tRPC v11 — 55 procedures across 15 routers
   self-healing.ts  Redacted fingerprinting → safe transient retry → advisory diagnosis
                    stored in errorLogs/errorFixes; generated fixes require approval
 drizzle/      schema.ts (16 pg tables) + generated SQL migrations
-landing/      Static cinematic marketing site + /class-lambda/ and /colab/ ecosystem routes
+landing/      Static cinematic marketing site + /class-lambda/, /class-a/, and /colab/ ecosystem routes
 scripts/build-site.mjs  Assembles dist/: landing/ at /, Expo web export at /app
 server-dist/  Generated API bundle — Render builds this; never publish it as web content
 dist/         Generated web artifact — Netlify builds it with production public values
@@ -53,19 +53,20 @@ dist/         Generated web artifact — Netlify builds it with production publi
 `pnpm build:web` runs `scripts/build-site.mjs`, which exports the Expo app with
 `EXPO_BASE_URL=/app` into `dist/app/` and copies `landing/` into `dist/` unchanged.
 Netlify serves it all from one site (`netlify.toml`): `/` is the marketing landing
-page, `/app/*` is the student app, `/class-lambda/` is the talent pathway, and
-`/colab/` is the connected venture pathway (SPA-fallback redirect keeps client-side routes
+page, `/app/*` is the student app, `/class-lambda/` is the talent overview,
+`/class-a/` contains the current class choices and registration forms, and `/colab/`
+is the connected venture pathway (SPA-fallback redirect keeps client-side routes
 like `/app/profile` working). The landing page's "Sign up"/"Student login" links
 point at `/app` (relative — works on any domain/preview URL). There is no more
 separate GitHub Pages deploy; `.github/workflows/deploy-pages.yml` was removed.
 
 **Only supported production topology:**
 
-| Surface | Host | Source | Trigger |
-|---|---|---|---|
-| Whole site (landing at `/`, app at `/app`) | Netlify, site `exitbd` → exitbd.netlify.app | `pnpm build:web:production` → generated `dist/` | push to `main` |
-| API server | Render (`render.yaml`, `last-bench-api`, Singapore) | `pnpm build` → `server-dist/index.js`; `pnpm start` | Render git integration |
-| Database | Supabase Postgres 17, project `tocxdyqlrvzthpexnmxe` (ap-southeast-1) | — | — |
+| Surface                                    | Host                                                                  | Source                                              | Trigger                |
+| ------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------- | ---------------------- |
+| Whole site (landing at `/`, app at `/app`) | Netlify, site `exitbd` → exitbd.netlify.app                           | `pnpm build:web:production` → generated `dist/`     | push to `main`         |
+| API server                                 | Render (`render.yaml`, `last-bench-api`, Singapore)                   | `pnpm build` → `server-dist/index.js`; `pnpm start` | Render git integration |
+| Database                                   | Supabase Postgres 17, project `tocxdyqlrvzthpexnmxe` (ap-southeast-1) | —                                                   | —                      |
 
 - Netlify is the only web deployment and Render is the only API deployment. Vercel
   configuration has been removed and GitHub Pages must remain disabled.
@@ -144,6 +145,7 @@ curl --fail --silent --show-error "$API_ORIGIN/api/health"
 curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/"
 curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/app/"
 curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/class-lambda/"
+curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/class-a/"
 curl --fail --silent --show-error --output /dev/null "$WEB_ORIGIN/colab/"
 ```
 
@@ -193,6 +195,7 @@ backend (`server/routers.ts` `AI_GUIDES` + `aiGuidance.chat/getChatHistory`, eac
 own system prompt, all grounded — no canned/scripted replies, unlike the design mockup's
 prototype JS) and the `app/(tabs)/ai-guidance.tsx` screen (now in the tab bar). Needs
 before it's fully production-ready:
+
 - **Apply the schema migration** — `drizzle/0002_ai_guide_personas.sql` (adds the
   `ai_guide` enum + `aiChatMessages.guide` column) is written but NOT yet applied to the
   live Supabase project (no DB credential available in this session to run it, and the

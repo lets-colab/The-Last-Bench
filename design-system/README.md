@@ -21,8 +21,9 @@ change it there too — the two files list the same hex values.
   purposeful and should not be copied into dense product screens.
 - `/app/` is the working student product. It prioritizes legibility, honest data
   states, 44px touch targets, and persistent user-selected light/dark mode.
-- `/class-lambda/` and `/colab/` use the same identity with restrained editorial
-  layouts. They are connected pathways, not competing brands or alternate homepages.
+- `/class-lambda/`, `/class-a/`, and `/colab/` use the same identity with restrained
+  editorial layouts. They are connected pathways, not competing brands or alternate
+  homepages. `/class-lambda/` explains the system; `/class-a/` owns current registration.
 - Anton + Space Grotesk belong to marketing surfaces. General Sans + Sora belong to
   the product UI. Do not mix the pairs inside one component.
 - The Claude Design prototypes are visual references. Their demo names, metrics,

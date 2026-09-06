@@ -35,12 +35,12 @@ Cinematic, sincere, determined. "From the last bench. To the world." — the und
 Last Bench is the student-first umbrella and the only public front door. The connected
 parts have distinct jobs and must not compete for attention on the main conversion path:
 
-| Path | Job | Canonical route | Current status |
-|---|---|---|---|
-| Last Bench journey | Help a student understand the Malaysia pathway and request human guidance | `/` | Public marketing experience |
-| Student dashboard | Authenticated profile, applications, university exploration, AI guidance, and account settings | `/app/` | Working product; production infrastructure still requires release-gate verification |
-| `[CLASS(Λ)]` | Develop practical AI, content, brand, and validation ability through shipped work | `/class-lambda/` | Founding programme in development; interest only, not enrollment |
-| co.lab | Shape validated talent, ideas, brands, product experiences, and growth operations | `/colab/` | Connected venture pathway; work starts only after human scoping |
+| Path               | Job                                                                                            | Canonical route                                       | Current status                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Last Bench journey | Help a student understand the Malaysia pathway and request human guidance                      | `/`                                                   | Public marketing experience                                                               |
+| Student dashboard  | Authenticated profile, applications, university exploration, AI guidance, and account settings | `/app/`                                               | Working product; production infrastructure still requires release-gate verification       |
+| `[CLASS(Λ)]`       | Develop practical AI, content, brand, and validation ability through shipped work              | `/class-lambda/` overview · `/class-a/` current offer | Free Class 0 masterclass plus a 20-class venture-builder application; payment is separate |
+| co.lab             | Shape validated talent, ideas, brands, product experiences, and growth operations              | `/colab/`                                             | Connected venture pathway; work starts only after human scoping                           |
 
 The intended progression is:
 
@@ -53,8 +53,8 @@ to `[CLASS(Λ)]` or co.lab is never implied by creating an account.
 
 - The landing mentor form creates a lead in Netlify Forms. It does not create an account.
 - `/app/` is the only account and authentication entry point currently wired in this repo.
-- The `[CLASS(Λ)]` form registers interest only. It does not confirm admission, dates,
-  pricing, payment, or a cohort seat.
+- The free `[CLASS(Λ)]` masterclass form registers a consented seat request and takes no payment.
+- The full-course form registers a consented application for the currently listed 20-class, ৳5,000 path. It does not process payment, publish an event date, or guarantee a place.
 - co.lab contact links begin a human conversation. They do not create a contract or
   authorize work.
 - Do not connect an unknown Replit signup URL until its ownership, data destination,
