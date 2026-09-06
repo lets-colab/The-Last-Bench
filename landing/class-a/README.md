@@ -12,7 +12,18 @@ Two conversion pages share one visual and interaction system:
 - Full course is clearly marked **৳5,000**.
 - Both pages use `ACQUIRE. APPLY. ADVANCE.` and the CLASS[Λ] one-person AI team positioning.
 - Pages cross-link so the masterclass acts as the top-of-funnel entry and the full course is the conversion destination.
-- Forms currently simulate registration locally in the browser. They do not claim backend persistence or payment processing.
-- Before public launch, connect both forms to the approved registration/CRM system and replace the local-only success contract.
+- Both forms are configured for Netlify Forms and include honeypot spam protection.
+- The course page registers interest only; payment is explicitly handled separately.
+- The masterclass page does not request or imply payment.
 
 These files are copied automatically into the production web artifact by `scripts/build-site.mjs` because that build recursively copies `landing/` into `dist/`.
+
+## Production routes after deployment
+
+- `/class-a/masterclass.html`
+- `/class-a/course.html`
+
+Form names used by Netlify:
+
+- `class-a-masterclass`
+- `class-a-course`
