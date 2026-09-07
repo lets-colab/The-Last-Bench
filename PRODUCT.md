@@ -29,3 +29,44 @@ Cinematic, sincere, determined. "From the last bench. To the world." — the und
 - Generic ed-agency sites: stock photos of smiling students, trust badges, WhatsApp button spam.
 - SaaS landing clichés: hero metrics, identical card grids, purple gradients.
 - Charity-pity framing of "last bench" students. The brand is pride, not sympathy.
+
+## Product Architecture
+
+Last Bench is the student-first umbrella and the only public front door. The connected
+parts have distinct jobs and must not compete for attention on the main conversion path:
+
+| Path               | Job                                                                                            | Canonical route                                       | Current status                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Last Bench journey | Help a student understand the Malaysia pathway and request human guidance                      | `/`                                                   | Public marketing experience                                                               |
+| Student dashboard  | Authenticated profile, applications, university exploration, AI guidance, and account settings | `/app/`                                               | Working product; production infrastructure still requires release-gate verification       |
+| `[CLASS(Λ)]`       | Develop practical AI, content, brand, and validation ability through shipped work              | `/class-lambda/` overview · `/class-a/` current offer | Free Class 0 masterclass plus a 20-class venture-builder application; payment is separate |
+| co.lab             | Shape validated talent, ideas, brands, product experiences, and growth operations              | `/colab/`                                             | Connected venture pathway; work starts only after human scoping                           |
+
+The intended progression is:
+
+`discover → get guided → build practical ability → prove the work → shape a venture`
+
+This is a pathway, not a promise. Students may use only the guidance product, and entry
+to `[CLASS(Λ)]` or co.lab is never implied by creating an account.
+
+## Conversion Contracts
+
+- The landing mentor form creates a lead in Netlify Forms. It does not create an account.
+- `/app/` is the only account and authentication entry point currently wired in this repo.
+- The free `[CLASS(Λ)]` masterclass form registers a consented seat request and takes no payment.
+- The full-course form registers a consented application for the currently listed 20-class, ৳5,000 path. It does not process payment, publish an event date, or guarantee a place.
+- co.lab contact links begin a human conversation. They do not create a contract or
+  authorize work.
+- Do not connect an unknown Replit signup URL until its ownership, data destination,
+  privacy terms, and current behavior have been verified.
+
+## Product Truth Rules
+
+- Never display illustrative dashboard progress, dates, offers, rankings, acceptance
+  rates, visa odds, scholarships, or prices as if they belong to the signed-in student.
+- Show real records, a clearly labeled empty state, or an explicit service-unavailable
+  state. No silent demo fallback is allowed in production.
+- AI guides are software shaped around the founders' focus areas. They are not the
+  founders, and their output must be checked before a consequential decision.
+- Dates, fees, eligibility, programmes, scholarships, and immigration guidance require
+  a current authoritative source and visible review context.

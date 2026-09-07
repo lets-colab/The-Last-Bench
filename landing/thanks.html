@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Welcome to the movement — The Last Bench</title>
+<title>Request received — The Last Bench</title>
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23111111"/><g stroke="%2300C853" stroke-width="4" fill="none" stroke-linecap="round"><path d="M12 40h28"/><path d="M12 33h28"/><path d="M14 40v10M38 40v10"/><path d="M40 38l8-9"/><path d="M48 29h-7M48 29v7"/></g></svg>' />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800&family=Noto+Sans+Bengali:wght@600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+Bengali:wght@600&display=swap" rel="stylesheet" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{min-height:100svh;display:flex;align-items:center;justify-content:center;background:
   radial-gradient(70% 55% at 50% 20%,rgba(0,200,83,.16),transparent 65%),
-  linear-gradient(180deg,#0a1f14,#0F2A1E);color:#FAFAF8;font-family:'Sora',sans-serif;text-align:center;padding:24px}
+  linear-gradient(180deg,#0a1f14,#0F2A1E);color:#FAFAF8;font-family:'Space Grotesk',sans-serif;text-align:center;padding:24px}
 .box{max-width:640px}
 svg{width:110px;height:110px;margin-bottom:26px}
 #tick{stroke-dasharray:80;stroke-dashoffset:80;animation:draw 1s .5s cubic-bezier(.6,0,.2,1) forwards}
@@ -20,8 +20,9 @@ h1{font-size:clamp(30px,6vw,52px);font-weight:800;text-transform:uppercase;lette
 h1 span{color:#00C853}
 p{margin-top:18px;color:#bcd0c3;font-size:16px;line-height:1.6}
 .bn{font-family:'Noto Sans Bengali',sans-serif;color:#93B99A;margin-top:14px}
-a{display:inline-block;margin-top:30px;background:#00C853;color:#03160a;font-weight:800;text-decoration:none;text-transform:uppercase;font-size:14px;letter-spacing:.06em;padding:15px 34px;border-radius:99px;transition:transform .2s,box-shadow .2s}
+a{display:inline-flex;min-height:48px;align-items:center;justify-content:center;margin-top:30px;background:#00C853;color:#03160a;font-weight:800;text-decoration:none;text-transform:uppercase;font-size:14px;letter-spacing:.06em;padding:15px 34px;border-radius:99px;transition:transform .2s,box-shadow .2s}
 a:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,200,83,.5)}
+a:focus-visible{outline:3px solid #FAFAF8;outline-offset:4px}
 .fade{opacity:0;transform:translateY(24px);animation:up .8s .7s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes up{to{opacity:1;transform:none}}
 </style>
@@ -32,10 +33,10 @@ a:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,200,83,.5)}
     <circle id="ring" cx="65" cy="65" r="60" stroke="#00C853" stroke-width="5"/>
     <path id="tick" d="M40 67 L58 85 L92 48" stroke="#FAFAF8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
-  <h1 class="fade">Welcome to<br><span>the movement.</span></h1>
-  <p class="fade">Your seat is claimed. A mentor will review your profile and reach you on WhatsApp within 72 hours.<br/>From last bench. To the world.</p>
+  <h1 class="fade">Request<br><span>received.</span></h1>
+  <p class="fade">A member of the Last Bench team will review the details you shared and follow up using your contact information. This form did not create a student account, take payment, or guarantee a place.<br/>From last bench. To the world.</p>
   <p class="fade bn">শেষ বেঞ্চ থেকে, পৃথিবীর দিকে।</p>
-  <a class="fade" href="/app">Open the student app →</a>
+  <a class="fade" href="/app">Open the student dashboard →</a>
   <a class="fade" href="./" style="background:transparent;color:#93B99A;border:1px solid rgba(147,185,154,.4);box-shadow:none;">← Back to the story</a>
 </div>
 </body>

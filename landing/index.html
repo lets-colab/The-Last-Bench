@@ -56,6 +56,12 @@ a,a:hover{color:inherit;}
 .lb-brand-resolve{margin-top:18px;font-size:clamp(10px,1.4vw,14px);font-weight:700;letter-spacing:.18em;color:rgba(234,244,236,.82);}
 .lb-brand-active .lb-brand-resolve{animation:lbResolve .9s ease-out 6.1s both;}
 .lb-brand-resolve strong{color:#FFF4BD;font-weight:700;}
+.lb-ecosystem{width:min(760px,92vw);padding:22px;border:1px solid rgba(255,255,255,.16);border-radius:18px;background:rgba(4,20,12,.52);backdrop-filter:blur(10px);}
+.lb-ecosystem-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;}
+.lb-ecosystem-link{display:flex;min-height:58px;align-items:center;justify-content:center;padding:12px;border:1px solid rgba(255,255,255,.17);border-radius:12px;color:#fff;text-decoration:none;font-size:12px;font-weight:700;line-height:1.35;}
+.lb-ecosystem-link:hover{border-color:#00E676;color:#00E676;background:rgba(0,200,83,.1);}
+.lb-contact-link,.lb-login{display:inline-flex;min-height:44px;align-items:center;justify-content:center;}
+.lb-contact-link{padding:8px 10px;}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #fff;outline-offset:3px;}
 @media (max-width:600px){
   .lb-hud{padding:12px 16px !important;}
@@ -64,10 +70,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   .lb-wordmark-label{max-width:58px;font-size:14px !important;line-height:.95;letter-spacing:.08em !important;}
   .lb-hud-meta{gap:8px !important;}
   .lb-chapter{display:none !important;}
-  .lb-season{font-size:8px !important;letter-spacing:.12em !important;}
-  .lb-login{font-size:8px !important;letter-spacing:.16em !important;padding:10px !important;}
+  .lb-season{font-size:11px !important;letter-spacing:.08em !important;}
+  .lb-login{font-size:11px !important;letter-spacing:.08em !important;padding:10px 12px !important;}
   .lb-hero{padding:96px 20px 72px !important;}
-  .lb-hero-kicker{font-size:10px !important;line-height:1.5;letter-spacing:.2em !important;margin-bottom:18px !important;}
+  .lb-hero-kicker{font-size:11px !important;line-height:1.5;letter-spacing:.16em !important;margin-bottom:18px !important;}
   .lb-hero h1{font-size:clamp(48px,15vw,64px) !important;letter-spacing:-.02em;}
   .lb-hero-copy{font-size:15px !important;line-height:1.55 !important;margin:24px 0 28px !important;}
   .lb-hero-actions{width:100%;gap:12px !important;}
@@ -79,8 +85,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   .lb-brand-resolve{text-align:left;line-height:1.6;}
   .lb-cta-copy{font-size:15px !important;line-height:1.6 !important;padding:0 4px;}
   .lb-signup-form{width:100% !important;max-width:100%;padding:18px !important;border-radius:16px !important;}
+  .lb-form-label,.lb-journey-label,.lb-campus-link{font-size:11px !important;letter-spacing:.12em !important;}
   .lb-signup-actions{align-items:stretch !important;}
   .lb-signup-actions>*{width:100%;text-align:center;}
+  .lb-ecosystem{width:100%;padding:18px;}
+  .lb-ecosystem-links{grid-template-columns:1fr;}
+  .lb-ecosystem-link{min-height:52px;}
   .lb-chat-launcher{right:12px !important;bottom:12px !important;width:50px !important;height:50px !important;}
   .lb-chat-panel{right:10px !important;bottom:72px !important;width:calc(100vw - 20px) !important;max-height:calc(100vh - 96px) !important;}
 }
@@ -179,8 +189,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
     <h1 class="lb-hero-seq" style="animation-delay:.32s;font-family:'Anton',sans-serif;font-weight:400;font-size:clamp(52px,9vw,124px);line-height:.98;margin:0;color:#fff;text-shadow:0 8px 60px rgba(0,0,0,.8);">FROM THE<br>LAST BENCH<br><span style="color:#00C853;">TO MALAYSIA.</span></h1>
     <p class="lb-hero-seq lb-hero-copy" style="animation-delay:.58s;max-width:580px;font-size:clamp(15px,1.6vw,19px);line-height:1.6;color:rgba(234,244,236,.85);margin:28px 0 36px;text-wrap:pretty;text-shadow:0 2px 18px rgba(0,0,0,.85);">Built for students who refuse to be defined by where they started. Scroll through a cinematic route inspired by real Malaysian places — then verify every decision with current sources and human guidance.</p>
     <div class="lb-hero-seq lb-hero-actions" style="animation-delay:.78s;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
-      <a href="#cta" style="display:inline-block;background:#00C853;color:#04140b;font-weight:700;font-size:15px;letter-spacing:.04em;padding:16px 32px;border-radius:999px;text-decoration:none;box-shadow:0 0 34px rgba(0,200,83,.5);" style-hover="background:#00E676;box-shadow:0 0 50px rgba(0,230,118,.7);">Sign up now</a>
-      <a href="#cta" style="display:inline-block;border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:600;font-size:15px;padding:16px 32px;border-radius:999px;text-decoration:none;backdrop-filter:blur(6px);background:rgba(0,0,0,.28);" style-hover="border-color:#00C853;color:#00E676;">Join the community</a>
+      <a href="#cta" style="display:inline-block;background:#00C853;color:#04140b;font-weight:700;font-size:15px;letter-spacing:.04em;padding:16px 32px;border-radius:999px;text-decoration:none;box-shadow:0 0 34px rgba(0,200,83,.5);" style-hover="background:#00E676;box-shadow:0 0 50px rgba(0,230,118,.7);">Talk to a mentor</a>
+      <a href="/app" style="display:inline-block;border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:600;font-size:15px;padding:16px 32px;border-radius:999px;text-decoration:none;backdrop-filter:blur(6px);background:rgba(0,0,0,.28);" style-hover="border-color:#00C853;color:#00E676;">Open student dashboard</a>
     </div>
     <div class="lb-scroll-hint" style="position:absolute;bottom:64px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;animation:lbBob 2.4s ease-in-out infinite;">
       <span style="font-size:10px;font-weight:700;letter-spacing:.3em;color:rgba(234,244,236,.6);">FLY IN</span>
@@ -237,7 +247,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
               <div style="font-size:12px;color:rgba(234,244,236,.55);margin-top:2px;">{{ u.location }}</div>
             </div>
             <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:12px;margin-top:auto;font-size:11.5px;line-height:1.5;color:rgba(234,244,236,.66);">Explore the setting. Verify current programme and entry details before applying.</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:.22em;color:#00E676;display:flex;align-items:center;gap:7px;">VISIT CAMPUS <svg width="10" height="9" viewBox="0 0 10 9"><path d="M1 4.5h7M5 1l3.5 3.5L5 8" stroke="#00E676" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+            <div class="lb-campus-link" style="font-size:9px;font-weight:700;letter-spacing:.22em;color:#00E676;display:flex;align-items:center;gap:7px;">VISIT CAMPUS <svg width="10" height="9" viewBox="0 0 10 9"><path d="M1 4.5h7M5 1l3.5 3.5L5 8" stroke="#00E676" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
           </div>
         </sc-for>
       </div>
@@ -249,7 +259,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   <!-- ============ ACT 4 · KLCC PARK / THE BENCH ============ -->
   <section class="lb-cta" id="cta" data-screen-label="KLCC Park — The Bench" style="position:relative;z-index:2;min-height:140vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;">
     <div class="lb-cta-inner" data-reveal style="display:flex;flex-direction:column;align-items:center;max-width:760px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:.24em;color:#fff;background:rgba(4,20,12,.55);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">DAYLIGHT REACHED · MOVE OR TILT TO LOOK AROUND</div>
+      <div class="lb-journey-label" style="font-size:9px;font-weight:700;letter-spacing:.24em;color:#fff;background:rgba(4,20,12,.55);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:9px 14px;margin-bottom:20px;backdrop-filter:blur(8px);">DAYLIGHT REACHED · MOVE OR TILT TO LOOK AROUND</div>
       <img src="assets/logo-full.png" alt="Last Bench — Creating a Lasting Benchmark" style="width:min(320px,70vw);height:auto;margin-bottom:26px;filter:drop-shadow(0 0 30px rgba(0,200,83,.35));">
       <div style="font-size:12px;font-weight:700;letter-spacing:.34em;color:#FFB300;margin-bottom:18px;">04 — KLCC PARK, SUNLIGHT</div>
       <div class="lb-brand-lockup">
@@ -270,29 +280,38 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <form class="lb-signup-form" name="signup" method="POST" action="/thanks.html" data-netlify="true" data-netlify-honeypot="bot-field" style="width:min(560px,92vw);background:rgba(5,16,10,.78);border:1px solid rgba(0,200,83,.3);border-radius:20px;padding:26px;backdrop-filter:blur(12px);text-align:left;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22><g fill=%22none%22 stroke=%22%2300C853%22 stroke-opacity=%22.07%22 stroke-width=%221.4%22><path d=%22M-20 60 Q 90 20 180 70 T 420 50%22/><path d=%22M-20 100 Q 90 60 180 110 T 420 90%22/><path d=%22M-20 140 Q 90 100 180 150 T 420 130%22/><path d=%22M-20 330 Q 110 290 200 340 T 430 320%22/><path d=%22M-20 370 Q 110 330 200 380 T 430 360%22/></g></svg>');">
         <input type="hidden" name="form-name" value="signup">
         <p style="display:none;"><label>Leave this empty: <input name="bot-field"></label></p>
-        <div style="font-size:11px;font-weight:700;letter-spacing:.3em;color:#00E676;margin-bottom:6px;">CLAIM YOUR SEAT</div>
-        <div style="font-size:13px;color:rgba(234,244,236,.6);margin-bottom:18px;">A mentor reviews your profile and follows up with you on WhatsApp.</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.3em;color:#00E676;margin-bottom:6px;">REQUEST MENTOR GUIDANCE</div>
+        <div style="font-size:13px;color:rgba(234,244,236,.72);margin-bottom:18px;line-height:1.5;">A mentor reviews these details and follows up on WhatsApp. This form requests contact; it does not create a student account.</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
-          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">FULL NAME</span><input required name="name" autocomplete="name" maxlength="100" placeholder="Your name" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
-          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">WHATSAPP NUMBER</span><input required name="whatsapp" type="tel" inputMode="tel" autocomplete="tel" maxlength="14" pattern="(?:\+?8801|01)[3-9][0-9]{8}" title="Enter a Bangladesh mobile number such as 01712345678" placeholder="01XXXXXXXXX" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
-          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">CLASS / STAGE</span><select name="stage" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"><option value="SSC">SSC / O-Level</option><option value="HSC" selected>HSC / A-Level</option><option value="HSC-done">HSC done — applying now</option><option value="diploma">Diploma</option><option value="parent">I'm a parent</option></select></label>
-          <label style="display:block;"><span style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">DREAM FIELD (OPTIONAL)</span><input name="field" maxlength="100" placeholder="CS, Business, Medicine…" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span class="lb-form-label" style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">FULL NAME</span><input required name="name" autocomplete="name" maxlength="100" placeholder="Your name" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span class="lb-form-label" style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">WHATSAPP NUMBER</span><input required name="whatsapp" type="tel" inputMode="tel" autocomplete="tel" maxlength="14" pattern="(?:\+?8801|01)[3-9][0-9]{8}" title="Enter a Bangladesh mobile number such as 01712345678" placeholder="01XXXXXXXXX" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
+          <label style="display:block;"><span class="lb-form-label" style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">CLASS / STAGE</span><select required name="stage" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"><option value="" selected disabled>Choose your current stage</option><option value="SSC">SSC / O-Level</option><option value="HSC">HSC / A-Level</option><option value="HSC-done">HSC done — applying now</option><option value="diploma">Diploma</option><option value="parent">I'm a parent</option></select></label>
+          <label style="display:block;"><span class="lb-form-label" style="display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(234,244,236,.55);margin-bottom:6px;">DREAM FIELD (OPTIONAL)</span><input name="field" maxlength="100" placeholder="CS, Business, Medicine…" style="width:100%;box-sizing:border-box;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.18);border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:16px;padding:13px 14px;outline:none;"></label>
         </div>
         <input type="hidden" name="contact_consent" value="Submission confirms WhatsApp contact consent">
         <div style="margin-top:16px;color:rgba(234,244,236,.68);font-size:11px;line-height:1.5;">
           <strong style="color:rgba(234,244,236,.9);">CONTACT CONSENT.</strong> By submitting, you agree that Last Bench may contact you on WhatsApp about study guidance. Do not send documents or sensitive personal information through this form.
         </div>
         <div class="lb-signup-actions" style="display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap;">
-          <button type="submit" style="background:#00C853;color:#04140b;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:.04em;padding:16px 36px;border-radius:999px;border:0;cursor:pointer;box-shadow:0 0 44px rgba(0,200,83,.55);" style-hover="background:#00E676;box-shadow:0 0 64px rgba(0,230,118,.75);">Claim my seat →</button>
+          <button type="submit" style="background:#00C853;color:#04140b;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:.04em;padding:16px 36px;border-radius:999px;border:0;cursor:pointer;box-shadow:0 0 44px rgba(0,200,83,.55);" style-hover="background:#00E676;box-shadow:0 0 64px rgba(0,230,118,.75);">Request mentor guidance →</button>
           <a href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.75);font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:14px 22px;border-radius:999px;" style-hover="border-color:#00C853;color:#00E676;">Join the community ↗</a>
         </div>
       </form>
     </div>
     <footer style="margin-top:52px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+      <div class="lb-ecosystem">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.24em;color:#00E676;">ONE ECOSYSTEM · THREE PATHS</div>
+        <div style="font-size:13px;line-height:1.55;color:rgba(234,244,236,.7);margin-top:7px;">Start with guidance. Build practical ability. Turn the strongest work into what comes next.</div>
+        <nav class="lb-ecosystem-links" aria-label="Last Bench ecosystem">
+          <a class="lb-ecosystem-link" href="/app/">STUDY · STUDENT DASHBOARD</a>
+          <a class="lb-ecosystem-link" href="/class-a/">BUILD · [CLASS(Λ)]</a>
+          <a class="lb-ecosystem-link" href="/colab/">LAUNCH · CO.LAB</a>
+        </nav>
+      </div>
       <div style="display:flex;justify-content:center;gap:22px;font-size:12px;letter-spacing:.14em;color:rgba(234,244,236,.7);font-weight:600;flex-wrap:wrap;">
-        <a href="tel:+8801300801785" style="color:#00E676;text-decoration:none;">01300 801785</a>
-        <a href="tel:+8801726494917" style="color:#00E676;text-decoration:none;">01726 494917</a>
-        <a href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.7);text-decoration:none;">@LASTBENCH.COMMUNITY</a>
+        <a class="lb-contact-link" href="tel:+8801300801785" style="color:#00E676;text-decoration:none;">01300 801785</a>
+        <a class="lb-contact-link" href="tel:+8801726494917" style="color:#00E676;text-decoration:none;">01726 494917</a>
+        <a class="lb-contact-link" href="https://instagram.com/lastbench.community" target="_blank" rel="noopener" style="color:rgba(234,244,236,.7);text-decoration:none;">@LASTBENCH.COMMUNITY</a>
       </div>
       <div style="display:flex;justify-content:center;gap:24px;font-size:11px;letter-spacing:.18em;color:rgba(234,244,236,.45);font-weight:600;flex-wrap:wrap;">
         <span>LAST BENCH © 2026</span>

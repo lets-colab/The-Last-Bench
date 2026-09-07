@@ -1,20 +1,58 @@
-import { ScrollView, Text, View, TouchableOpacity, Alert } from "react-native";
-import { ScreenContainer } from "@/components/screen-container";
-import { useAuth } from "@/hooks/use-auth";
-import { trpc } from "@/lib/trpc";
+import { Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { BenchLoader } from "@/components/bench-loader";
 
-/**
- * Profile Screen - Premium User Hub
- * 
- * Design Excellence:
- * - Beautiful gradient header
- * - Integrated messaging access
- * - Elegant settings management
- * - Smooth interactions
- */
+import { ScreenContainer } from "@/components/screen-container";
+import { BenchLoader } from "@/components/bench-loader";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { useAuth } from "@/hooks/use-auth";
+import { useColors } from "@/hooks/use-colors";
+import { useThemeContext } from "@/lib/theme-provider";
+import { trpc } from "@/lib/trpc";
+
+type ProfileLinkProps = {
+  title: string;
+  body: string;
+  icon: IconSymbolName;
+  onPress: () => void;
+  badge?: number;
+};
+
+function ProfileLink({ title, body, icon, onPress, badge }: ProfileLinkProps) {
+  const colors = useColors();
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${body}`}
+      activeOpacity={0.82}
+      onPress={onPress}
+      className="min-h-16 flex-row items-center gap-3 border-t border-border bg-surface p-4 first:border-t-0"
+    >
+      <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+        <IconSymbol name={icon} size={21} color={colors.primary} />
+      </View>
+      <View className="flex-1 gap-1">
+        <Text className="text-base font-bold text-foreground">{title}</Text>
+        <Text className="text-sm leading-5 text-muted">{body}</Text>
+      </View>
+      {badge && badge > 0 ? (
+        <View className="min-w-6 h-6 items-center justify-center rounded-full bg-primary px-1.5">
+          <Text className="text-xs font-bold text-background">{badge}</Text>
+        </View>
+      ) : (
+        <IconSymbol name="arrow.right" size={20} color={colors.muted} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function hapticPress(action: () => void) {
+  if (Platform.OS !== "web") {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+  action();
+}
+
 export default function ProfileScreen() {
   const {
     user,
@@ -24,26 +62,33 @@ export default function ProfileScreen() {
     logout,
   } = useAuth();
   const router = useRouter();
+  const colors = useColors();
+  const { colorScheme, setColorScheme } = useThemeContext();
 
-  const studentQuery = trpc.student.getProfile.useQuery(undefined, {
+  const studentQuery = trpc.student.getProfile.useQuery(undefined, { enabled: !!user });
+  const { data: notifications } = trpc.notification.getForUser.useQuery(undefined, {
     enabled: !!user,
   });
-  const { data: notifications } = trpc.notification.getForUser.useQuery(undefined, { enabled: !!user });
-  const { data: applications } = trpc.application.getByStudent.useQuery(undefined, { enabled: !!user });
-  const { data: conversations } = trpc.message.getConversations.useQuery(undefined, { enabled: !!user });
-  const unreadCount = (notifications ?? []).filter((n: any) => !n.isRead).length;
+  const { data: applications } = trpc.application.getByStudent.useQuery(undefined, {
+    enabled: !!user,
+  });
+  const { data: conversations } = trpc.message.getConversations.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  const unreadCount = (notifications ?? []).filter((item) => !item.isRead).length;
   const unreadMessages = (conversations ?? []).reduce(
-    (total: number, conversation: { unreadCount: number }) => total + conversation.unreadCount,
+    (total, conversation) => total + conversation.unreadCount,
     0,
   );
   const mentorsAssigned = new Set(
     (applications ?? []).map((application) => application.mentorAssigned).filter(Boolean),
   ).size;
-  const isAdmin = (user as any)?.role === "admin";
+  const isAdmin = (user as { role?: string } | null)?.role === "admin";
 
   if (authLoading) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center">
+      <ScreenContainer className="items-center justify-center p-6">
         <BenchLoader />
       </ScreenContainer>
     );
@@ -51,16 +96,22 @@ export default function ProfileScreen() {
 
   if (authError) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center gap-4">
-        <Text className="text-xl font-bold text-foreground text-center">Student services are unavailable</Text>
-        <Text className="text-sm text-muted text-center">
-          Your workspace could not connect to Last Bench services. Please try again in a moment.
-        </Text>
+      <ScreenContainer className="items-center justify-center gap-5 p-6">
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <IconSymbol name="gearshape.fill" size={24} color={colors.primary} />
+        </View>
+        <View className="gap-2">
+          <Text className="text-center text-2xl font-bold text-foreground">Profile unavailable</Text>
+          <Text className="text-center text-base leading-6 text-muted">
+            We could not reach the private student service. Nothing has been changed.
+          </Text>
+        </View>
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => void refreshAuth()}
-          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
         >
-          <Text className="text-background font-bold">Retry connection</Text>
+          <Text className="text-base font-bold text-background">Try again</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
@@ -68,17 +119,25 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center">
-        <Text className="text-xl font-bold text-foreground">Please sign in to continue</Text>
+      <ScreenContainer className="items-center justify-center gap-4 p-6">
+        <Text className="text-center text-2xl font-bold text-foreground">Sign in to view your profile</Text>
+        <Text className="text-center text-base leading-6 text-muted">
+          Account details, messages, and documents stay private.
+        </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => router.replace("/(tabs)")}
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
+        >
+          <Text className="text-base font-bold text-background">Return home</Text>
+        </TouchableOpacity>
       </ScreenContainer>
     );
   }
 
-  const student = studentQuery.data;
-
   if (studentQuery.isLoading) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center">
+      <ScreenContainer className="items-center justify-center p-6">
         <BenchLoader />
       </ScreenContainer>
     );
@@ -86,199 +145,230 @@ export default function ProfileScreen() {
 
   if (studentQuery.isError) {
     return (
-      <ScreenContainer className="p-6 justify-center items-center gap-4">
-        <Text className="text-xl font-bold text-foreground text-center">Profile unavailable</Text>
-        <Text className="text-sm text-muted text-center">
-          We could not load your study profile. Check your connection and try again.
+      <ScreenContainer className="items-center justify-center gap-5 p-6">
+        <Text className="text-center text-2xl font-bold text-foreground">Profile could not load</Text>
+        <Text className="text-center text-base leading-6 text-muted">
+          Check your connection and try once more.
         </Text>
         <TouchableOpacity
+          accessibilityRole="button"
           onPress={() => void studentQuery.refetch()}
-          className="bg-primary rounded-lg px-5 py-3 active:opacity-80"
+          className="min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3"
         >
-          <Text className="text-background font-bold">Retry</Text>
+          <Text className="text-base font-bold text-background">Reload profile</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
   }
 
+  const student = studentQuery.data;
+
   const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", onPress: () => {} },
+    Alert.alert("Sign out", "Sign out of this device?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: "Sign Out",
+        text: "Sign out",
+        style: "destructive",
         onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          if (Platform.OS !== "web") {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
           void logout();
         },
-        style: "destructive",
       },
     ]);
   };
 
   return (
     <ScreenContainer className="p-0">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        {/* Premium Header */}
-        <View className="bg-gradient-to-b from-primary to-blue-600 px-6 pt-8 pb-12">
-          {/* Avatar */}
-          <View className="items-center gap-4 mb-6">
-            <View className="w-24 h-24 rounded-full bg-white/30 items-center justify-center border-2 border-white/50">
-              <Text className="text-5xl">👤</Text>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 36 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="px-5 pt-5 pb-6 gap-5">
+          <View className="flex-row items-center gap-4">
+            <View className="h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface">
+              <Image
+                source={require("@/landing/assets/logo-icon.png")}
+                accessibilityLabel="Last Bench"
+                resizeMode="contain"
+                style={{ width: 46, height: 32 }}
+              />
             </View>
-            <View className="items-center gap-1">
-              <Text className="text-2xl font-bold text-white">{user.name || "Student"}</Text>
-              <Text className="text-sm text-white/80">{user.email}</Text>
+            <View className="flex-1 gap-1">
+              <Text className="text-xs font-bold uppercase tracking-widest text-primary">Your profile</Text>
+              <Text className="text-2xl font-bold leading-8 text-foreground">
+                {user.name || "Student"}
+              </Text>
+              <Text className="text-sm text-muted" numberOfLines={1}>
+                {user.email || "Signed-in account"}
+              </Text>
             </View>
           </View>
 
-          {/* Quick Stats */}
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
-              <Text className="text-xs text-white/80">Applications</Text>
-              <Text className="text-xl font-bold text-white">{applications?.length ?? 0}</Text>
-            </View>
-            <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
-              <Text className="text-xs text-white/80">Mentors</Text>
-              <Text className="text-xl font-bold text-white">{mentorsAssigned}</Text>
-            </View>
-            <View className="flex-1 bg-white/20 rounded-xl p-3 items-center gap-1">
-              <Text className="text-xs text-white/80">Unread</Text>
-              <Text className="text-xl font-bold text-white">{unreadMessages}</Text>
+          <View className="rounded-2xl border border-border bg-surface px-3 py-4">
+            <View className="flex-row">
+              {[
+                ["Applications", applications?.length ?? 0],
+                ["Mentors", mentorsAssigned],
+                ["Unread", unreadMessages],
+              ].map(([label, value], index) => (
+                <View
+                  key={String(label)}
+                  className={`flex-1 items-center gap-1 ${index > 0 ? "border-l border-border" : ""}`}
+                >
+                  <Text className="text-xl font-bold text-foreground">{value}</Text>
+                  <Text className="text-xs font-semibold text-muted">{label}</Text>
+                </View>
+              ))}
             </View>
           </View>
         </View>
 
-        {/* Content */}
-        <View className="px-6 pt-6 pb-12 gap-6">
-          {/* Messages Section */}
+        <View className="px-5 gap-6">
           <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Messages</Text>
-            <TouchableOpacity
-              onPress={() => router.push("/messages")}
-              className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
-            >
-              <View className="flex-1 gap-1">
-                <Text className="text-base font-semibold text-foreground">💬 All Messages</Text>
-                <Text className="text-sm text-muted">
-                  {unreadMessages > 0 ? `${unreadMessages} unread` : "No unread messages"}
-                </Text>
-              </View>
-              <View className="w-8 h-8 rounded-full bg-primary items-center justify-center">
-                <Text className="text-white font-bold text-sm">→</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Study Profile */}
-          {student ? (
-            <View className="gap-3">
-              <Text className="text-lg font-bold text-foreground">Study Profile</Text>
-              <View className="bg-surface border border-border rounded-xl p-5 gap-4">
-                <View className="gap-2">
-                  <Text className="text-xs text-muted font-semibold">CLASS</Text>
-                  <Text className="text-lg font-bold text-foreground">{student.class || "Not set"}</Text>
-                </View>
-
-                {student.gpa && (
-                  <View className="gap-2 pt-4 border-t border-border">
-                    <Text className="text-xs text-muted font-semibold">GPA</Text>
-                    <Text className="text-lg font-bold text-foreground">{student.gpa}</Text>
-                  </View>
-                )}
-
-                {student.fieldOfInterest && (
-                  <View className="gap-2 pt-4 border-t border-border">
-                    <Text className="text-xs text-muted font-semibold">FIELD OF INTEREST</Text>
-                    <Text className="text-lg font-bold text-foreground">{student.fieldOfInterest}</Text>
-                  </View>
-                )}
-
-                {student.destinationPreference && (
-                  <View className="gap-2 pt-4 border-t border-border">
-                    <Text className="text-xs text-muted font-semibold">DESTINATION</Text>
-                    <Text className="text-lg font-bold text-foreground">{student.destinationPreference}</Text>
-                  </View>
-                )}
-
+            <View className="flex-row items-end justify-between">
+              <Text className="text-xl font-bold text-foreground">Study profile</Text>
+              {student ? (
                 <TouchableOpacity
+                  accessibilityRole="button"
                   onPress={() => router.push("/onboarding")}
-                  className="bg-primary rounded-lg py-3 mt-2 active:opacity-80"
+                  className="min-h-11 justify-center px-1"
                 >
-                  <Text className="text-white font-bold text-center">Edit Profile</Text>
+                  <Text className="text-sm font-bold text-primary">Edit</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {student ? (
+              <View className="overflow-hidden rounded-2xl border border-border bg-surface">
+                {[
+                  ["Study stage", student.class || "Not set"],
+                  ...(student.gpa ? [["GPA", student.gpa]] : []),
+                  ["Field", student.fieldOfInterest || "Not set"],
+                  ["Destination", student.destinationPreference || "Not set"],
+                ].map(([label, value], index) => (
+                  <View
+                    key={label}
+                    className={`gap-1 p-4 ${index > 0 ? "border-t border-border" : ""}`}
+                  >
+                    <Text className="text-xs font-bold uppercase tracking-widest text-muted">{label}</Text>
+                    <Text className="text-base font-bold text-foreground">{value}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View className="rounded-2xl border border-border bg-surface p-5 gap-4">
+                <View className="gap-2">
+                  <Text className="text-lg font-bold text-foreground">Build your starting profile</Text>
+                  <Text className="text-sm leading-5 text-muted">
+                    Add your study stage, destination, and field to improve your guidance.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={() => router.push("/onboarding")}
+                  className="min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3"
+                >
+                  <Text className="text-base font-bold text-background">Set up profile</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          ) : (
-            <View className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 gap-3">
-              <Text className="text-base font-bold text-amber-900 dark:text-amber-100">Complete Your Profile</Text>
-              <Text className="text-sm text-amber-800 dark:text-amber-200">
-                Add your academic info and study preferences to get personalized guidance.
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/onboarding")}
-                className="bg-amber-500 rounded-lg py-2.5 mt-2 active:opacity-80"
-              >
-                <Text className="text-white font-bold text-center text-sm">Create Profile</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Portal Access */}
-          <View className="gap-3">
-            <Text className="text-lg font-bold text-foreground">Quick Access</Text>
-
-            <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/notifications"); }}
-              className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
-            >
-              <View className="gap-1">
-                <Text className="text-base font-semibold text-foreground">🔔 Notifications</Text>
-                <Text className="text-sm text-muted">{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</Text>
-              </View>
-              {unreadCount > 0 && (
-                <View className="w-6 h-6 rounded-full bg-primary items-center justify-center">
-                  <Text className="text-white text-xs font-bold">{unreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/tutor"); }}
-              className="bg-surface border border-border rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
-            >
-              <View className="gap-1">
-                <Text className="text-base font-semibold text-foreground">🤝 Partner Portal</Text>
-                <Text className="text-sm text-muted">Refer students and earn commission</Text>
-              </View>
-              <Text className="text-lg text-muted">→</Text>
-            </TouchableOpacity>
-
-            {isAdmin && (
-              <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/admin"); }}
-                className="bg-surface border border-primary/20 rounded-xl p-4 flex-row items-center justify-between active:opacity-80"
-              >
-                <View className="gap-1">
-                  <Text className="text-base font-semibold text-foreground">⚙️ Admin Dashboard</Text>
-                  <Text className="text-sm text-muted">Manage students, applications & tutors</Text>
-                </View>
-                <Text className="text-lg text-muted">→</Text>
-              </TouchableOpacity>
             )}
           </View>
 
-          {/* Sign Out */}
+          <View className="gap-3">
+            <Text className="text-xl font-bold text-foreground">Quick access</Text>
+            <View className="overflow-hidden rounded-2xl border border-border bg-surface">
+              <ProfileLink
+                title="Messages"
+                body={unreadMessages > 0 ? `${unreadMessages} waiting for you` : "Your mentor conversations"}
+                icon="bubble.left.and.bubble.right.fill"
+                badge={unreadMessages}
+                onPress={() => hapticPress(() => router.push("/messages"))}
+              />
+              <ProfileLink
+                title="Applications & documents"
+                body="Timelines, reviewed files, and next steps"
+                icon="folder.fill"
+                onPress={() => hapticPress(() => router.push("/applications"))}
+              />
+              <ProfileLink
+                title="Community"
+                body="Join peers on the same journey"
+                icon="person.2.fill"
+                onPress={() => hapticPress(() => router.push("/community"))}
+              />
+              <ProfileLink
+                title="Notifications"
+                body={unreadCount > 0 ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "All caught up"}
+                icon="bell.fill"
+                badge={unreadCount}
+                onPress={() => hapticPress(() => router.push("/notifications"))}
+              />
+              <ProfileLink
+                title="Partner portal"
+                body="Tutor and coaching-centre tools"
+                icon="person.2.fill"
+                onPress={() => hapticPress(() => router.push("/tutor"))}
+              />
+              {isAdmin ? (
+                <ProfileLink
+                  title="Admin dashboard"
+                  body="Manage students, applications, and partners"
+                  icon="gearshape.fill"
+                  onPress={() => hapticPress(() => router.push("/admin"))}
+                />
+              ) : null}
+            </View>
+          </View>
+
+          <View className="gap-3">
+            <Text className="text-xl font-bold text-foreground">Appearance</Text>
+            <View className="flex-row gap-2 rounded-2xl border border-border bg-surface p-2">
+              {[
+                ["light", "Day", "sun.max.fill"],
+                ["dark", "Night", "moon.fill"],
+              ].map(([scheme, label, icon]) => {
+                const selected = colorScheme === scheme;
+                return (
+                  <TouchableOpacity
+                    key={scheme}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${label} appearance`}
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => hapticPress(() => setColorScheme(scheme as "light" | "dark"))}
+                    className={`min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl px-3 py-3 ${
+                      selected ? "bg-primary" : "bg-transparent"
+                    }`}
+                  >
+                    <IconSymbol
+                      name={icon as IconSymbolName}
+                      size={20}
+                      color={selected ? colors.background : colors.muted}
+                    />
+                    <Text className={`text-sm font-bold ${selected ? "text-background" : "text-muted"}`}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text className="text-sm leading-5 text-muted">
+              Your choice is remembered on this device.
+            </Text>
+          </View>
+
           <TouchableOpacity
+            accessibilityRole="button"
             onPress={handleLogout}
-            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 items-center active:opacity-80"
+            className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl border border-error/30 bg-error/10 px-4 py-3"
           >
-            <Text className="text-red-600 dark:text-red-400 font-bold">Sign Out</Text>
+            <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
+            <Text className="text-base font-bold text-error">Sign out</Text>
           </TouchableOpacity>
 
-          {/* Footer */}
-          <View className="items-center gap-1 pt-4 border-t border-border">
-            <Text className="text-xs text-muted">last bench v1.0.0</Text>
-            <Text className="text-xs text-muted">Beyond marks. Beyond limits.</Text>
+          <View className="items-center gap-1 border-t border-border pt-5">
+            <Text className="text-xs font-bold uppercase tracking-widest text-muted">Last Bench v1.0</Text>
+            <Text className="text-sm text-muted">Beyond marks. Beyond limits.</Text>
           </View>
         </View>
       </ScrollView>

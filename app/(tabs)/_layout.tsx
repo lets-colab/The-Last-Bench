@@ -9,10 +9,8 @@ import { useColors } from "@/hooks/use-colors";
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
-  // Leave enough vertical room for the 24px icon and a readable 11px label.
-  // React Navigation subtracts the bar padding from the button height on web.
-  const tabBarHeight = 64 + bottomPadding;
+  const bottomPadding = Platform.OS === "web" ? 10 : Math.max(insets.bottom, 8);
+  const tabBarHeight = 62 + bottomPadding;
 
   return (
     <Tabs
@@ -21,18 +19,26 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.muted,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          paddingTop: 8,
+          paddingTop: 7,
           paddingBottom: bottomPadding,
           height: tabBarHeight,
-          backgroundColor: colors.background,
+          backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          borderTopWidth: 0.5,
+          borderTopWidth: 1,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarItemStyle: {
+          minHeight: 50,
+          paddingHorizontal: 0,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-          marginTop: 4,
+          fontSize: 10,
+          fontWeight: "700",
+          lineHeight: 12,
+          marginTop: 2,
         },
       }}
     >
@@ -47,6 +53,7 @@ export default function TabLayout() {
         name="applications"
         options={{
           title: "Applications",
+          tabBarLabel: "Apply",
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="paperplane.fill" color={color} />,
         }}
       />
@@ -54,6 +61,7 @@ export default function TabLayout() {
         name="universities"
         options={{
           title: "Universities",
+          tabBarLabel: "Explore",
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="graduationcap.fill" color={color} />,
         }}
       />
@@ -61,6 +69,7 @@ export default function TabLayout() {
         name="ai-guidance"
         options={{
           title: "AI Guides",
+          tabBarLabel: "Guides",
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="bubble.left.and.bubble.right.fill" color={color} />
         }}
       />

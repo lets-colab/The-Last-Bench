@@ -80,7 +80,10 @@ function verifyLocalAssetReferences(siteRoot) {
 console.log("[build-site] exporting Expo web app → temporary build (base URL /app)");
 const result = spawnSync(
   expo,
-  ["export", "--platform", "web", "--output-dir", appOutput],
+  // Public Expo values are compiled into the browser bundle. Clear Metro's
+  // transform cache so switching between preview, local, and production values
+  // cannot silently reuse a bundle built for a different API/auth origin.
+  ["export", "--platform", "web", "--clear", "--output-dir", appOutput],
   {
     cwd: root,
     stdio: "inherit",
